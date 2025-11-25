@@ -1,1 +1,4 @@
 libs/
+out/
+bin/
+production/
