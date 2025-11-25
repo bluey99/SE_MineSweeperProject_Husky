@@ -11,6 +11,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
+import view.Menu;
 
 /**
  * Main entry point for Cooperative Minesweeper
@@ -23,7 +24,7 @@ public class Main extends Application {
     private String selectedDifficulty = "Easy";
     
     @Override
-    public void start(Stage primaryStage) throws Exception {
+   /* public void start(Stage primaryStage) throws Exception {
         primaryStage.setTitle("Cooperative Minesweeper");
         
         // Show setup screen first
@@ -36,7 +37,38 @@ public class Main extends Application {
             Platform.exit();
             System.exit(0);
         });
+    }*/
+    
+    
+    public void start(Stage primaryStage) throws Exception {
+        primaryStage.setTitle("Cooperative Minesweeper");
+
+        // 1️⃣ Show MAIN MENU first
+        Menu menu = new Menu();
+        Scene menuScene = new Scene(menu, 600, 500);
+
+        primaryStage.setScene(menuScene);
+        primaryStage.show();
+
+        // 2️⃣ When START GAME is clicked → go to setup screen
+        menu.startBtn.setOnAction(e -> {
+            Scene setupScene = createSetupScene(primaryStage);
+            primaryStage.setScene(setupScene);
+        });
+
+        // 3️⃣ Optional: history button
+        menu.historyBtn.setOnAction(e -> {
+            System.out.println("History clicked");
+            // later we add HistoryView here
+        });
+
+        // 4️⃣ Handle window close
+        primaryStage.setOnCloseRequest(e -> {
+            Platform.exit();
+            System.exit(0);
+        });
     }
+
     
     private Scene createSetupScene(Stage primaryStage) {
         VBox root = new VBox(20);
