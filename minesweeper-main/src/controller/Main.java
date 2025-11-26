@@ -11,7 +11,6 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
-import view.Menu;
 
 /**
  * Main entry point for Cooperative Minesweeper
@@ -24,7 +23,7 @@ public class Main extends Application {
     private String selectedDifficulty = "Easy";
     
     @Override
-   /* public void start(Stage primaryStage) throws Exception {
+    public void start(Stage primaryStage) throws Exception {
         primaryStage.setTitle("Cooperative Minesweeper");
         
         // Show setup screen first
@@ -37,38 +36,7 @@ public class Main extends Application {
             Platform.exit();
             System.exit(0);
         });
-    }*/
-    
-    
-    public void start(Stage primaryStage) throws Exception {
-        primaryStage.setTitle("Cooperative Minesweeper");
-
-        // 1️⃣ Show MAIN MENU first
-        Menu menu = new Menu();
-        Scene menuScene = new Scene(menu, 600, 500);
-
-        primaryStage.setScene(menuScene);
-        primaryStage.show();
-
-        // 2️⃣ When START GAME is clicked → go to setup screen
-        menu.startBtn.setOnAction(e -> {
-            Scene setupScene = createSetupScene(primaryStage);
-            primaryStage.setScene(setupScene);
-        });
-
-        // 3️⃣ Optional: history button
-        menu.historyBtn.setOnAction(e -> {
-            System.out.println("History clicked");
-            // later we add HistoryView here
-        });
-
-        // 4️⃣ Handle window close
-        primaryStage.setOnCloseRequest(e -> {
-            Platform.exit();
-            System.exit(0);
-        });
     }
-
     
     private Scene createSetupScene(Stage primaryStage) {
         VBox root = new VBox(20);
@@ -231,17 +199,24 @@ public class Main extends Application {
         );
         
         startBtn.setOnAction(e -> {
+            // 1. Validate first
+            if (!validatePlayerNames(p1Field, p2Field)) {
+                // Validation failed so do not start game
+                return;
+            }
+
+            // 2. If valid, save names
             player1Name = p1Field.getText().trim();
             player2Name = p2Field.getText().trim();
-            
-            if (player1Name.isEmpty()) player1Name = "Player 1";
-            if (player2Name.isEmpty()) player2Name = "Player 2";
-            
+
+            // 3. Read difficulty
             RadioButton selected = (RadioButton) difficultyGroup.getSelectedToggle();
             selectedDifficulty = selected.getText();
-            
+
+            // 4. Start game
             startGame(primaryStage);
         });
+
         
         // Footer
         Label footerLabel = new Label("Manage questions • View history • Save scores (Coming soon)");
@@ -261,6 +236,48 @@ public class Main extends Application {
         
         return new Scene(root, 600, 750);
     }
+    
+    
+    private boolean validatePlayerNames(TextField p1Field, TextField p2Field) {
+        String p1 = p1Field.getText().trim();
+        String p2 = p2Field.getText().trim();
+
+        StringBuilder errorMsg = new StringBuilder();
+
+        // 1. Not empty
+        if (p1.isEmpty()) {
+            errorMsg.append("- Player 1 name cannot be empty.\n");
+        }
+        if (p2.isEmpty()) {
+            errorMsg.append("- Player 2 name cannot be empty.\n");
+        }
+
+        // 2. Max length (you can change 12 to another number)
+        if (!p1.isEmpty() && p1.length() > 12) {
+            errorMsg.append("- Player 1 name must be at most 12 characters.\n");
+        }
+        if (!p2.isEmpty() && p2.length() > 12) {
+            errorMsg.append("- Player 2 name must be at most 12 characters.\n");
+        }
+
+        // 3. Names must be different
+        if (!p1.isEmpty() && !p2.isEmpty() && p1.equalsIgnoreCase(p2)) {
+            errorMsg.append("- Players must have different names.\n");
+        }
+
+        // If there are any errors → show alert and return false
+        if (errorMsg.length() > 0) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Invalid Player Names");
+            alert.setHeaderText("Please fix the following:");
+            alert.setContentText(errorMsg.toString());
+            alert.showAndWait();
+            return false;
+        }
+
+        return true; // all good
+    }
+
     
     private void startGame(Stage primaryStage) {
         GameController controller = new GameController(selectedDifficulty, player1Name, player2Name);
