@@ -89,7 +89,7 @@ public class GameView extends BorderPane {
         topSection.setSpacing(8);
         topSection.setPadding(new Insets(10, 0, 15, 0));
 
-        Label titleLabel = new Label("⚑ Cooperative Minesweeper ⚑");
+        Label titleLabel = new Label("Cooperative Minesweeper");
         titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 30));
         titleLabel.setTextFill(Color.web("#1565C0"));
 
