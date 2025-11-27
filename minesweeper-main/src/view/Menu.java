@@ -26,7 +26,7 @@ public class Menu extends StackPane {
         root.setPadding(new Insets(40));
 
         // Title
-        Label title = new Label("Co-op Minesweeper");
+        Label title = new Label("Cooperative Minesweeper");
         title.setFont(Font.font("Arial", FontWeight.BOLD, 40));
         title.setTextFill(Color.WHITE);
 

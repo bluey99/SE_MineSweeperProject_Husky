@@ -4,7 +4,6 @@ import controller.Main;
 import controller.SetupController;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -30,72 +29,63 @@ public class SetupView extends BorderPane {
 
     private void buildUI() {
 
+        // Dark background like menu
         this.setBackground(new Background(new BackgroundFill(
-                Color.web("#E3F2FD"), CornerRadii.EMPTY, Insets.EMPTY)));
+                Color.web("#0F0F1A"), CornerRadii.EMPTY, Insets.EMPTY)));
 
-        VBox root = new VBox(20);
+        VBox root = new VBox(25);
         root.setAlignment(Pos.TOP_CENTER);
-        root.setPadding(new Insets(40));
+        root.setPadding(new Insets(60));
 
         // Title
         Label title = new Label("Cooperative Minesweeper");
         title.setFont(Font.font("Arial", FontWeight.BOLD, 38));
-        title.setTextFill(Color.web("#1565C0"));
+        title.setTextFill(Color.WHITE);
 
-        Label subtitle = new Label("Two players • One goal • Shared score & lives");
+        Label subtitle = new Label("Two players • One goal • Shared victory");
         subtitle.setFont(Font.font("Arial", 16));
-        subtitle.setTextFill(Color.web("#424242"));
+        subtitle.setTextFill(Color.web("#BBBBBB"));
 
-        // Card
-        VBox card = new VBox(15);
+        // Card container (dark style)
+        VBox card = new VBox(20);
         card.setAlignment(Pos.CENTER);
-        card.setPadding(new Insets(25));
+        card.setPadding(new Insets(30));
         card.setMaxWidth(500);
         card.setStyle(
-                "-fx-background-color: white;" +
-                        "-fx-background-radius: 12;" +
-                        "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 3);"
+                "-fx-background-color: #1C1C2A;" +
+                "-fx-background-radius: 14;" +
+                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 15, 0, 0, 5);"
         );
 
-        // Player 1
-        Label p1Label = new Label("Player 1 Name:");
-        p1Label.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        // Field labels
+        Label p1Label = createLabel("Player 1 Name:");
+        player1Field = createInput("Player 1");
 
-        player1Field = new TextField("Player 1");
-        player1Field.setPrefWidth(300);
+        Label p2Label = createLabel("Player 2 Name:");
+        player2Field = createInput("Player 2");
 
-        // Player 2
-        Label p2Label = new Label("Player 2 Name:");
-        p2Label.setFont(Font.font("Arial", FontWeight.BOLD, 14));
-
-        player2Field = new TextField("Player 2");
-        player2Field.setPrefWidth(300);
-
-        // Difficulty
-        Label diffLabel = new Label("Select Difficulty:");
-        diffLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        // Difficulty section
+        Label diffLabel = createLabel("Select Difficulty:");
 
         ToggleGroup diffGroup = new ToggleGroup();
 
-        easyBtn = new RadioButton("Easy");
-        mediumBtn = new RadioButton("Medium");
-        hardBtn = new RadioButton("Hard");
-
-        easyBtn.setToggleGroup(diffGroup);
-        mediumBtn.setToggleGroup(diffGroup);
-        hardBtn.setToggleGroup(diffGroup);
+        easyBtn = createRadio("Easy", diffGroup);
+        mediumBtn = createRadio("Medium", diffGroup);
+        hardBtn = createRadio("Hard", diffGroup);
         easyBtn.setSelected(true);
 
-        HBox diffBox = new HBox(20, easyBtn, mediumBtn, hardBtn);
+        HBox diffBox = new HBox(25, easyBtn, mediumBtn, hardBtn);
         diffBox.setAlignment(Pos.CENTER);
 
         Label diffInfo = new Label(
-                "Easy: 9×9 grid • 10 mines per board • 10 lives\n" +
-                        "Medium: 13×13 grid • 26 mines per board • 8 lives\n" +
-                        "Hard: 16×16 grid • 44 mines per board • 6 lives"
+                "Easy: 9×9 grid • 10 mines • 10 lives\n" +
+                "Medium: 13×13 grid • 26 mines • 8 lives\n" +
+                "Hard: 16×16 grid • 44 mines • 6 lives"
         );
         diffInfo.setFont(Font.font("Arial", 12));
-        diffInfo.setTextFill(Color.web("#616161"));
+        diffInfo.setTextFill(Color.web("#A5A5A5"));
+        diffInfo.setAlignment(Pos.CENTER);
+        diffInfo.setWrapText(true);
 
         card.getChildren().addAll(
                 p1Label, player1Field,
@@ -104,26 +94,76 @@ public class SetupView extends BorderPane {
                 diffInfo
         );
 
-        // Start button
-        Button startBtn = new Button("▶ START GAME");
+        // Start button (blue like menu)
+        Button startBtn = new Button("Start Game");
         startBtn.setPrefSize(250, 55);
         startBtn.setFont(Font.font("Arial", FontWeight.BOLD, 18));
         startBtn.setStyle(
-                "-fx-background-color: #4CAF50;" +
-                        "-fx-text-fill: white;" +
-                        "-fx-background-radius: 10;"
+                "-fx-background-color: #3F7CFF;" +
+                "-fx-background-radius: 10;" +
+                "-fx-text-fill: white;" +
+                "-fx-cursor: hand;"
+        );
+
+        startBtn.setOnMouseEntered(e ->
+                startBtn.setStyle(
+                        "-fx-background-color: #2F6BF5;" +
+                        "-fx-background-radius: 10;" +
+                        "-fx-text-fill: white;"
+                )
+        );
+
+        startBtn.setOnMouseExited(e ->
+                startBtn.setStyle(
+                        "-fx-background-color: #3F7CFF;" +
+                        "-fx-background-radius: 10;" +
+                        "-fx-text-fill: white;"
+                )
         );
 
         startBtn.setOnAction(e -> onStartPressed());
 
         root.getChildren().addAll(title, subtitle, card, startBtn);
-
         this.setCenter(root);
     }
 
+
+    // Helper for labels
+    private Label createLabel(String text) {
+        Label lbl = new Label(text);
+        lbl.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        lbl.setTextFill(Color.WHITE);
+        return lbl;
+    }
+
+    // Helper for text fields
+    private TextField createInput(String placeholder) {
+        TextField field = new TextField(placeholder);
+        field.setPrefWidth(300);
+        field.setStyle(
+                "-fx-background-color: #2D2D3F;" +
+                "-fx-text-fill: white;" +
+                "-fx-border-color: #444;" +
+                "-fx-border-radius: 6;" +
+                "-fx-background-radius: 6;"
+        );
+        return field;
+    }
+
+    // Helper for radio buttons
+    private RadioButton createRadio(String text, ToggleGroup group) {
+        RadioButton rb = new RadioButton(text);
+        rb.setToggleGroup(group);
+        rb.setFont(Font.font("Arial", 13));
+        rb.setTextFill(Color.WHITE);
+        rb.setStyle("-fx-cursor: hand;");
+        return rb;
+    }
+
+
     private void onStartPressed() {
 
-        // Delegates validation to SetupController
+        // Validation via SetupController
         String validationError = controller.validatePlayerNames(
                 player1Field.getText(),
                 player2Field.getText()
@@ -141,7 +181,7 @@ public class SetupView extends BorderPane {
         String difficulty = easyBtn.isSelected() ? "Easy" :
                 mediumBtn.isSelected() ? "Medium" : "Hard";
 
-        // Pass values to Main
+        // Pass info to Main
         mainApp.startGameFromSetup(p1, p2, difficulty);
     }
 }
