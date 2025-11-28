@@ -156,27 +156,27 @@ public class GameController {
 
     private void handleLeftClick(CellController[][] board, int row, int col, int playerNum) {
         CellController cell = board[row][col];
-        
-        // If cell is already open or flagged, ignore
-        if (cell.cellModel.isOpen() || cell.cellModel.isFlag()) return;
-        
-        // Check if it's a special cell that needs activation
-        if (cell.cellModel.isSurprise() && cell.cellModel.isDiscovered()) {
+
+        // 1) If it's a discovered special cell and not yet activated -> activate it
+        if (cell.cellModel.isSurprise() && cell.cellModel.isDiscovered() && !cell.cellModel.isActivated()) {
             activateSurpriseCell(cell);
             switchPlayer();
             return;
         }
-        
-        if (cell.cellModel.isQuestion() && cell.cellModel.isDiscovered()) {
+
+        if (cell.cellModel.isQuestion() && cell.cellModel.isDiscovered() && !cell.cellModel.isActivated()) {
             activateQuestionCell(cell);
             switchPlayer();
             return;
         }
         
-        // Open the cell
-        openCell(board, row, col);
+        // 2) If cell is already open or flagged (and not a "click to activate" special), ignore
+        if (cell.cellModel.isOpen() || cell.cellModel.isFlag()) return;
         
-        // Check cell type and handle accordingly
+        // 3) Open the cell (root click)
+        openCell(board, row, col, true);
+        
+        // 4) Check cell type and handle accordingly
         if (cell.cellModel.isMine()) {
             handleMineHit();
             switchPlayer();
@@ -185,15 +185,17 @@ public class GameController {
             cell.init();
             showMessage("Surprise Cell Discovered!", 
                 "A Surprise Cell has been found!\nYou can activate it on your next turn.");
-            switchPlayer();
+            switchPlayer(); // ends turn (SRS 3.2.18)
         } else if (cell.cellModel.isQuestion()) {
             cell.cellModel.setDiscovered(true);
             cell.init();
             showMessage("Question Cell Discovered!", 
                 "A Question Cell has been found!\nYou can activate it on your next turn.");
+            switchPlayer(); // ends turn (SRS 3.2.18)
+        } else {
+            // Normal number/empty cell: revealing ends the turn (SRS 3.2.8)
             switchPlayer();
         }
-        // For normal cells (numbers/empty), turn continues for flagging
         
         updateUI();
         checkWinCondition();
@@ -205,61 +207,74 @@ public class GameController {
         // Can only flag unopened cells
         if (cell.cellModel.isOpen()) return;
         
-        boolean wasFlaged = cell.cellModel.isFlag();
-        cell.cellModel.setFlag();
-        
-        // Apply flagging rewards/penalties (SRS 3.2.10, 3.2.11)
-        if (!wasFlaged && cell.cellModel.isFlag()) {
-            // Just placed a flag
+        boolean wasFlagged = cell.cellModel.isFlag();
+        cell.cellModel.toggleFlag();
+        boolean isFlagged = cell.cellModel.isFlag();
+
+        // Apply flagging rewards/penalties ONCE per cell (SRS 3.2.10–3.2.13)
+        if (!wasFlagged && isFlagged && !cell.cellModel.isFlagScored()) {
             if (cell.cellModel.isMine()) {
-                gameModel.sharedScore += 1; // +1 for correct flag
+                gameModel.sharedScore += 1;   // +1 for correct flag
             } else {
-                gameModel.sharedScore -= 3; // -3 for incorrect flag
+                gameModel.sharedScore -= 3;   // -3 for incorrect flag
             }
-        } else if (wasFlaged && !cell.cellModel.isFlag()) {
-            // Removed a flag - reverse the scoring
-            if (cell.cellModel.isMine()) {
-                gameModel.sharedScore -= 1;
-            } else {
-                gameModel.sharedScore += 3;
-            }
+            cell.cellModel.setFlagScored(true); // prevent double scoring
         }
-        
+
         cell.init();
         updateUI();
         // Flagging doesn't end turn (SRS 3.2.9)
     }
 
+ // Simple version kept for compatibility if you ever call it elsewhere
     private void openCell(CellController[][] board, int row, int col) {
+        openCell(board, row, col, true);
+    }
+
+    /**
+     * Open a cell.
+     * @param isRootClick true if this was the cell the player actually clicked.
+     *                    Only the root clicked non-special cell gives +1 point.
+     */
+    private void openCell(CellController[][] board, int row, int col, boolean isRootClick) {
         CellController cell = board[row][col];
-        
+
+        // Already open or flagged? do nothing
         if (cell.cellModel.isOpen() || cell.cellModel.isFlag()) return;
-        
+
         cell.cellModel.setOpen(true);
         gameModel.revealedCells++;
-        
-        // Award points for revealing non-mine cells (SRS 3.2.16, 3.2.17)
-        if (!cell.cellModel.isMine() && !cell.cellModel.isSurprise() && !cell.cellModel.isQuestion()) {
+
+        boolean isSpecial = cell.cellModel.isMine()
+                || cell.cellModel.isSurprise()
+                || cell.cellModel.isQuestion();
+
+        // 🆕 IMPORTANT:
+        // If a Surprise / Question cell is revealed (even via cascade),
+        // mark it as discovered so the next click can activate it.
+        if (cell.cellModel.isSurprise() || cell.cellModel.isQuestion()) {
+            cell.cellModel.setDiscovered(true);
+        }
+
+        // Scoring: +1 point for the clicked non-special cell (SRS 3.2.16, 3.2.17)
+        if (isRootClick && !isSpecial) {
             gameModel.sharedScore += 1;
         }
-        
-        // Flood fill for empty cells (SRS 3.2.17)
-        if (cell.cellModel.getNeighborMinesNum() == 0 && 
-            !cell.cellModel.isMine() && 
-            !cell.cellModel.isSurprise() && 
-            !cell.cellModel.isQuestion()) {
-            
+
+        // Flood fill for empty cells: reveal connected empties + bordering numbers (SRS 3.2.17)
+        if (!isSpecial && cell.cellModel.getNeighborMinesNum() == 0) {
             for (int i = row - 1; i <= row + 1; i++) {
                 for (int j = col - 1; j <= col + 1; j++) {
                     if (isInBoard(i, j) && !(i == row && j == col)) {
-                        openCell(board, i, j);
+                        openCell(board, i, j, false); // cascade: no extra scoring
                     }
                 }
             }
         }
-        
+
         cell.init();
     }
+
 
     private void handleMineHit() {
         gameModel.sharedLives--; // SRS 3.2.15

@@ -13,8 +13,8 @@ public class CellModel {
     public static final String coverImgURL = "img/cover.png";
     public static final String flagImgURL = "img/flag.png";
     public static final String mineImgURL = "img/mine.png";
-    public static final String surpriseImgURL = "img/star.png"; // Reuse star image
-    public static final String questionImgURL = "img/clock.png"; // Reuse clock image
+    public static final String surpriseImgURL = "img/SurpriseIcon.png";     // Surprise icon
+    public static final String questionImgURL = "img/QuestionIcon.png";    // Question icon
     
     public static String numberImgURL(int num) {
         return "img/" + num + ".png";
@@ -23,12 +23,15 @@ public class CellModel {
     // Cell properties
     public int neighborMinesNum = 0;
     private boolean mine = false;
-    private boolean surprise = false;  // Surprise cell (good/bad outcome)
-    private boolean question = false;  // Question cell (trivia)
+    private boolean surprise = false;     // Surprise cell (good/bad outcome)
+    private boolean question = false;     // Question cell (trivia)
     private boolean open = false;
     private boolean flag = false;
-    private boolean discovered = false;  // Special cell revealed but not yet activated
-    private boolean activated = false;   // Special cell has been used
+    private boolean discovered = false;   // Special cell revealed but not yet activated
+    private boolean activated = false;    // Special cell has been used
+
+    // NEW: has this cell already affected score due to flagging?
+    private boolean flagScored = false;
     
     public int cellSide = 32;
     
@@ -68,6 +71,10 @@ public class CellModel {
     public boolean isActivated() {
         return activated;
     }
+
+    public boolean isFlagScored() {
+        return flagScored;
+    }
     
     // Setters
     public void setMine(boolean mine) {
@@ -86,8 +93,20 @@ public class CellModel {
         this.open = open;
     }
     
-    public void setFlag() {
+    /**
+     * Toggle flag state on/off.
+     * (Used by GameController for right-click handling)
+     */
+    public void toggleFlag() {
         this.flag = !this.flag;
+    }
+
+    /**
+     * Kept for backward compatibility with existing code.
+     * Internally just toggles the flag.
+     */
+    public void setFlag() {
+        toggleFlag();
     }
     
     public void setDiscovered(boolean discovered) {
@@ -96,5 +115,9 @@ public class CellModel {
     
     public void setActivated(boolean activated) {
         this.activated = activated;
+    }
+
+    public void setFlagScored(boolean flagScored) {
+        this.flagScored = flagScored;
     }
 }

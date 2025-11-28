@@ -14,6 +14,7 @@ public class Menu extends StackPane {
 
     public Button startBtn = new Button("Start Game");
     public Button historyBtn = new Button("History");
+    public Button questionManagementBtn = new Button("Question Management"); // NEW BUTTON
 
     public Menu() {
 
@@ -38,11 +39,16 @@ public class Menu extends StackPane {
         // Style buttons
         stylePrimaryButton(startBtn);
         styleSecondaryButton(historyBtn);
+        styleSecondaryButton(questionManagementBtn); // style new button same as secondary
 
         // Buttons container
         VBox btnContainer = new VBox(15);
         btnContainer.setAlignment(Pos.CENTER);
-        btnContainer.getChildren().addAll(startBtn, historyBtn);
+        btnContainer.getChildren().addAll(
+                startBtn,
+                historyBtn,
+                questionManagementBtn // add new button to layout
+        );
 
         // Add everything
         root.getChildren().addAll(title, subtitle, btnContainer);
