@@ -466,9 +466,24 @@ public class GameController {
     }
 
     private void highlightCurrentPlayer() {
-        String activeBorder = "-fx-border-color: #4CAF50; -fx-border-width: 4; -fx-padding: 10; -fx-background-color: #E8F5E9; -fx-border-radius: 8; -fx-background-radius: 8;";
-        String inactiveBorder = "-fx-border-color: #BDBDBD; -fx-border-width: 2; -fx-padding: 10; -fx-background-color: white; -fx-border-radius: 8; -fx-background-radius: 8;";
-        
+        String activeBorder =
+            "-fx-border-color: #22C55E;" +          // bright green
+            "-fx-border-width: 3;" +
+            "-fx-padding: 18;" +
+            "-fx-background-color: #111827;" +      // dark card
+            "-fx-border-radius: 14;" +
+            "-fx-background-radius: 14;" +
+            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.6), 12, 0, 0, 6);";
+
+        String inactiveBorder =
+            "-fx-border-color: #374151;" +          // neutral gray
+            "-fx-border-width: 2;" +
+            "-fx-padding: 18;" +
+            "-fx-background-color: #111827;" +
+            "-fx-border-radius: 14;" +
+            "-fx-background-radius: 14;" +
+            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 8, 0, 0, 4);";
+
         if (currentPlayer == 1) {
             gameView.player1Panel.setStyle(activeBorder);
             gameView.player2Panel.setStyle(inactiveBorder);
@@ -487,9 +502,9 @@ public class GameController {
         
         // Color lives red if low
         if (gameModel.sharedLives <= 3) {
-            gameView.sharedLivesLabel.setTextFill(Color.web("#D32F2F"));
+            gameView.sharedLivesLabel.setTextFill(Color.web("#FCA5A5")); // soft red
         } else {
-            gameView.sharedLivesLabel.setTextFill(Color.web("#1976D2"));
+            gameView.sharedLivesLabel.setTextFill(Color.web("#A5B4FC")); // bluish
         }
     }
 
