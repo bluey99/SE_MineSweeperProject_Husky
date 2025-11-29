@@ -18,6 +18,9 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
+import javafx.scene.control.Dialog;
+import javafx.stage.Modality;
+
 
 /**
  * Main game controller for cooperative two-player Minesweeper
@@ -226,43 +229,52 @@ public class GameController {
         // Flagging doesn't end turn (SRS 3.2.9)
     }
 
- // Simple version kept for compatibility if you ever call it elsewhere
+    // Simple version kept for compatibility if you ever call it elsewhere
     private void openCell(CellController[][] board, int row, int col) {
         openCell(board, row, col, true);
     }
 
     /**
-     * Open a cell.
-     * @param isRootClick true if this was the cell the player actually clicked.
-     *                    Only the root clicked non-special cell gives +1 point.
+     * Open a cell, with flood-fill behavior that:
+     * - Treats Surprise and Question cells like "empty" for expansion
+     * - Never expands through mines
+     * - Gives +1 point only for the root clicked non-special cell
      */
     private void openCell(CellController[][] board, int row, int col, boolean isRootClick) {
+        if (!isInBoard(row, col)) return;
+
         CellController cell = board[row][col];
 
         // Already open or flagged? do nothing
         if (cell.cellModel.isOpen() || cell.cellModel.isFlag()) return;
 
+        // Open it
         cell.cellModel.setOpen(true);
         gameModel.revealedCells++;
 
-        boolean isSpecial = cell.cellModel.isMine()
-                || cell.cellModel.isSurprise()
-                || cell.cellModel.isQuestion();
+        boolean isMine = cell.cellModel.isMine();
+        boolean isSpecial = cell.cellModel.isSurprise() || cell.cellModel.isQuestion();
+        int neighbors = cell.cellModel.getNeighborMinesNum();
 
-        // 🆕 IMPORTANT:
         // If a Surprise / Question cell is revealed (even via cascade),
-        // mark it as discovered so the next click can activate it.
-        if (cell.cellModel.isSurprise() || cell.cellModel.isQuestion()) {
+        // mark it as discovered so a later click can activate it.
+        if (isSpecial && !cell.cellModel.isDiscovered()) {
             cell.cellModel.setDiscovered(true);
         }
 
-        // Scoring: +1 point for the clicked non-special cell (SRS 3.2.16, 3.2.17)
-        if (isRootClick && !isSpecial) {
+        // Scoring: +1 point for the root clicked non-special cell only
+        if (isRootClick && !isMine && !isSpecial) {
             gameModel.sharedScore += 1;
         }
 
-        // Flood fill for empty cells: reveal connected empties + bordering numbers (SRS 3.2.17)
-        if (!isSpecial && cell.cellModel.getNeighborMinesNum() == 0) {
+        // Decide if we should expand from this cell:
+        // - Never from mines
+        // - Expand from empty cells (0 neighbors)
+        // - ALSO expand from Surprise / Question cells (treat them like empty)
+        boolean shouldExpand =
+            !isMine && (neighbors == 0 || isSpecial);
+
+        if (shouldExpand) {
             for (int i = row - 1; i <= row + 1; i++) {
                 for (int j = col - 1; j <= col + 1; j++) {
                     if (isInBoard(i, j) && !(i == row && j == col)) {
@@ -272,9 +284,9 @@ public class GameController {
             }
         }
 
+        // Refresh cell view
         cell.init();
     }
-
 
     private void handleMineHit() {
         gameModel.sharedLives--; // SRS 3.2.15
@@ -562,91 +574,95 @@ public class GameController {
  * Question Dialog for Question Cells
  */
 class QuestionDialog {
+
+    private final Dialog<Boolean> dialog;
     private String questionDifficulty;
-    private boolean correctAnswer = false;
-    private boolean answered = false;
-    
+
     public QuestionDialog(String gameDifficulty) {
         // Randomly select question difficulty
         String[] difficulties = {"Easy", "Intermediate", "Hard", "Expert"};
         questionDifficulty = difficulties[new Random().nextInt(difficulties.length)];
-    }
-    
-    public String getQuestionDifficulty() {
-        return questionDifficulty;
-    }
-    
-    public Optional<Boolean> showAndWait() {
-        Alert alert = new Alert(Alert.AlertType.NONE);
-        alert.setTitle("Question Cell");
-        alert.setHeaderText(questionDifficulty + " Question");
-        
-        // Sample question (in real game, load from CSV)
+
+        dialog = new Dialog<>();
+        dialog.setTitle("Question Cell");
+        dialog.setHeaderText(questionDifficulty + " Question");
+        dialog.initModality(Modality.APPLICATION_MODAL);
+
+        // Sample question (in real game, load from CSV/DB)
         String question = getSampleQuestion(questionDifficulty);
         String[] answers = getSampleAnswers(questionDifficulty);
         int correctIndex = 1; // Second answer is correct
-        
+
         VBox content = new VBox(12);
         content.setPadding(new Insets(20));
-        
+
         Label questionLabel = new Label(question);
         questionLabel.setWrapText(true);
-        questionLabel.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 14));
+        questionLabel.setFont(javafx.scene.text.Font.font("Arial",
+                javafx.scene.text.FontWeight.BOLD, 14));
         questionLabel.setMaxWidth(400);
         content.getChildren().add(questionLabel);
-        
-        content.getChildren().add(new Label("")); // Spacer
-        
+
+        content.getChildren().add(new Label("")); // spacer
+
         Button[] buttons = new Button[4];
         for (int i = 0; i < 4; i++) {
             final int index = i;
-            buttons[i] = new Button((char)('A' + i) + ")  " + answers[i]);
+            buttons[i] = new Button((char) ('A' + i) + ")  " + answers[i]);
             buttons[i].setPrefWidth(400);
             buttons[i].setPrefHeight(45);
             buttons[i].setFont(javafx.scene.text.Font.font("Arial", 13));
             buttons[i].setStyle(
-                "-fx-background-color: #2196F3;" +
-                "-fx-text-fill: white;" +
-                "-fx-background-radius: 6;" +
-                "-fx-cursor: hand;"
-            );
-            buttons[i].setOnMouseEntered(e -> 
-                buttons[index].setStyle(
-                    "-fx-background-color: #1976D2;" +
-                    "-fx-text-fill: white;" +
-                    "-fx-background-radius: 6;" +
-                    "-fx-cursor: hand;" +
-                    "-fx-font-size: 13px;"
-                )
-            );
-            buttons[i].setOnMouseExited(e -> 
-                buttons[index].setStyle(
                     "-fx-background-color: #2196F3;" +
                     "-fx-text-fill: white;" +
                     "-fx-background-radius: 6;" +
-                    "-fx-cursor: hand;" +
-                    "-fx-font-size: 13px;"
-                )
+                    "-fx-cursor: hand;"
             );
+
+            buttons[i].setOnMouseEntered(e ->
+                    buttons[index].setStyle(
+                            "-fx-background-color: #1976D2;" +
+                            "-fx-text-fill: white;" +
+                            "-fx-background-radius: 6;" +
+                            "-fx-cursor: hand;" +
+                            "-fx-font-size: 13px;"
+                    )
+            );
+            buttons[i].setOnMouseExited(e ->
+                    buttons[index].setStyle(
+                            "-fx-background-color: #2196F3;" +
+                            "-fx-text-fill: white;" +
+                            "-fx-background-radius: 6;" +
+                            "-fx-cursor: hand;" +
+                            "-fx-font-size: 13px;"
+                    )
+            );
+
+            // When user clicks an answer → set result and close dialog
             buttons[i].setOnAction(e -> {
-                correctAnswer = (index == correctIndex);
-                answered = true;
-                alert.close();
+                dialog.setResult(index == correctIndex);
+                dialog.close();
             });
+
             content.getChildren().add(buttons[i]);
         }
-        
-        alert.getDialogPane().setContent(content);
-        alert.getDialogPane().getButtonTypes().clear();
-        alert.getDialogPane().setPrefSize(480, 400);
-        
-        alert.showAndWait();
-        
-        return answered ? Optional.of(correctAnswer) : Optional.empty();
+
+        dialog.getDialogPane().setContent(content);
+        dialog.getDialogPane().getButtonTypes().clear(); // no default OK/Cancel
+        dialog.getDialogPane().setPrefSize(480, 400);
     }
-    
+
+    public String getQuestionDifficulty() {
+        return questionDifficulty;
+    }
+
+    public Optional<Boolean> showAndWait() {
+        // If user presses X, result is null → Optional.empty()
+        return dialog.showAndWait();
+    }
+
+    // Same helpers as before
     private String getSampleQuestion(String difficulty) {
-        // Sample questions - in real game, load from CSV
         switch (difficulty) {
             case "Easy":
                 return "What is 5 + 3?";
@@ -660,19 +676,19 @@ class QuestionDialog {
                 return "Sample question";
         }
     }
-    
+
     private String[] getSampleAnswers(String difficulty) {
         switch (difficulty) {
             case "Easy":
-                return new String[]{"7", "8", "9", "10"};
+                return new String[] { "7", "8", "9", "10" };
             case "Intermediate":
-                return new String[]{"London", "Paris", "Berlin", "Madrid"};
+                return new String[] { "London", "Paris", "Berlin", "Madrid" };
             case "Hard":
-                return new String[]{"1944", "1945", "1946", "1947"};
+                return new String[] { "1944", "1945", "1946", "1947" };
             case "Expert":
-                return new String[]{"299,792", "300,000", "250,000", "350,000"};
+                return new String[] { "299,792", "300,000", "250,000", "350,000" };
             default:
-                return new String[]{"A", "B", "C", "D"};
+                return new String[] { "A", "B", "C", "D" };
         }
     }
 }
