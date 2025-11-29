@@ -1,35 +1,35 @@
 package controller;
 
-import javafx.application.Platform;
-import javafx.event.EventHandler;
-import javafx.geometry.Insets;
-import javafx.scene.control.*;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.stage.Modality;
-
-import model.Board;
-import model.Cell;
-import model.GameModel;
-import model.Question;
-import model.QuestionDifficulty;
-import model.QuestionRepository;
-
-import view.GameView;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-
-import model.GameHistoryEntry;    // <-- your history model
-import model.SysData;             // <-- your CSV saving / loading
-
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import javafx.application.Platform;
+import javafx.event.EventHandler;
+import javafx.geometry.Insets;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.stage.Modality;
+import model.Board;
+import model.Cell;
+import model.GameHistoryEntry;    // <-- your history model
+import model.GameModel;
+import model.Question;
+import model.QuestionDifficulty;
+import model.QuestionRepository;
+import model.SysData;             // <-- your CSV saving / loading
+import view.GameView;
 
 /**
  * ==============================================================================
