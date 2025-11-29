@@ -22,5 +22,4 @@ public class SetupController {
 
         return null; // no errors
     }
-
 }

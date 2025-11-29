@@ -127,7 +127,6 @@ public class SetupView extends BorderPane {
         this.setCenter(root);
     }
 
-
     // Helper for labels
     private Label createLabel(String text) {
         Label lbl = new Label(text);
@@ -159,7 +158,6 @@ public class SetupView extends BorderPane {
         rb.setStyle("-fx-cursor: hand;");
         return rb;
     }
-
 
     private void onStartPressed() {
 

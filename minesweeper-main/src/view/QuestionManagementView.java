@@ -2,7 +2,11 @@ package view;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -11,12 +15,12 @@ import model.Question;
 
 public class QuestionManagementView extends BorderPane {
 
-    public Button backBtn = new Button("← Back to Menu");
-    public Button addBtn = new Button("+ Add Question");
-    public Button editBtn = new Button("Edit Selected");
-    public Button deleteBtn = new Button("Delete Selected");
+    public final Button backBtn = new Button("← Back to Menu");
+    public final Button addBtn = new Button("+ Add Question");
+    public final Button editBtn = new Button("Edit Selected");
+    public final Button deleteBtn = new Button("Delete Selected");
 
-    public TableView<Question> table = new TableView<>();
+    public final TableView<Question> table = new TableView<>();
 
     public QuestionManagementView() {
         setStyle("-fx-background-color: #0f172a;"); // dark background

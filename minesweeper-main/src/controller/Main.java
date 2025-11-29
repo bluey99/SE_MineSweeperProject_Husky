@@ -13,7 +13,6 @@ public class Main extends Application {
 
     private static Stage primaryStage;   // used so other screens can change the scene
 
-    // רצוי למניו/סטאפ (נקטין אם המסך קטן)
     private static final double MENU_WIDTH = 900;
     private static final double MENU_HEIGHT = 650;
 

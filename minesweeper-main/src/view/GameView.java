@@ -20,39 +20,39 @@ import javafx.scene.text.FontWeight;
  */
 public class GameView extends BorderPane {
 
-    private GameController controller;
+    private final GameController controller;
 
     // Top Section
-    private VBox topSection = new VBox();
+    private final VBox topSection = new VBox();
 
     // Center Section (3 columns)
-    private HBox centerSection = new HBox();
+    private final HBox centerSection = new HBox();
 
     // Bottom Section
-    private VBox bottomSection = new VBox();
+    private final VBox bottomSection = new VBox();
 
     // Shared Info Panel
-    public VBox sharedInfoPanel = new VBox();
-    public Label sharedScoreLabel = new Label("0");
-    public Label sharedLivesLabel = new Label("0");
-    public Label difficultyLabel = new Label("Easy");
-    public Label timeLabel = new Label("00:00");
-    public Label currentPlayerLabel = new Label("Player 1's Turn");
+    public final VBox sharedInfoPanel = new VBox();
+    public final Label sharedScoreLabel = new Label("0");
+    public final Label sharedLivesLabel = new Label("0");
+    public final Label difficultyLabel = new Label("Easy");
+    public final Label timeLabel = new Label("00:00");
+    public final Label currentPlayerLabel = new Label("Player 1's Turn");
 
     // Player 1 Panel + Board Grid
-    public VBox player1Panel = new VBox();
-    public GridPane gridPane1 = new GridPane();
-    private Label player1Label;
+    public final VBox player1Panel = new VBox();
+    public final GridPane gridPane1 = new GridPane();
+    private final Label player1Label;
 
     // Player 2 Panel + Board Grid
-    public VBox player2Panel = new VBox();
-    public GridPane gridPane2 = new GridPane();
-    private Label player2Label;
+    public final VBox player2Panel = new VBox();
+    public final GridPane gridPane2 = new GridPane();
+    private final Label player2Label;
 
     // Bottom Buttons
-    public Button restartBtn = new Button("New Game");
-    public Button endTurnBtn = new Button("End Turn");
-    public Button exitBtn = new Button("Exit");
+    public final Button restartBtn = new Button("New Game");
+    public final Button endTurnBtn = new Button("End Turn");
+    public final Button exitBtn = new Button("Exit");
 
     public GameView(GameController controller) {
         this.controller = controller;
