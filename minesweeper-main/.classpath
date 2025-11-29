@@ -6,19 +6,18 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="C:/Users/jawad/Downloads/openjfx-18.0.1_windows-x64_bin-sdk/javafx-sdk-18.0.1/lib/javafx.base.jar"/>
-	<classpathentry kind="lib" path="C:/Users/jawad/Downloads/openjfx-18.0.1_windows-x64_bin-sdk/javafx-sdk-18.0.1/lib/javafx.controls.jar"/>
-	<classpathentry kind="lib" path="C:/Users/jawad/Downloads/openjfx-18.0.1_windows-x64_bin-sdk/javafx-sdk-18.0.1/lib/javafx.fxml.jar"/>
-	<classpathentry kind="lib" path="C:/Users/jawad/Downloads/openjfx-18.0.1_windows-x64_bin-sdk/javafx-sdk-18.0.1/lib/javafx.graphics.jar"/>
-	<classpathentry kind="lib" path="C:/Users/jawad/Downloads/openjfx-18.0.1_windows-x64_bin-sdk/javafx-sdk-18.0.1/lib/javafx.media.jar"/>
-	<classpathentry kind="lib" path="C:/Users/jawad/Downloads/openjfx-18.0.1_windows-x64_bin-sdk/javafx-sdk-18.0.1/lib/javafx.swing.jar"/>
-	<classpathentry kind="lib" path="C:/Users/jawad/Downloads/openjfx-18.0.1_windows-x64_bin-sdk/javafx-sdk-18.0.1/lib/javafx.web.jar"/>
-	<classpathentry kind="lib" path="C:/Users/jawad/Downloads/openjfx-18.0.1_windows-x64_bin-sdk/javafx-sdk-18.0.1/lib/javafx-swt.jar"/>
-	<classpathentry kind="lib" path="C:/Users/jawad/Downloads/UCanAccess-5.0.1.bin/UCanAccess-5.0.1.bin/lib/commons-lang3-3.8.1.jar"/>
-	<classpathentry kind="lib" path="C:/Users/jawad/Downloads/UCanAccess-5.0.1.bin/UCanAccess-5.0.1.bin/lib/commons-logging-1.2.jar"/>
-	<classpathentry kind="lib" path="C:/Users/jawad/Downloads/UCanAccess-5.0.1.bin/UCanAccess-5.0.1.bin/lib/hsqldb-2.5.0.jar"/>
-	<classpathentry kind="lib" path="C:/Users/jawad/Downloads/UCanAccess-5.0.1.bin/UCanAccess-5.0.1.bin/lib/jackcess-3.0.1.jar"/>
-	<classpathentry kind="lib" path="C:/Users/jawad/Downloads/UCanAccess-5.0.1.bin/UCanAccess-5.0.1.bin/lib/ucanload.jar"/>
-	<classpathentry kind="lib" path="C:/Users/jawad/Downloads/UCanAccess-5.0.1.bin/UCanAccess-5.0.1.bin/lib/ucanaccess-5.0.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/salim/Desktop/Old Courses/Design and Development/bonus_implementation_2024_Artishok/bonus_implementation_2024_Artishok/bonus_implementation_2024_Artishok/UCanAccess-5.0.1.bin/lib/commons-lang3-3.8.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/salim/Desktop/Old Courses/Design and Development/bonus_implementation_2024_Artishok/bonus_implementation_2024_Artishok/bonus_implementation_2024_Artishok/UCanAccess-5.0.1.bin/lib/commons-logging-1.2.jar"/>
+	<classpathentry kind="lib" path="C:/Users/salim/Desktop/Old Courses/Design and Development/bonus_implementation_2024_Artishok/bonus_implementation_2024_Artishok/bonus_implementation_2024_Artishok/UCanAccess-5.0.1.bin/lib/hsqldb-2.5.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/salim/Desktop/Old Courses/Design and Development/bonus_implementation_2024_Artishok/bonus_implementation_2024_Artishok/bonus_implementation_2024_Artishok/UCanAccess-5.0.1.bin/lib/jackcess-3.0.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/salim/Desktop/Old Courses/Design and Development/bonus_implementation_2024_Artishok/bonus_implementation_2024_Artishok/bonus_implementation_2024_Artishok/UCanAccess-5.0.1.bin/lib/ucanaccess-5.0.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/salim/Desktop/Software Engineering/openjfx-21.0.9_windows-x64_bin-sdk/javafx-sdk-21.0.9/lib/javafx.base.jar"/>
+	<classpathentry kind="lib" path="C:/Users/salim/Desktop/Software Engineering/openjfx-21.0.9_windows-x64_bin-sdk/javafx-sdk-21.0.9/lib/javafx.controls.jar"/>
+	<classpathentry kind="lib" path="C:/Users/salim/Desktop/Software Engineering/openjfx-21.0.9_windows-x64_bin-sdk/javafx-sdk-21.0.9/lib/javafx.fxml.jar"/>
+	<classpathentry kind="lib" path="C:/Users/salim/Desktop/Software Engineering/openjfx-21.0.9_windows-x64_bin-sdk/javafx-sdk-21.0.9/lib/javafx.graphics.jar"/>
+	<classpathentry kind="lib" path="C:/Users/salim/Desktop/Software Engineering/openjfx-21.0.9_windows-x64_bin-sdk/javafx-sdk-21.0.9/lib/javafx.media.jar"/>
+	<classpathentry kind="lib" path="C:/Users/salim/Desktop/Software Engineering/openjfx-21.0.9_windows-x64_bin-sdk/javafx-sdk-21.0.9/lib/javafx.swing.jar"/>
+	<classpathentry kind="lib" path="C:/Users/salim/Desktop/Software Engineering/openjfx-21.0.9_windows-x64_bin-sdk/javafx-sdk-21.0.9/lib/javafx.web.jar"/>
+	<classpathentry kind="lib" path="C:/Users/salim/Desktop/Software Engineering/openjfx-21.0.9_windows-x64_bin-sdk/javafx-sdk-21.0.9/lib/javafx-swt.jar"/>
 	<classpathentry kind="output" path="out/production/MineSweeper"/>
 </classpath>

@@ -4,6 +4,7 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import view.HistoryView;
 import view.Menu;
 import view.SetupView;
 
@@ -41,7 +42,7 @@ public class Main extends Application {
 
         // History button (still stub)
         menu.historyBtn.setOnAction(e -> {
-            System.out.println("History clicked");
+        	HistoryView.show(primaryStage); 
         });
 
         // Question Management

@@ -1,6 +1,10 @@
 package controller;
 
 import javafx.application.Platform;
+import model.GameHistoryEntry;
+import model.SysData;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
@@ -523,6 +527,8 @@ public class GameController {
         int lifeBonus = gameModel.sharedLives * (difficulty.equals("Easy") ? 5 : difficulty.equals("Medium") ? 8 : 12);
         int finalScore = gameModel.sharedScore + lifeBonus;
         
+        saveGameToHistory(won, finalScore);
+        
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(won ? "🎉 Victory!" : "Game Over");
         alert.setHeaderText(won ? 
@@ -556,6 +562,34 @@ public class GameController {
         alert.setContentText(message);
         alert.showAndWait();
     }
+    
+    private void saveGameToHistory(boolean won, int finalScore) {
+        // 1. Date & time
+        String dateTime = LocalDateTime.now()
+                .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+
+        // 2. Result and winner
+        String result = won ? "WIN" : "LOSE";
+
+
+        // 3. Game length (from your existing timer)
+        int gameLengthSeconds = elapsedTime;
+
+        // 4. Build entry
+        GameHistoryEntry entry = new GameHistoryEntry(
+                dateTime,
+                difficulty,      // make sure 'difficulty' is a String field in this controller
+                player1Name,     // same for player1Name / player2Name
+                player2Name,
+                result,
+                finalScore,
+                gameLengthSeconds
+        );
+
+        // 5. Save to CSV using SysData
+        SysData.saveGame(entry);
+    }
+
 }
 
 /**
@@ -675,4 +709,8 @@ class QuestionDialog {
                 return new String[]{"A", "B", "C", "D"};
         }
     }
+    
+    
+
+
 }
