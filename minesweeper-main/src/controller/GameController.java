@@ -21,6 +21,11 @@ import java.util.TimerTask;
 import javafx.scene.control.Dialog;
 import javafx.stage.Modality;
 
+// NEW imports for questions from CSV
+import java.util.List;
+import model.Question;
+import model.QuestionDifficulty;
+import model.QuestionRepository;
 
 /**
  * Main game controller for cooperative two-player Minesweeper
@@ -587,31 +592,60 @@ public class GameController {
 
 /**
  * Question Dialog for Question Cells
+ * Now uses real questions from CSV via QuestionRepository.
  */
 class QuestionDialog {
 
     private final Dialog<Boolean> dialog;
-    private String questionDifficulty;
+    private String questionDifficulty;   // "Easy", "Intermediate", "Hard", "Expert"
+    private int correctIndex;           // field used by the buttons
 
     public QuestionDialog(String gameDifficulty) {
-        // Randomly select question difficulty
-        String[] difficulties = {"Easy", "Intermediate", "Hard", "Expert"};
-        questionDifficulty = difficulties[new Random().nextInt(difficulties.length)];
-
         dialog = new Dialog<>();
-        dialog.setTitle("Question Cell");
-        dialog.setHeaderText(questionDifficulty + " Question");
         dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.setTitle("Question Cell");
 
-        // Sample question (in real game, load from CSV/DB)
-        String question = getSampleQuestion(questionDifficulty);
-        String[] answers = getSampleAnswers(questionDifficulty);
-        int correctIndex = 1; // Second answer is correct
+        // Load all questions from CSV
+        List<Question> allQuestions = QuestionRepository.loadQuestions();
+        Question chosen = null;
 
+        if (allQuestions != null && !allQuestions.isEmpty()) {
+            chosen = allQuestions.get(new Random().nextInt(allQuestions.size()));
+            QuestionDifficulty diffEnum = chosen.getDifficulty();
+            questionDifficulty = mapDifficultyLabel(diffEnum);   // for scoring + header
+            dialog.setHeaderText(questionDifficulty + " Question");
+        } else {
+            // Fallback: no CSV questions → use generic difficulty
+            String[] difficulties = {"Easy", "Intermediate", "Hard", "Expert"};
+            questionDifficulty = difficulties[new Random().nextInt(difficulties.length)];
+            dialog.setHeaderText(questionDifficulty + " Question");
+        }
+
+        // Build UI
         VBox content = new VBox(12);
         content.setPadding(new Insets(20));
 
-        Label questionLabel = new Label(question);
+        String questionText;
+        String[] answers;
+
+        if (chosen != null) {
+            questionText = chosen.getText();
+            answers = chosen.getOptions();
+            correctIndex = chosen.getCorrectIndex();   // set FIELD
+
+            // Safety: ensure we have 4 options
+            if (answers == null || answers.length < 4) {
+                answers = new String[] { "Option A", "Option B", "Option C", "Option D" };
+                correctIndex = 0;                      // set FIELD
+            }
+        } else {
+            // Fallback sample
+            questionText = "Sample question (no questions found in CSV).";
+            answers = new String[] { "A", "B", "C", "D" };
+            correctIndex = 0;                          // set FIELD
+        }
+
+        Label questionLabel = new Label(questionText);
         questionLabel.setWrapText(true);
         questionLabel.setFont(javafx.scene.text.Font.font("Arial",
                 javafx.scene.text.FontWeight.BOLD, 14));
@@ -623,7 +657,11 @@ class QuestionDialog {
         Button[] buttons = new Button[4];
         for (int i = 0; i < 4; i++) {
             final int index = i;
-            buttons[i] = new Button((char) ('A' + i) + ")  " + answers[i]);
+            String answerText = (answers[i] == null || answers[i].isEmpty())
+                    ? "(empty answer)"
+                    : answers[i];
+
+            buttons[i] = new Button((char) ('A' + i) + ")  " + answerText);
             buttons[i].setPrefWidth(400);
             buttons[i].setPrefHeight(45);
             buttons[i].setFont(javafx.scene.text.Font.font("Arial", 13));
@@ -655,7 +693,7 @@ class QuestionDialog {
 
             // When user clicks an answer → set result and close dialog
             buttons[i].setOnAction(e -> {
-                dialog.setResult(index == correctIndex);
+                dialog.setResult(index == correctIndex);  // uses FIELD
                 dialog.close();
             });
 
@@ -667,43 +705,35 @@ class QuestionDialog {
         dialog.getDialogPane().setPrefSize(480, 400);
     }
 
+    /**
+     * Map enum difficulty to the string used by applyQuestionReward.
+     * EASY -> "Easy"
+     * MEDIUM -> "Intermediate"
+     * HARD -> "Hard"
+     * EXPERT -> "Expert"
+     */
+    private String mapDifficultyLabel(QuestionDifficulty diff) {
+        if (diff == null) return "Easy";
+
+        switch (diff) {
+            case EASY:
+                return "Easy";
+            case MEDIUM:
+                return "Intermediate";  // matches applyQuestionReward's "Intermediate"
+            case HARD:
+                return "Hard";
+            case EXPERT:
+                return "Expert";
+            default:
+                return "Easy";
+        }
+    }
+
     public String getQuestionDifficulty() {
         return questionDifficulty;
     }
 
     public Optional<Boolean> showAndWait() {
-        // If user presses X, result is null → Optional.empty()
         return dialog.showAndWait();
-    }
-
-    // Same helpers as before
-    private String getSampleQuestion(String difficulty) {
-        switch (difficulty) {
-            case "Easy":
-                return "What is 5 + 3?";
-            case "Intermediate":
-                return "What is the capital of France?";
-            case "Hard":
-                return "In what year did World War II end?";
-            case "Expert":
-                return "What is the speed of light in vacuum (in km/s)?";
-            default:
-                return "Sample question";
-        }
-    }
-
-    private String[] getSampleAnswers(String difficulty) {
-        switch (difficulty) {
-            case "Easy":
-                return new String[] { "7", "8", "9", "10" };
-            case "Intermediate":
-                return new String[] { "London", "Paris", "Berlin", "Madrid" };
-            case "Hard":
-                return new String[] { "1944", "1945", "1946", "1947" };
-            case "Expert":
-                return new String[] { "299,792", "300,000", "250,000", "350,000" };
-            default:
-                return new String[] { "A", "B", "C", "D" };
-        }
     }
 }

@@ -1,136 +1,118 @@
 package model;
 
-import java.sql.*;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
 public class QuestionRepository {
 
-	private static final String DB_URL = "jdbc:ucanaccess://questions.accdb";
-
-    static {
-        try {
-            Class.forName("net.ucanaccess.jdbc.UcanaccessDriver");
-        } catch (ClassNotFoundException e) {
-            System.err.println("UCanAccess driver not found. Check your JARs.");
-            e.printStackTrace();
-        }
-    }
+    // Path to your CSV file (relative to project root).
+    // If you put it in another folder, change this path.
+    private static final String CSV_PATH = "QuestionsCSV.csv";
 
     // -----------------------------------------------------------------
-    // Load all questions
+    // Load all questions from CSV
+    // CSV columns:
+    // ID,Question,Difficulty,A,B,C,D,Correct Answer
+    // Correct Answer is one of: A / B / C / D
     // -----------------------------------------------------------------
     public static List<Question> loadQuestions() {
         List<Question> list = new ArrayList<>();
 
-        String sql = "SELECT id, question, option1, option2, option3, option4, " +
-                     "correctIndex, difficulty FROM Questions1 ORDER BY id";
+        try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(
+                        new FileInputStream(CSV_PATH),
+                        StandardCharsets.UTF_8))) {
 
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+            String line;
+            boolean firstLine = true;
 
-            while (rs.next()) {
-                int id = rs.getInt("id");
-                String text = rs.getString("question");
+            while ((line = br.readLine()) != null) {
+
+                // Skip header
+                if (firstLine) {
+                    firstLine = false;
+                    continue;
+                }
+
+                // Split row into columns
+                String[] cols = line.split(",", -1);
+                if (cols.length < 8) {
+                    // malformed line, skip
+                    continue;
+                }
+
+                // Remove BOM from first column if present
+                cols[0] = cols[0].replace("\uFEFF", "");
+
+                int id = Integer.parseInt(cols[0].trim());
+                String text = cols[1];
+                String difficultyStr = cols[2];
+
                 String[] options = new String[4];
-                options[0] = rs.getString("option1");
-                options[1] = rs.getString("option2");
-                options[2] = rs.getString("option3");
-                options[3] = rs.getString("option4");
-                int correctIndex = rs.getInt("correctIndex");
-                QuestionDifficulty diff =
-                        QuestionDifficulty.fromString(rs.getString("difficulty"));
+                options[0] = cols[3]; // A
+                options[1] = cols[4]; // B
+                options[2] = cols[5]; // C
+                options[3] = cols[6]; // D
+
+                String correctLetter = cols[7].trim();
+                int correctIndex = letterToIndex(correctLetter);
+
+                QuestionDifficulty diff = QuestionDifficulty.fromString(difficultyStr);
 
                 list.add(new Question(id, text, options, correctIndex, diff));
             }
-        } catch (SQLException e) {
+
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
         return list;
     }
 
+    // Map A/B/C/D -> 0/1/2/3
+    private static int letterToIndex(String letter) {
+        if (letter == null) return -1;
+
+        switch (letter.toUpperCase()) {
+            case "A":
+                return 0;
+            case "B":
+                return 1;
+            case "C":
+                return 2;
+            case "D":
+                return 3;
+            default:
+                return -1;
+        }
+    }
+
     // -----------------------------------------------------------------
-    // Add new question (auto ID)
+    // The following methods are NOT implemented for CSV.
+    // If your game/editor never calls them, they will never be used.
+    // If you want, we can later implement "edit CSV" logic as well.
     // -----------------------------------------------------------------
     public static void addQuestion(Question q) {
-        String sql =
-            "INSERT INTO Questions1 " +
-            "(question, option1, option2, option3, option4, correctIndex, difficulty) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?)";
-
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-
-            ps.setString(1, q.getText());
-            String[] opts = q.getOptions();
-            ps.setString(2, safeOpt(opts, 0));
-            ps.setString(3, safeOpt(opts, 1));
-            ps.setString(4, safeOpt(opts, 2));
-            ps.setString(5, safeOpt(opts, 3));
-            ps.setInt(6, q.getCorrectIndex());
-            ps.setString(7, q.getDifficulty().toString());
-            ps.executeUpdate();
-
-            // get generated id (works when 'id' is AutoNumber)
-            try (ResultSet rs = ps.getGeneratedKeys()) {
-                if (rs.next()) {
-                    int generatedId = rs.getInt(1);
-                    q.setId(generatedId);
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        throw new UnsupportedOperationException(
+                "addQuestion is not supported with CSV storage");
     }
 
-    // -----------------------------------------------------------------
-    // Update existing question (by id)
-    // -----------------------------------------------------------------
     public static void updateQuestion(Question q) {
-        String sql =
-            "UPDATE Questions1 SET " +
-            "question = ?, option1 = ?, option2 = ?, option3 = ?, option4 = ?, " +
-            "correctIndex = ?, difficulty = ? " +
-            "WHERE id = ?";
-
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, q.getText());
-            String[] opts = q.getOptions();
-            ps.setString(2, safeOpt(opts, 0));
-            ps.setString(3, safeOpt(opts, 1));
-            ps.setString(4, safeOpt(opts, 2));
-            ps.setString(5, safeOpt(opts, 3));
-            ps.setInt(6, q.getCorrectIndex());
-            ps.setString(7, q.getDifficulty().toString());
-            ps.setInt(8, q.getId());
-
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        throw new UnsupportedOperationException(
+                "updateQuestion is not supported with CSV storage");
     }
 
-    // -----------------------------------------------------------------
-    // Delete question (by id)
-    // -----------------------------------------------------------------
     public static void deleteQuestion(Question q) {
-        String sql = "DELETE FROM Questions1 WHERE id = ?";
-
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, q.getId());
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        throw new UnsupportedOperationException(
+                "deleteQuestion is not supported with CSV storage");
     }
 
-    // helper to avoid nulls
+    // helper from old code kept for compatibility (not used now)
+    @SuppressWarnings("unused")
     private static String safeOpt(String[] arr, int idx) {
         if (arr == null || idx >= arr.length || arr[idx] == null) return "";
         return arr[idx];
