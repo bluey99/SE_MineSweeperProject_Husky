@@ -12,9 +12,9 @@ import javafx.scene.text.FontWeight;
 
 public class Menu extends StackPane {
 
-    public Button startBtn = new Button("Start Game");
-    public Button historyBtn = new Button("History");
-    public Button questionManagementBtn = new Button("Question Management"); // NEW BUTTON
+    public final Button startBtn = new Button("Start Game");
+    public final Button historyBtn = new Button("History");
+    public final Button questionManagementBtn = new Button("Question Management"); // NEW BUTTON
 
     public Menu() {
 
