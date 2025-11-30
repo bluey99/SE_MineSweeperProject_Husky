@@ -90,10 +90,9 @@ public class QuestionFormDialog {
         HBox diffBox = new HBox(10, easyBtn, medBtn, hardBtn, expertBtn);
         diffBox.setAlignment(Pos.CENTER_LEFT);
 
-        // Default difficulty = Easy
         easyBtn.setSelected(true);
 
-        // If editing, fill with existing data
+        // If editing, load data
         if (isEditMode && original != null) {
             questionField.setText(original.getText());
             String[] opts = original.getOptions();
@@ -125,6 +124,58 @@ public class QuestionFormDialog {
         dialog.getDialogPane().setContent(root);
         dialog.getDialogPane().setStyle("-fx-background-color: #0f172a;");
 
+        // ----------------------------------------------------------------------
+        // bayan added here – FULL VALIDATION before allowing the dialog to close
+        // ----------------------------------------------------------------------
+        Button okButton = (Button) dialog.getDialogPane().lookupButton(
+                dialog.getDialogPane().getButtonTypes().get(0)
+        );
+
+        okButton.addEventFilter(javafx.event.ActionEvent.ACTION, evt -> {
+
+            // bayan added here - get question text for validation
+            String qText = questionField.getText().trim();
+
+            // 1. Reject empty question
+            if (qText.isEmpty()) {
+                showError("Invalid Question", "Please enter a question.");
+                evt.consume();
+                return;
+            }
+
+            // 2. Reject meaningless questions (symbols only like ????, ... etc.)
+            // Must contain at least one Hebrew/English letter or digit
+            if (!qText.matches(".*[A-Za-z].*")) {
+                showError("Invalid Question", "Please Enter a valid question.");
+                evt.consume();
+                return;
+            }
+
+
+            // 3. Validate answers
+            for (int i = 0; i < 4; i++) {
+                if (optionFields[i].getText().trim().isEmpty()) {
+                    showError("Invalid Answers", "All 4 answers must be filled.");
+                    evt.consume();
+                    return;
+                }
+            }
+
+            // 4. Validate correct answer selection
+            if (correctGroup.getSelectedToggle() == null) {
+                showError("Missing Correct Answer", "Please select which answer is correct.");
+                evt.consume();
+                return;
+            }
+
+            // 5. Validate difficulty selection
+            if (difficultyGroup.getSelectedToggle() == null) {
+                showError("Missing Difficulty", "Please choose a difficulty level.");
+                evt.consume();
+            }
+        });
+
+
         dialog.setResultConverter(buttonType -> {
             if (buttonType.getButtonData() != ButtonBar.ButtonData.OK_DONE) {
                 return null;
@@ -136,20 +187,15 @@ public class QuestionFormDialog {
                 opts[i] = optionFields[i].getText().trim();
             }
 
-            Toggle selected = correctGroup.getSelectedToggle();
-            int correctIdx = selected == null ? 0 : (int) selected.getUserData();
-
-            Toggle diffToggle = difficultyGroup.getSelectedToggle();
-            String diffStr = diffToggle == null ? "Easy" : ((ToggleButton) diffToggle).getText();
+            int correctIdx = (int) correctGroup.getSelectedToggle().getUserData();
+            String diffStr = ((ToggleButton) difficultyGroup.getSelectedToggle()).getText();
             QuestionDifficulty diff = QuestionDifficulty.fromString(diffStr);
 
-            Question q;
             if (isEditMode && original != null) {
-                q = new Question(original.getId(), qText, opts, correctIdx, diff);
+                return new Question(original.getId(), qText, opts, correctIdx, diff);
             } else {
-                q = new Question(qText, opts, correctIdx, diff);
+                return new Question(qText, opts, correctIdx, diff);
             }
-            return q;
         });
     }
 
@@ -182,6 +228,17 @@ public class QuestionFormDialog {
             }
         });
         return btn;
+    }
+
+    // ----------------------------------------------------------------------
+    // bayan added here - reusable alert method
+    // ----------------------------------------------------------------------
+    private void showError(String title, String msg) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(msg);
+        alert.showAndWait();
     }
 
     public Optional<Question> showAndWait() {

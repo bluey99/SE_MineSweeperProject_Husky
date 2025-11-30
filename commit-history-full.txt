@@ -1,0 +1,203 @@
+commit 80cfc3a6e3b373a293db08a3bdd4c8a7dc1b6869
+Merge: 8652182 a39e850
+Author: bayan <bayan.naa1999@gmail.com>
+Date:   Sun Nov 30 17:51:58 2025 +0200
+
+    Merge branch 'historyscreen---feature'
+
+commit a39e8504c4dddbaf11c91fa1b2d50e6cdc72af19
+Author: bayan <bayan.naa1999@gmail.com>
+Date:   Sun Nov 30 17:45:08 2025 +0200
+
+    Add dynamic difficulty info to SetupView
+    
+    - Implemented dynamic difficulty description text in SetupView.
+    - Difficulty info now updates automatically when selecting Easy, Medium, or Hard.
+    - Added helper method to generate difficulty details and connected radio button listeners.
+    - NOTE: The dynamic text is still partially clipped due to a layout/height constraint in the card.
+    - Layout issue will be addressed in a follow-up commit.
+
+commit 7efbf2bdec011a841cb80e35db17dddff6498521
+Author: bayan <bayan.naa1999@gmail.com>
+Date:   Sun Nov 30 17:13:04 2025 +0200
+
+    Remove manual End Turn feature from GameView and GameController
+    
+    - Removed the manual "End Turn" button from GameView.
+    - Deleted all related event handlers and logic in GameController.
+    - Added clarification comment explaining that manual turn-ending is not aligned with game rules.
+    - Turns now switch only when a cell is uncovered or activated, while flag/unflag actions do not end the turn.
+
+commit fe75bb192dca3aede0b5dfc27e84d738312b4639
+Author: bayan <bayan.naa1999@gmail.com>
+Date:   Sun Nov 30 16:58:42 2025 +0200
+
+    Refactor HistoryView to use unified screen layout and integrate with Main menu navigation
+    
+    - Converted HistoryView to an embedded view instead of a separate Stage
+    - Updated Main.showMainMenu() to load HistoryView with consistent sizing
+    - Added back button navigation to return to the main menu
+    - Ensured History screen matches app layout and styling
+
+commit 865218294beb84dbcca408ca9308884ad400e52d
+Merge: da9b390 cadf567
+Author: bayan <bayan.naa1999@gmail.com>
+Date:   Sun Nov 30 13:17:43 2025 +0200
+
+    Merge pull request #3 from bluey99/historyscreen---feature
+    
+    Historyscreen   feature
+
+commit cadf56775b60f78cd3401f65278d1ba044fdfd71
+Author: salimski <155438516+salimski@users.noreply.github.com>
+Date:   Sun Nov 30 01:51:48 2025 +0200
+
+    History
+
+commit efdb0e2bb489f013609262295ea2940b3d752fb4
+Merge: 0eadae4 da9b390
+Author: salimski <155438516+salimski@users.noreply.github.com>
+Date:   Sun Nov 30 01:44:15 2025 +0200
+
+    Merge branch 'main' of
+    https://github.com/bluey99/SE_MineSweeperProject_Husky.git into main
+
+commit 0eadae44fe221924b511aa1d6b6e8aff9d1e512f
+Author: salimski <155438516+salimski@users.noreply.github.com>
+Date:   Sun Nov 30 00:35:52 2025 +0200
+
+    Add game history CSV + history screen
+
+commit da9b390f99d2641ad23723793c757f7e54d04606
+Author: JawadShakkour <Jawadshakkour66@gmail.com>
+Date:   Sat Nov 29 20:20:07 2025 +0200
+
+    Refactor Minesweeper model architecture
+    
+    - Removed CellModel and CellType
+    - Added new OOP structure: Cell, MineCell, SurpriseCell, QuestionCell
+    - Added Board class for board generation and special cell placement
+    - Updated GameModel to use Board instead of CellModel/CellController arrays
+    - Cleaned unused classes and improved code clarity
+
+commit e7f53d21b1d6bd471216397aff418a5bcbf3da90
+Author: monahalloun <155420524+monahalloun@users.noreply.github.com>
+Date:   Sat Nov 29 18:15:47 2025 +0200
+
+    fixed the questions
+
+commit 0d8c7ad019b7d670ae4e091d4138352753ed0b77
+Author: monahalloun <155420524+monahalloun@users.noreply.github.com>
+Date:   Sat Nov 29 14:03:31 2025 +0200
+
+    mine image
+
+commit 6ed12dfe1ce0a82ab7ede548e5a2f30f6dbaa1fb
+Author: monahalloun <155420524+monahalloun@users.noreply.github.com>
+Date:   Sat Nov 29 13:59:44 2025 +0200
+
+    design
+
+commit 89388c1575751444c506e074b0b3f0bf9a5a0d67
+Author: monahalloun <155420524+monahalloun@users.noreply.github.com>
+Date:   Sat Nov 29 13:23:49 2025 +0200
+
+    fixed the questions popup
+
+commit f26d270232ca56a522c2831a15ec85f4ae22c35a
+Author: monahalloun <155420524+monahalloun@users.noreply.github.com>
+Date:   Sat Nov 29 01:03:39 2025 +0200
+
+    Update .gitignore
+
+commit 654bd01fda9f9e856d40f015b6df8d42feb9f675
+Author: JawadShakkour <Jawadshakkour66@gmail.com>
+Date:   Fri Nov 28 14:41:49 2025 +0200
+
+    Update Game Rules & Add Access-Based Question Manager
+    
+    Updated Minesweeper rules to support Surprise and Question cells, added full Question Management UI, migrated question storage to Access DB using UCanAccess, and implemented CRUD operations with the new database structure.
+
+commit b091e033e5c9db40467004c0c9c1189db6186dc6
+Author: monahalloun <155420524+monahalloun@users.noreply.github.com>
+Date:   Thu Nov 27 17:02:30 2025 +0200
+
+    design
+
+commit 5b92e18e1b36d29d2a339a17e5882cbdbc957671
+Author: monahalloun <155420524+monahalloun@users.noreply.github.com>
+Date:   Thu Nov 27 17:00:30 2025 +0200
+
+    changed the setup designs
+
+commit 2bd38f7d05134b4b31a0efd2016642f1272600ca
+Author: monahalloun <155420524+monahalloun@users.noreply.github.com>
+Date:   Thu Nov 27 16:54:27 2025 +0200
+
+    i separated the view and the controllers
+
+commit 7d92e8cad2d4aa9e884b254b15538c4864f4e63b
+Author: Salim <155438516+salimski@users.noreply.github.com>
+Date:   Wed Nov 26 19:12:47 2025 +0200
+
+    Implement validation logic for player name input
+    
+    Added validation rules to ensure:
+    - Player names cannot be empty
+    - Player names cannot exceed 12 characters
+    - Player names must be different
+    Invalid input now displays an error alert and prevents the game from starting.
+
+commit d3df1cc013c36b557de8d79c5fa4fe12794f03b8
+Author: monahalloun <155420524+monahalloun@users.noreply.github.com>
+Date:   Tue Nov 25 18:58:34 2025 +0200
+
+    main menu page
+
+commit 269e0937313c774e123313fab5baec0e301c3cb3
+Author: monahalloun <155420524+monahalloun@users.noreply.github.com>
+Date:   Tue Nov 25 16:48:14 2025 +0200
+
+    creating new files in the view
+
+commit 1ef862bfa74e99e1d4f77800136121871690f8a1
+Author: monahalloun <155420524+monahalloun@users.noreply.github.com>
+Date:   Tue Nov 25 16:29:55 2025 +0200
+
+    i created gitignore file to keep the jars working
+
+commit a7fb81aa0893fdab22947c1928c19b7ef1528b9a
+Author: JawadShakkour <Jawadshakkour66@gmail.com>
+Date:   Sun Nov 23 18:00:20 2025 +0200
+
+    removing hi
+
+commit a7e9007ad01b1ff5e7f316d944396326ea71883e
+Author: monahalloun <155420524+monahalloun@users.noreply.github.com>
+Date:   Sun Nov 23 17:53:18 2025 +0200
+
+    change in controller
+
+commit c2dc85018e26ebf25252246620f856eb8b213d6a
+Author: monahalloun <155420524+monahalloun@users.noreply.github.com>
+Date:   Sun Nov 23 17:50:53 2025 +0200
+
+    readme update
+
+commit 719f5226f7cc2708d3eb59e400e37cd1badbd0fe
+Author: monahalloun <155420524+monahalloun@users.noreply.github.com>
+Date:   Sun Nov 23 17:38:08 2025 +0200
+
+    changed the README.md file
+
+commit 1cec89e1c2014ec5650e7664443ef27b66a803c9
+Author: JawadShakkour <Jawadshakkour66@gmail.com>
+Date:   Sun Nov 23 14:46:12 2025 +0200
+
+    found a source code to reuse,pushing it
+
+commit 579102a04ab0be64fd94c55354910b3687ce7389
+Author: bayan <bayan.naa1999@gmail.com>
+Date:   Fri Oct 31 22:10:41 2025 +0200
+
+    Initial commit

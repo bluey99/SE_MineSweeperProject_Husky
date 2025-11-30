@@ -1,4 +1,4 @@
-﻿ID,Question,Difficulty,A,B,C,D,Correct Answer
+ID,Question,Difficulty,A,B,C,D,Correct Answer
 1,What is the capital of France?,Easy,London,Paris,Berlin,Madrid,B
 2,Which planet is known as the Red Planet?,Easy,Earth,Mars,Jupiter,Venus,B
 3,What is the largest ocean on Earth?,Medium,Atlantic,Indian,Pacific,Arctic,C
@@ -19,3 +19,4 @@
 18,Which element has the atomic number 1?,Easy,Oxygen,Hydrogen,Carbon,Helium,B
 19,What is the longest river in the world?,Hard,Amazon,Nile,Yangtze,Mississippi,B
 20,What is the powerhouse of the cell?,Medium,Nucleus,Mitochondria,Ribosome,Golgi apparatus,B
+21,Who is your master?,Expert,Mona,Jawad,Salim,Bayan,D
