@@ -51,6 +51,8 @@ public class SetupView extends BorderPane {
         card.setAlignment(Pos.CENTER);
         card.setPadding(new Insets(30));
         card.setMaxWidth(500);
+        VBox.setVgrow(card, Priority.ALWAYS);  // allow card to expand
+
         card.setStyle(
                 "-fx-background-color: #1C1C2A;" +
                 "-fx-background-radius: 14;" +
@@ -77,15 +79,19 @@ public class SetupView extends BorderPane {
         HBox diffBox = new HBox(25, easyBtn, mediumBtn, hardBtn);
         diffBox.setAlignment(Pos.CENTER);
 
-        Label diffInfo = new Label(
-                "Easy: 9×9 grid • 10 mines • 10 lives\n" +
-                "Medium: 13×13 grid • 26 mines • 8 lives\n" +
-                "Hard: 16×16 grid • 44 mines • 6 lives"
-        );
+        // dynamic difficulty info label
+        Label diffInfo = new Label(getDifficultyText("Easy"));
         diffInfo.setFont(Font.font("Arial", 12));
         diffInfo.setTextFill(Color.web("#A5A5A5"));
         diffInfo.setAlignment(Pos.CENTER);
         diffInfo.setWrapText(true);
+        VBox.setVgrow(diffInfo, Priority.ALWAYS);   
+        diffInfo.setPadding(new Insets(10, 0, 0, 0));  
+        
+        // update difficulty info dynamically
+        easyBtn.setOnAction(e -> diffInfo.setText(getDifficultyText("Easy")));
+        mediumBtn.setOnAction(e -> diffInfo.setText(getDifficultyText("Medium")));
+        hardBtn.setOnAction(e -> diffInfo.setText(getDifficultyText("Hard")));
 
         card.getChildren().addAll(
                 p1Label, player1Field,
@@ -125,6 +131,32 @@ public class SetupView extends BorderPane {
 
         root.getChildren().addAll(title, subtitle, card, startBtn);
         this.setCenter(root);
+    }
+
+    // bayan added here - helper for difficulty descriptions
+    private String getDifficultyText(String difficulty) {
+        switch (difficulty) {
+            case "Easy":
+                return "Easy Mode:\n" +
+                       "• 9×9 grid\n" +
+                       "• 10 mines\n" +
+                       "• 10 shared lives";
+
+            case "Medium":
+                return "Medium Mode:\n" +
+                       "• 13×13 grid\n" +
+                       "• 26 mines\n" +
+                       "• 8 shared lives";
+
+            case "Hard":
+                return "Hard Mode:\n" +
+                       "• 16×16 grid\n" +
+                       "• 44 mines\n" +
+                       "• 6 shared lives";
+
+            default:
+                return "";
+        }
     }
 
     // Helper for labels

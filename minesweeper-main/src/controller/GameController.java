@@ -226,13 +226,14 @@ public class GameController {
             Platform.exit();
             System.exit(0);
         });
-
-        // End turn button
+        
+        // manual "End Turn" button is not aligned with game rules: players may flag/unflag freely, and turns switch only when a cell is uncovered or activated.
+        /*End turn button
         gameView.endTurnBtn.addEventHandler(MouseEvent.MOUSE_CLICKED, e -> {
             if (gameActive) {
                 switchPlayer();
             }
-        });
+        });*/
     }
 
     // -------------------------------------------------------------------------

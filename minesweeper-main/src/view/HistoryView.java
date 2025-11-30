@@ -3,61 +3,62 @@ package view;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import model.GameHistoryEntry;
 import model.SysData;
 
-public class HistoryView {
+public class HistoryView extends BorderPane {
 
-    public static void show(Stage owner) {
-        Stage stage = new Stage();
-        stage.setTitle("Game History");
+    public final Button backBtn = new Button("← Back to Menu");
+    public final TableView<GameHistoryEntry> table = new TableView<>();
 
-        // ====== TOP BAR: Back button + Title/subtitle ======
-        Button backBtn = new Button("← Back to Menu");
-        backBtn.setOnAction(e -> stage.close());
-        backBtn.setFocusTraversable(false);
+    public HistoryView() {
+
+        // ==== ROOT STYLE (same as QuestionManagementView) ====
+        setStyle("-fx-background-color: #0f172a;");
+
+        // ==== TOP BAR ====
+        HBox topBar = new HBox(20);
+        topBar.setPadding(new Insets(20, 30, 10, 30));
+        topBar.setAlignment(Pos.CENTER_LEFT);
+
         backBtn.setStyle(
                 "-fx-background-color: transparent;" +
-                "-fx-text-fill: #e5e7eb;" +          // light gray
-                "-fx-font-size: 14px;"
+                "-fx-text-fill: #60A5FA;" +
+                "-fx-font-size: 14px;" +
+                "-fx-cursor: hand;"
         );
 
+        Label icon = new Label("📜"); // scroll icon for history
+        icon.setTextFill(Color.web("#FBBF24"));
+        icon.setFont(Font.font("Arial", FontWeight.BOLD, 28));
+
+        VBox titleBox = new VBox(5);
         Label title = new Label("Game History");
-        title.setStyle(
-                "-fx-text-fill: white;" +
-                "-fx-font-size: 28px;" +
-                "-fx-font-weight: bold;"
-        );
+        title.setTextFill(Color.WHITE);
+        title.setFont(Font.font("Arial", FontWeight.BOLD, 26));
 
         Label subtitle = new Label("Review previous cooperative games");
-        subtitle.setStyle(
-                "-fx-text-fill: #9ca3af;" +          // gray-400
-                "-fx-font-size: 14px;"
-        );
+        subtitle.setTextFill(Color.web("#9CA3AF"));
+        subtitle.setFont(Font.font("Arial", 14));
 
-        VBox titleBox = new VBox(4, title, subtitle);
-        titleBox.setAlignment(Pos.CENTER_LEFT);
+        titleBox.getChildren().addAll(title, subtitle);
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        HBox topBar = new HBox(16, backBtn, titleBox, spacer);
-        topBar.setAlignment(Pos.CENTER_LEFT);
-        topBar.setPadding(new Insets(16, 16, 8, 16));
+        topBar.getChildren().addAll(backBtn, icon, titleBox, spacer);
+        setTop(topBar);
 
-        // ====== TABLE ======
-        TableView<GameHistoryEntry> table = new TableView<>();
+        // ==== TABLE ====
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setFocusTraversable(false);
+        table.setPlaceholder(new Label("No history records yet."));
 
         TableColumn<GameHistoryEntry, String> dateCol = new TableColumn<>("Date & Time");
         dateCol.setCellValueFactory(new PropertyValueFactory<>("dateTime"));
@@ -73,19 +74,14 @@ public class HistoryView {
 
         TableColumn<GameHistoryEntry, String> resultCol = new TableColumn<>("Result");
         resultCol.setCellValueFactory(new PropertyValueFactory<>("result"));
-
-        // make Result look like colored tags (similar to difficulty chips)
         resultCol.setCellFactory(col -> new TableCell<>() {
             private final Label tag = new Label();
 
             {
                 tag.setPadding(new Insets(2, 10, 2, 10));
-                tag.setStyle(
-                        "-fx-background-radius: 999;" +
-                        "-fx-text-fill: white;" +
-                        "-fx-font-size: 12px;" +
-                        "-fx-font-weight: bold;"
-                );
+                tag.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+                tag.setTextFill(Color.WHITE);
+                tag.setStyle("-fx-background-radius: 999;");
             }
 
             @Override
@@ -95,28 +91,13 @@ public class HistoryView {
                     setText(null);
                     setGraphic(null);
                 } else {
-                    String upper = item.toUpperCase();
-                    if (upper.equals("WIN")) {
-                        tag.setText("Win");
-                        tag.setStyle(
-                                "-fx-background-color: #16a34a;" + // green
-                                "-fx-background-radius: 999;" +
-                                "-fx-text-fill: white;" +
-                                "-fx-font-size: 12px;" +
-                                "-fx-font-weight: bold;"
-                        );
-                    } else {
-                        tag.setText("Lose");
-                        tag.setStyle(
-                                "-fx-background-color: #dc2626;" + // red
-                                "-fx-background-radius: 999;" +
-                                "-fx-text-fill: white;" +
-                                "-fx-font-size: 12px;" +
-                                "-fx-font-weight: bold;"
-                        );
-                    }
+                    if (item.equalsIgnoreCase("WIN"))
+                        tag.setStyle("-fx-background-color: #16a34a; -fx-background-radius: 999;");
+                    else
+                        tag.setStyle("-fx-background-color: #dc2626; -fx-background-radius: 999;");
+
+                    tag.setText(item);
                     setGraphic(tag);
-                    setText(null);
                     setAlignment(Pos.CENTER);
                 }
             }
@@ -125,7 +106,8 @@ public class HistoryView {
         TableColumn<GameHistoryEntry, Number> scoreCol = new TableColumn<>("Final Score");
         scoreCol.setCellValueFactory(new PropertyValueFactory<>("finalScore"));
 
-        TableColumn<GameHistoryEntry, Number> lengthCol = new TableColumn<>("Game Length (sec)");
+        TableColumn<GameHistoryEntry, Number> lengthCol =
+                new TableColumn<>("Game Length (sec)");
         lengthCol.setCellValueFactory(new PropertyValueFactory<>("gameLengthSeconds"));
 
         table.getColumns().addAll(
@@ -134,15 +116,9 @@ public class HistoryView {
 
         table.setItems(FXCollections.observableArrayList(SysData.loadHistory()));
 
-        // Optional bottom padding area, like in Question Management
-        VBox root = new VBox(10, topBar, table);
-        root.setPadding(new Insets(0, 16, 16, 16));
-        root.setStyle("-fx-background-color: #020617;"); // dark navy (similar vibe)
+        VBox centerBox = new VBox(10, table);
+        centerBox.setPadding(new Insets(10, 30, 10, 30));
 
-        Scene scene = new Scene(root, 900, 500);
-        stage.setScene(scene);
-        stage.initOwner(owner);
-        stage.initModality(Modality.NONE);
-        stage.show();
+        setCenter(centerBox);
     }
 }
