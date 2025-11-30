@@ -17,8 +17,13 @@ public class CellController {
     // UI node
     public final CellView cellView;
 
-    // Size of each cell image (replaces old cellModel.cellSide)
-    public static final int CELL_SIDE = 32;
+    // Size of each cell image – configurable (GameController sets it per difficulty)
+    private static int CELL_SIDE = 22;
+
+    /** Called from GameController to change cell size for this run. */
+    public static void setCellSide(int size) {
+        CELL_SIDE = size;
+    }
 
     public CellController(Cell cell) {
         this.cell = cell;

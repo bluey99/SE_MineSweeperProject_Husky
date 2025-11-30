@@ -6,7 +6,6 @@ import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
-import view.HistoryView;
 import view.Menu;
 import view.SetupView;
 
@@ -14,6 +13,7 @@ public class Main extends Application {
 
     private static Stage primaryStage;   // used so other screens can change the scene
 
+    // Preferred menu size (will be clamped to screen)
     private static final double MENU_WIDTH = 900;
     private static final double MENU_HEIGHT = 650;
 
@@ -32,11 +32,18 @@ public class Main extends Application {
 
     // Called from Start + Back button
     public static void showMainMenu(Stage stage) {
+        // Clear any old size constraints from the game screen
+        stage.setMinWidth(0);
+        stage.setMaxWidth(Double.MAX_VALUE);
+        stage.setMinHeight(0);
+        stage.setMaxHeight(Double.MAX_VALUE);
+        stage.setResizable(false);
+
         Menu menu = new Menu();
 
-        // ניקח את גודל המסך ונוסיף מרווח
+        // Clamp menu size to screen
         Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
-        double maxWidth = bounds.getWidth() - 80;   // קצת מרווח מהקצוות
+        double maxWidth = bounds.getWidth() - 80;
         double maxHeight = bounds.getHeight() - 80;
 
         double width = Math.min(MENU_WIDTH, maxWidth);
@@ -45,8 +52,7 @@ public class Main extends Application {
         Scene menuScene = new Scene(menu, width, height);
         stage.setScene(menuScene);
 
-        // ננעל על הגודל הזה
-        stage.setResizable(false);
+        // Fix menu size
         stage.setMinWidth(width);
         stage.setMaxWidth(width);
         stage.setMinHeight(height);
@@ -55,9 +61,11 @@ public class Main extends Application {
         stage.centerOnScreen();
         stage.show();
 
+        // ----------------- BUTTON HANDLERS -----------------
+
         // Start game -> go to setup screen
         menu.startBtn.setOnAction(e -> {
-            SetupView setup = new SetupView(new Main()); // Main is only used as callback
+            SetupView setup = new SetupView(new Main()); // Main used as callback
             Scene setupScene = new Scene(setup, width, height);
             stage.setScene(setupScene);
             stage.centerOnScreen();
@@ -65,22 +73,8 @@ public class Main extends Application {
 
         // History button (placeholder)
         menu.historyBtn.setOnAction(e -> {
-            HistoryView historyView = new HistoryView();
-
-            // history screen now acts like all other screens
-            historyView.backBtn.setOnAction(ev -> showMainMenu(primaryStage));
-
-            Scene historyScene = new Scene(historyView, MENU_WIDTH, MENU_HEIGHT);
-            primaryStage.setScene(historyScene);
-
-            primaryStage.setMinWidth(MENU_WIDTH);
-            primaryStage.setMaxWidth(MENU_WIDTH);
-            primaryStage.setMinHeight(MENU_HEIGHT);
-            primaryStage.setMaxHeight(MENU_HEIGHT);
-
-            primaryStage.centerOnScreen();
+            System.out.println("History clicked");
         });
-
 
         // Question Management
         menu.questionManagementBtn.setOnAction(e -> {
@@ -88,6 +82,7 @@ public class Main extends Application {
             Scene qmScene = qm.createScene();
             stage.setScene(qmScene);
 
+            // keep the QM window at menu size
             stage.setMinWidth(width);
             stage.setMaxWidth(width);
             stage.setMinHeight(height);
@@ -100,46 +95,39 @@ public class Main extends Application {
      * Called from SetupView after validation is done.
      */
     public void startGameFromSetup(String p1, String p2, String difficulty) {
-        GameController controller = new GameController(difficulty, p1, p2);
+        // UPDATED: pass primaryStage into controller
+        GameController controller = new GameController(difficulty, p1, p2, primaryStage);
 
-        // גדלים "רצויים" לכל רמה (רק כנקודת פתיחה)
-        double desiredWidth;
-        double desiredHeight;
-
-        switch (difficulty) {
-            case "Easy":
-                desiredWidth = 1150;
-                desiredHeight = 700;
-                break;
-            case "Medium":
-                desiredWidth = 1350;
-                desiredHeight = 800;
-                break;
-            case "Hard":
-            default:
-                desiredWidth = 1500;
-                desiredHeight = 880;
-                break;
-        }
-
-        // נוודא שלא עובר את המסך
+        // Get full usable screen area (excludes taskbar)
         Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
-        double maxWidth = bounds.getWidth() - 40;   // מרווח קטן מהקצה
-        double maxHeight = bounds.getHeight() - 80; // מרווח מלמעלה/טוסטר בר
+        double screenX = bounds.getMinX();
+        double screenY = bounds.getMinY();
+        double screenW = bounds.getWidth();
+        double screenH = bounds.getHeight();
 
-        double width = Math.min(desiredWidth, maxWidth);
-        double height = Math.min(desiredHeight, maxHeight);
+        // Remove menu size limits so we can expand
+        primaryStage.setMinWidth(0);
+        primaryStage.setMaxWidth(Double.MAX_VALUE);
+        primaryStage.setMinHeight(0);
+        primaryStage.setMaxHeight(Double.MAX_VALUE);
 
-        Scene gameScene = new Scene(controller.gameView, width, height);
+        // Create scene that matches the screen size
+        Scene gameScene = new Scene(controller.gameView, screenW, screenH);
         primaryStage.setScene(gameScene);
 
-        primaryStage.setResizable(false);
-        primaryStage.setMinWidth(width);
-        primaryStage.setMaxWidth(width);
-        primaryStage.setMinHeight(height);
-        primaryStage.setMaxHeight(height);
+        // Position window at top-left and stretch to full visible screen
+        primaryStage.setX(screenX);
+        primaryStage.setY(screenY);
+        primaryStage.setWidth(screenW);
+        primaryStage.setHeight(screenH);
 
-        primaryStage.centerOnScreen();
+        // Lock size so layout stays stable
+        primaryStage.setMinWidth(screenW);
+        primaryStage.setMaxWidth(screenW);
+        primaryStage.setMinHeight(screenH);
+        primaryStage.setMaxHeight(screenH);
+
+        primaryStage.setResizable(false);
     }
 
     public static void main(String[] args) {

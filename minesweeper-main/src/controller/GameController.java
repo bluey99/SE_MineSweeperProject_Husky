@@ -13,6 +13,7 @@ import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar.ButtonData;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
@@ -21,67 +22,37 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Modality;
+import javafx.stage.Stage;
 import model.Board;
 import model.Cell;
-import model.GameHistoryEntry;    // <-- your history model
+import model.GameHistoryEntry;
 import model.GameModel;
 import model.Question;
 import model.QuestionDifficulty;
 import model.QuestionRepository;
-import model.SysData;             // <-- your CSV saving / loading
+import model.SysData;
 import view.GameView;
 
 /**
- * ==============================================================================
- *   FINAL MERGED GAMECONTROLLER.JAVA  (Option C: with detailed explanations)
- * ==============================================================================
- *
- * This file is a clean merge of:
- *    - YOUR older version (with saveGameToHistory, two-board UI, timer, etc.)
- *    - Your teammates' NEW rewritten version (Board/Cell architecture,
- *      updated flood-fill, question repository, new styling, new CellController,
- *      new rules logic, etc.)
- *
- * WHY WE COULD NOT USE YOUR OLD VERSION:
- *    Your old version relied on:
- *       - CellController.cellModel
- *       - board as CellController[][]
- *       - old CellModel (not used anymore)
- *    Your teammates rewrote ALL of this.
- *
- * WHAT WE KEEP:
- *    ✔ Game history saving
- *    ✔ saveGameToHistory()
- *    ✔ elapsedTime, difficulty, player names
- *
- * WHAT WE REMOVE:
- *    ✘ All old duplicated GameController code
- *    ✘ Old QuestionDialog (now uses new repository)
- *
- * WHAT WE PRESERVE FROM TEAM:
- *    ✔ New architecture (Board, Cell, CellController)
- *    ✔ New UI styling
- *    ✔ New flood-fill rules
- *    ✔ New QuestionDialog using CSV repository
- *    ✔ New event handler mapping
- *
- * ==============================================================================
+ * Main game controller for cooperative two-player Minesweeper.
+ * Uses:
+ *   - Board / Cell (model)
+ *   - CellController + GameView (view)
  */
 public class GameController {
 
-    // -------------------------------------------------------------------------
-    // FIELDS
-    // -------------------------------------------------------------------------
+    // Board size
+    public int N, M;
 
-    public int N, M;                // board size
-    public GameView gameView;       // UI view
-    public GameModel gameModel;     // logical model
+    // MVC parts
+    public GameView gameView;
+    public GameModel gameModel;
 
-    // Board UI (CellController wrappers)
+    // Board UI (wrappers around Cell)
     public CellController[][] board1;
     public CellController[][] board2;
 
-    // Player names (cooperative game)
+    // Players
     public String player1Name = "Player 1";
     public String player2Name = "Player 2";
 
@@ -93,47 +64,54 @@ public class GameController {
     private Timer gameTimer;
     private int elapsedTime = 0;
 
-    // Difficulty settings
+    // Difficulty
     private String difficulty;
     private int mineCount;
     private int sharedLives;
 
+    // NEW: Stage reference to return to menu
+    private final Stage primaryStage;
+
     // -------------------------------------------------------------------------
     // CONSTRUCTOR
     // -------------------------------------------------------------------------
-    public GameController(String difficulty, String p1Name, String p2Name) {
-
+    public GameController(String difficulty, String p1Name, String p2Name, Stage stage) {
+        this.primaryStage = stage;
         this.difficulty = difficulty;
         this.player1Name = p1Name;
         this.player2Name = p2Name;
 
-        // ---------------- Difficulty Rules (Same for both versions) ----------------
+        // Difficulty rules
+        int cellSize;   // dynamic cell size per difficulty
+
         switch (difficulty) {
             case "Easy":
                 N = M = 9;
                 mineCount = 10;
                 sharedLives = 10;
+                cellSize = 26;
                 break;
 
             case "Medium":
                 N = M = 13;
                 mineCount = 26;
                 sharedLives = 8;
+                cellSize = 24;
                 break;
 
             case "Hard":
+            default:
                 N = M = 16;
                 mineCount = 44;
                 sharedLives = 6;
+                cellSize = 22;   // smallest so it fits nicely
                 break;
-
-            default:
-                N = M = 9;
-                mineCount = 10;
-                sharedLives = 10;
         }
 
-        // Create model and view
+        // Tell CellController what cell size to use (global for this game)
+        CellController.setCellSide(cellSize);
+
+        // Create model & view
         gameModel = new GameModel(this, mineCount, sharedLives);
         gameView = new GameView(this);
 
@@ -143,15 +121,14 @@ public class GameController {
     }
 
     // -------------------------------------------------------------------------
-    // INIT (runs at new game + restart)
+    // INIT
     // -------------------------------------------------------------------------
     public void init() {
-
         gameActive = true;
         currentPlayer = 1;
         elapsedTime = 0;
 
-        // Reset boards in the model
+        // Reset boards in the model (creates new Board objects)
         gameModel.initializeBoards(N, M);
 
         Board logicalBoard1 = gameModel.getBoard1();
@@ -161,7 +138,7 @@ public class GameController {
         board1 = createUiBoard(logicalBoard1);
         board2 = createUiBoard(logicalBoard2);
 
-        // Populate the GridPane with UI CellViews
+        // Populate the GridPane with CellViews
         createCellsGrid(board1, gameView.gridPane1);
         createCellsGrid(board2, gameView.gridPane2);
 
@@ -173,47 +150,33 @@ public class GameController {
         highlightCurrentPlayer();
     }
 
-    // -------------------------------------------------------------------------
-    // Create UI Wrappers
-    // -------------------------------------------------------------------------
     private CellController[][] createUiBoard(Board logicalBoard) {
-
         int rows = logicalBoard.getRows();
         int cols = logicalBoard.getCols();
-
         CellController[][] uiBoard = new CellController[rows][cols];
 
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
-
                 Cell cell = logicalBoard.getCell(r, c);
                 uiBoard[r][c] = new CellController(cell);
             }
         }
-
         return uiBoard;
     }
 
-    // -------------------------------------------------------------------------
-    // Place CellView in the GridPane
-    // -------------------------------------------------------------------------
     private void createCellsGrid(CellController[][] board, javafx.scene.layout.GridPane gridPane) {
-
         gridPane.getChildren().clear();
-
         for (int i = 0; i < N; i++) {
             for (int j = 0; j < M; j++) {
-
                 gridPane.add(board[i][j].cellView, i, j, 1, 1);
             }
         }
     }
 
     // -------------------------------------------------------------------------
-    // EVENT HANDLERS (restart, exit, end turn)
+    // EVENT HANDLERS FOR BUTTONS
     // -------------------------------------------------------------------------
     private void setupEventHandlers() {
-
         // Restart
         gameView.restartBtn.addEventHandler(MouseEvent.MOUSE_CLICKED, e -> {
             if (gameTimer != null) gameTimer.cancel();
@@ -226,39 +189,33 @@ public class GameController {
             Platform.exit();
             System.exit(0);
         });
-        
-        // manual "End Turn" button is not aligned with game rules: players may flag/unflag freely, and turns switch only when a cell is uncovered or activated.
-        /*End turn button
-        gameView.endTurnBtn.addEventHandler(MouseEvent.MOUSE_CLICKED, e -> {
-            if (gameActive) {
-                switchPlayer();
-            }
-        });*/
+
+        // NEW: Return to Menu
+        gameView.backToMenuBtn.setOnAction(e -> {
+            if (gameTimer != null) gameTimer.cancel();
+            Main.showMainMenu(primaryStage);
+        });
+
+        // We removed "End Turn" button – turns change automatically
     }
 
     // -------------------------------------------------------------------------
-    // ADD CELL MOUSE HANDLERS
+    // MOUSE HANDLERS FOR CELLS
     // -------------------------------------------------------------------------
     private void addEventHandlerToBoard(CellController[][] board, int playerNum) {
-
         for (int i = 0; i < N; i++) {
             for (int j = 0; j < M; j++) {
-
                 int row = i;
                 int col = j;
 
                 board[i][j].cellView.addEventHandler(MouseEvent.MOUSE_CLICKED,
                         new EventHandler<MouseEvent>() {
-
                             @Override
                             public void handle(MouseEvent event) {
-
-                                // Only if active + correct player's turn
                                 if (!gameActive || currentPlayer != playerNum) return;
 
                                 if (event.getButton() == MouseButton.PRIMARY) {
                                     handleLeftClick(board, row, col, playerNum);
-
                                 } else if (event.getButton() == MouseButton.SECONDARY) {
                                     handleRightClick(board, row, col);
                                 }
@@ -268,22 +225,16 @@ public class GameController {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // LEFT CLICK LOGIC
-    // -------------------------------------------------------------------------
     private void handleLeftClick(CellController[][] board, int row, int col, int playerNum) {
-
         CellController cellCtrl = board[row][col];
         Cell cell = cellCtrl.getCell();
 
-        // SPECIAL CASE 1: Click-to-activate Surprise
+        // Activate already-discovered specials
         if (cell.isSurprise() && cell.isDiscovered() && !cell.isActivated()) {
             activateSurpriseCell(cellCtrl);
             switchPlayer();
             return;
         }
-
-        // SPECIAL CASE 2: Click-to-activate Question
         if (cell.isQuestion() && cell.isDiscovered() && !cell.isActivated()) {
             activateQuestionCell(cellCtrl);
             switchPlayer();
@@ -293,33 +244,27 @@ public class GameController {
         // Ignore if open or flagged
         if (cell.isOpen() || cell.isFlag()) return;
 
-        // Open the cell
+        // Open
         openCell(board, row, col, true);
 
-        // Determine content
+        // Behaviour by type
         if (cell.isMine()) {
-
             handleMineHit();
             switchPlayer();
-
         } else if (cell.isSurprise()) {
-
             cell.setDiscovered(true);
             cellCtrl.init();
             showMessage("Surprise Cell Discovered!",
-                    "You can activate it next turn.");
+                    "You can activate it on your next turn.");
             switchPlayer();
-
         } else if (cell.isQuestion()) {
-
             cell.setDiscovered(true);
             cellCtrl.init();
             showMessage("Question Cell Discovered!",
-                    "You can activate it next turn.");
+                    "You can activate it on your next turn.");
             switchPlayer();
-
         } else {
-            // Normal number / empty cell → turn ends
+            // Normal number / empty cell – turn ends
             switchPlayer();
         }
 
@@ -327,27 +272,19 @@ public class GameController {
         checkWinCondition();
     }
 
-    // -------------------------------------------------------------------------
-    // RIGHT CLICK (Flag)
-    // -------------------------------------------------------------------------
     private void handleRightClick(CellController[][] board, int row, int col) {
-
         CellController cellCtrl = board[row][col];
         Cell cell = cellCtrl.getCell();
 
-        // Can't flag open cells
-        if (cell.isOpen()) return;
+        if (cell.isOpen()) return;   // no flagging open cells
 
         boolean wasFlagged = cell.isFlag();
         cell.toggleFlag();
         boolean isFlagged = cell.isFlag();
 
-        // Apply scoring ONCE
         if (!wasFlagged && isFlagged && !cell.isFlagScored()) {
-
             if (cell.isMine()) gameModel.sharedScore += 1;
-            else              gameModel.sharedScore -= 3;
-
+            else               gameModel.sharedScore -= 3;
             cell.setFlagScored(true);
         }
 
@@ -356,10 +293,9 @@ public class GameController {
     }
 
     // -------------------------------------------------------------------------
-    // OPEN CELL (flood-fill logic)
+    // OPEN CELL + FLOOD-FILL
     // -------------------------------------------------------------------------
     private void openCell(CellController[][] board, int row, int col, boolean isRootClick) {
-
         if (!isInBoard(row, col)) return;
 
         CellController cellCtrl = board[row][col];
@@ -367,7 +303,6 @@ public class GameController {
 
         if (cell.isOpen() || cell.isFlag()) return;
 
-        // OPEN NOW
         cell.setOpen(true);
         gameModel.revealedCells++;
 
@@ -375,24 +310,20 @@ public class GameController {
         boolean isSpecial = cell.isSpecial();
         int neighbors = cell.getNeighborMinesNum();
 
-        // Mark special cells as discovered
         if (isSpecial && !cell.isDiscovered()) {
             cell.setDiscovered(true);
         }
 
-        // ROOT CLICK SCORE
         if (isRootClick && !isMine && !isSpecial) {
             gameModel.sharedScore += 1;
         }
 
-        // Determine if we expand
         boolean shouldExpand =
                 !isMine && (neighbors == 0 || isSpecial);
 
         if (shouldExpand) {
             for (int i = row - 1; i <= row + 1; i++) {
                 for (int j = col - 1; j <= col + 1; j++) {
-
                     if (!(i == row && j == col)) {
                         openCell(board, i, j, false);
                     }
@@ -411,13 +342,9 @@ public class GameController {
     // MINE HIT
     // -------------------------------------------------------------------------
     private void handleMineHit() {
-
         gameModel.sharedLives--;
-
         showMessage("Mine Hit!",
-                "You hit a mine! -1 life.\nShared Lives Remaining: "
-                        + gameModel.sharedLives);
-
+                "You hit a mine! -1 life.\nShared Lives Remaining: " + gameModel.sharedLives);
         if (gameModel.sharedLives <= 0) {
             endGame(false);
         }
@@ -427,7 +354,6 @@ public class GameController {
     // SURPRISE CELL ACTIVATION
     // -------------------------------------------------------------------------
     private void activateSurpriseCell(CellController cellCtrl) {
-
         Cell cell = cellCtrl.getCell();
 
         int cost = difficulty.equals("Easy") ? 5 :
@@ -435,14 +361,14 @@ public class GameController {
 
         if (gameModel.sharedScore < cost) {
             showMessage("Insufficient Score",
-                    "Need " + cost + " points to activate this Surprise Cell");
+                    "You need " + cost + " points to activate this Surprise Cell.\n" +
+                    "Current score: " + gameModel.sharedScore);
             return;
         }
 
         gameModel.sharedScore -= cost;
 
         boolean isGood = new Random().nextBoolean();
-
         int bonusPoints = difficulty.equals("Easy") ? 8 :
                           difficulty.equals("Medium") ? 12 : 16;
 
@@ -451,29 +377,27 @@ public class GameController {
             gameModel.sharedScore += bonusPoints;
 
             if (gameModel.sharedLives > 10) {
-                int extra = gameModel.sharedLives - 10;
+                int extraLives = gameModel.sharedLives - 10;
                 gameModel.sharedLives = 10;
-
-                int converted = extra *
+                int convertedPoints = extraLives *
                         (difficulty.equals("Easy") ? 5 :
                          difficulty.equals("Medium") ? 8 : 12);
+                gameModel.sharedScore += convertedPoints;
 
-                gameModel.sharedScore += converted;
-
-                showMessage("Good Surprise!",
-                        "+1 life (max reached, extras → +" + converted +
-                        " points)\n+" + bonusPoints + " points");
+                showMessage("Good Surprise! ✓",
+                        "✓ +1 life (max reached, extra lives converted to +" +
+                        convertedPoints + " points)\n" +
+                        "✓ +" + bonusPoints + " bonus points!");
             } else {
-                showMessage("Good Surprise!",
-                        "+1 life\n+" + bonusPoints + " points");
+                showMessage("Good Surprise! ✓",
+                        "✓ +1 life\n✓ +" + bonusPoints + " bonus points!");
             }
-
         } else {
             gameModel.sharedLives--;
             gameModel.sharedScore -= bonusPoints;
 
-            showMessage("Bad Surprise!",
-                    "-1 life\n-" + bonusPoints + " points");
+            showMessage("Bad Surprise! ✗",
+                    "✗ -1 life\n✗ -" + bonusPoints + " points");
 
             if (gameModel.sharedLives <= 0) {
                 endGame(false);
@@ -487,20 +411,68 @@ public class GameController {
     }
 
     // -------------------------------------------------------------------------
-    // QUESTION CELL ACTIVATION
+    // QUESTION CELL ACTIVATION – INLINE DIALOG (NO QuestionDialog CLASS)
     // -------------------------------------------------------------------------
     private void activateQuestionCell(CellController cellCtrl) {
+        // Load questions from CSV
+        List<Question> all = QuestionRepository.loadQuestions();
+        if (all == null || all.isEmpty()) {
+            showMessage("No Questions",
+                    "No questions found in QuestionsCSV.csv");
+            return;
+        }
 
-        // Use the NEW QuestionDialog (team version using CSV)
-        QuestionDialog dialog = new QuestionDialog(difficulty);
+        // Pick random question
+        Question q = all.get(new Random().nextInt(all.size()));
+
+        // Map difficulty enum to label used by scoring table
+        String qDiffLabel = mapDifficultyLabel(q.getDifficulty());
+
+        // Build a small custom Dialog<Boolean>
+        Dialog<Boolean> dialog = new Dialog<>();
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.setTitle("Question Cell");
+        dialog.setHeaderText(qDiffLabel + " Question");
+
+        VBox content = new VBox(10);
+        content.setPadding(new Insets(16));
+
+        Label qLabel = new Label(q.getText());
+        qLabel.setWrapText(true);
+        qLabel.setMaxWidth(420);
+
+        content.getChildren().add(qLabel);
+
+        String[] options = q.getOptions();
+        if (options == null || options.length < 4) {
+            options = new String[]{"A", "B", "C", "D"};
+        }
+
+        ButtonType[] btnTypes = new ButtonType[4];
+        for (int i = 0; i < 4; i++) {
+            char letter = (char) ('A' + i);
+            btnTypes[i] = new ButtonType(letter + ") " + options[i], ButtonData.OTHER);
+        }
+
+        dialog.getDialogPane().getButtonTypes().addAll(btnTypes);
+        dialog.getDialogPane().setContent(content);
+
+        int correctIdx = q.getCorrectIndex();
+
+        dialog.setResultConverter(btn -> {
+            if (btn == null) return null;
+            for (int i = 0; i < 4; i++) {
+                if (btn == btnTypes[i]) {
+                    return i == correctIdx;
+                }
+            }
+            return null;
+        });
 
         Optional<Boolean> result = dialog.showAndWait();
-
         if (result.isPresent()) {
             boolean correct = result.get();
-            String qDifficulty = dialog.getQuestionDifficulty();
-
-            applyQuestionReward(correct, qDifficulty);
+            applyQuestionReward(correct, qDiffLabel);
 
             Cell cell = cellCtrl.getCell();
             cell.setActivated(true);
@@ -513,23 +485,31 @@ public class GameController {
         }
     }
 
+    private String mapDifficultyLabel(QuestionDifficulty diff) {
+        if (diff == null) return "Easy";
+        switch (diff) {
+            case EASY:   return "Easy";
+            case MEDIUM: return "Intermediate";
+            case HARD:   return "Hard";
+            case EXPERT: return "Expert";
+            default:     return "Easy";
+        }
+    }
+
     // -------------------------------------------------------------------------
-    // APPLY QUESTION REWARD (Uses same logic as team's version)
+    // QUESTION REWARD TABLE
     // -------------------------------------------------------------------------
     private void applyQuestionReward(boolean correct, String qDiff) {
-
         int points = 0;
-        int lives  = 0;
+        int lives = 0;
 
-        // Uses the official table exactly as in your teammate’s version
         if (difficulty.equals("Easy")) {
             switch (qDiff) {
                 case "Easy":         points = correct ? 3  : -3;  lives = correct ? 1 : 0; break;
-                case "Intermediate": points = correct ? 6  : -6; break;
+                case "Intermediate": points = correct ? 6  : -6;  break;
                 case "Hard":         points = correct ? 10 : -10; break;
                 case "Expert":       points = correct ? 15 : -15; lives = correct ? 2 : -1; break;
             }
-
         } else if (difficulty.equals("Medium")) {
             switch (qDiff) {
                 case "Easy":         points = correct ? 8  : -8;  lives = correct ? 1 : 0; break;
@@ -537,7 +517,6 @@ public class GameController {
                 case "Hard":         points = correct ? 15 : -15; lives = correct ? 1 : -1; break;
                 case "Expert":       points = correct ? 20 : -20; lives = correct ? 2 : -2; break;
             }
-
         } else { // Hard
             switch (qDiff) {
                 case "Easy":         points = correct ? 10 : -10; lives = correct ? 1 : -1; break;
@@ -550,17 +529,14 @@ public class GameController {
         gameModel.sharedScore += points;
         gameModel.sharedLives += lives;
 
-        // Cap lives at 10
+        // Cap lives at 10, convert extras to points
         if (gameModel.sharedLives > 10) {
-
-            int extra = gameModel.sharedLives - 10;
+            int extraLives = gameModel.sharedLives - 10;
             gameModel.sharedLives = 10;
-
-            int converted = extra *
+            int convertedPoints = extraLives *
                     (difficulty.equals("Easy") ? 5 :
                      difficulty.equals("Medium") ? 8 : 12);
-
-            gameModel.sharedScore += converted;
+            gameModel.sharedScore += convertedPoints;
         }
 
         String msg = correct ?
@@ -570,13 +546,12 @@ public class GameController {
                 (lives < 0 ? ", " + lives + " lives" : "");
 
         showMessage("Question Result",
-                msg +
-                "\n\nScore: " + gameModel.sharedScore +
+                msg + "\n\nScore: " + gameModel.sharedScore +
                 " | Lives: " + gameModel.sharedLives);
     }
 
     // -------------------------------------------------------------------------
-    // SWITCH PLAYER
+    // PLAYER / UI STATE
     // -------------------------------------------------------------------------
     private void switchPlayer() {
         currentPlayer = (currentPlayer == 1 ? 2 : 1);
@@ -584,11 +559,7 @@ public class GameController {
         updateUI();
     }
 
-    // -------------------------------------------------------------------------
-    // HIGHLIGHT ACTIVE PLAYER UI
-    // -------------------------------------------------------------------------
     private void highlightCurrentPlayer() {
-
         String activeBorder =
                 "-fx-border-color: #22C55E;" +
                 "-fx-border-width: 3;" +
@@ -616,11 +587,7 @@ public class GameController {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // UPDATE UI STATE
-    // -------------------------------------------------------------------------
     private void updateUI() {
-
         gameView.sharedScoreLabel.setText("" + gameModel.sharedScore);
         gameView.sharedLivesLabel.setText("" + gameModel.sharedLives);
         gameView.currentPlayerLabel.setText(
@@ -629,7 +596,6 @@ public class GameController {
         gameView.difficultyLabel.setText(difficulty);
         gameView.timeLabel.setText(formatTime(elapsedTime));
 
-        // Color lives if low
         if (gameModel.sharedLives <= 3) {
             gameView.sharedLivesLabel.setTextFill(Color.web("#FCA5A5"));
         } else {
@@ -638,17 +604,12 @@ public class GameController {
     }
 
     private String formatTime(int sec) {
-
         int m = sec / 60;
         int s = sec % 60;
         return String.format("%02d:%02d", m, s);
     }
 
-    // -------------------------------------------------------------------------
-    // CHECK WIN CONDITION
-    // -------------------------------------------------------------------------
     private void checkWinCondition() {
-
         int totalCells = N * M * 2;
         int totalMines = mineCount * 2;
         int safeCells = totalCells - totalMines;
@@ -658,20 +619,14 @@ public class GameController {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // START TIMER
-    // -------------------------------------------------------------------------
     private void startTimer() {
-
         if (gameTimer != null) gameTimer.cancel();
 
         gameTimer = new Timer();
         gameTimer.schedule(new TimerTask() {
-
             @Override
             public void run() {
                 Platform.runLater(() -> {
-
                     if (gameActive) {
                         elapsedTime++;
                         updateUI();
@@ -682,38 +637,27 @@ public class GameController {
     }
 
     // -------------------------------------------------------------------------
-    // END GAME (MERGED WITH SAVE-TO-HISTORY)
+    // END GAME + SAVE HISTORY
     // -------------------------------------------------------------------------
     private void endGame(boolean won) {
-
         gameActive = false;
+        if (gameTimer != null) gameTimer.cancel();
 
-        if (gameTimer != null)
-            gameTimer.cancel();
-
-        // Convert life bonus
-        int lifeBonus =
-                gameModel.sharedLives *
-                        (difficulty.equals("Easy") ? 5 :
-                         difficulty.equals("Medium") ? 8 : 12);
+        int lifeBonus = gameModel.sharedLives *
+                (difficulty.equals("Easy") ? 5 :
+                 difficulty.equals("Medium") ? 8 : 12);
 
         int finalScore = gameModel.sharedScore + lifeBonus;
 
-        // 🎯 ***YOUR MERGED FEATURE*** → Save to CSV
         saveGameToHistory(won, finalScore);
 
-        // ---------------------------------------------
-        // Show result alert
-        //----------------------------------------------
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-
         alert.setTitle(won ? "🎉 Victory!" : "Game Over");
         alert.setHeaderText(
                 won
                         ? "Well done " + player1Name + " & " + player2Name + "!"
                         : "Out of Lives!"
         );
-
         alert.setContentText(
                 "Difficulty: " + difficulty + "\n" +
                 "Time: " + formatTime(elapsedTime) + "\n\n" +
@@ -734,19 +678,11 @@ public class GameController {
         });
     }
 
-    // -------------------------------------------------------------------------
-    // SAVE GAME HISTORY (YOUR METHOD — ADAPTED TO NEW ARCHITECTURE)
-    // -------------------------------------------------------------------------
     private void saveGameToHistory(boolean won, int finalScore) {
-
-        // 1. Build date string
-        String dateTime =
-                LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-
-        // 2. Cooperative result
+        String dateTime = LocalDateTime.now()
+                .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
         String result = won ? "WIN" : "LOSE";
 
-        // 3. Create entry
         GameHistoryEntry entry = new GameHistoryEntry(
                 dateTime,
                 difficulty,
@@ -757,12 +693,11 @@ public class GameController {
                 elapsedTime
         );
 
-        // 4. Save using SysData (writes to CSV)
         SysData.saveGame(entry);
     }
 
     // -------------------------------------------------------------------------
-    // SIMPLE MESSAGE
+    // SMALL HELPER
     // -------------------------------------------------------------------------
     private void showMessage(String title, String msg) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -770,116 +705,5 @@ public class GameController {
         alert.setHeaderText(null);
         alert.setContentText(msg);
         alert.showAndWait();
-    }
-
-} // END OF GAMECONTROLLER
-
-
-/* =============================================================================
-   QUESTION DIALOG (TEAM VERSION — WITH INLINE COMMENTS)
-   =============================================================================
-   Uses CSV QuestionRepository. This was kept almost exactly the same, but
-   formatted and clearly separated from GameController.
-   Also compatible with applyQuestionReward() which expects difficulty text
-   like "Easy", "Intermediate", "Hard", "Expert".
-============================================================================= */
-
-class QuestionDialog {
-
-    private final Dialog<Boolean> dialog;
-    private String questionDifficulty;
-    private int correctIndex;
-
-    public QuestionDialog(String gameDifficulty) {
-
-        dialog = new Dialog<>();
-        dialog.initModality(Modality.APPLICATION_MODAL);
-
-        // Load all questions from CSV
-        List<Question> allQuestions = QuestionRepository.loadQuestions();
-        Question chosen = null;
-
-        if (allQuestions != null && !allQuestions.isEmpty()) {
-
-            chosen = allQuestions.get(new Random().nextInt(allQuestions.size()));
-
-            QuestionDifficulty diffEnum = chosen.getDifficulty();
-            questionDifficulty = mapDifficultyLabel(diffEnum);
-
-            dialog.setTitle("Question Cell");
-            dialog.setHeaderText(questionDifficulty + " Question");
-
-        } else {
-            // fallback
-            String[] diffs = {"Easy", "Intermediate", "Hard", "Expert"};
-            questionDifficulty = diffs[new Random().nextInt(diffs.length)];
-
-            dialog.setTitle("Question Cell");
-            dialog.setHeaderText(questionDifficulty + " Question");
-        }
-
-        VBox box = new VBox(12);
-        box.setPadding(new Insets(20));
-
-        String qText;
-        String[] answers;
-
-        if (chosen != null) {
-            qText = chosen.getText();
-            answers = chosen.getOptions();
-            correctIndex = chosen.getCorrectIndex();
-            if (answers == null || answers.length < 4) {
-                answers = new String[]{"A", "B", "C", "D"};
-                correctIndex = 0;
-            }
-        } else {
-            qText = "No questions found in CSV.";
-            answers = new String[]{"A", "B", "C", "D"};
-            correctIndex = 0;
-        }
-
-        Label question = new Label(qText);
-        question.setWrapText(true);
-        question.setMaxWidth(400);
-        box.getChildren().add(question);
-        box.getChildren().add(new Label(""));
-
-        for (int i = 0; i < 4; i++) {
-
-            final int idx = i;
-
-            Button btn = new Button((char)('A' + i) + ") " + answers[i]);
-            btn.setPrefWidth(400);
-            btn.setPrefHeight(45);
-
-            btn.setOnAction(e -> {
-                dialog.setResult(idx == correctIndex);
-                dialog.close();
-            });
-
-            box.getChildren().add(btn);
-        }
-
-        dialog.getDialogPane().setContent(box);
-        dialog.getDialogPane().getButtonTypes().clear();
-        dialog.getDialogPane().setPrefSize(480, 300);
-    }
-
-    private String mapDifficultyLabel(QuestionDifficulty diff) {
-        switch (diff) {
-            case EASY:    return "Easy";
-            case MEDIUM:  return "Intermediate";
-            case HARD:    return "Hard";
-            case EXPERT:  return "Expert";
-        }
-        return "Easy";
-    }
-
-    public String getQuestionDifficulty() {
-        return questionDifficulty;
-    }
-
-    public Optional<Boolean> showAndWait() {
-        return dialog.showAndWait();
     }
 }
