@@ -65,8 +65,22 @@ public class Main extends Application {
 
         // History button (placeholder)
         menu.historyBtn.setOnAction(e -> {
-        	HistoryView.show(primaryStage); 
+            HistoryView historyView = new HistoryView();
+
+            // history screen now acts like all other screens
+            historyView.backBtn.setOnAction(ev -> showMainMenu(primaryStage));
+
+            Scene historyScene = new Scene(historyView, MENU_WIDTH, MENU_HEIGHT);
+            primaryStage.setScene(historyScene);
+
+            primaryStage.setMinWidth(MENU_WIDTH);
+            primaryStage.setMaxWidth(MENU_WIDTH);
+            primaryStage.setMinHeight(MENU_HEIGHT);
+            primaryStage.setMaxHeight(MENU_HEIGHT);
+
+            primaryStage.centerOnScreen();
         });
+
 
         // Question Management
         menu.questionManagementBtn.setOnAction(e -> {
