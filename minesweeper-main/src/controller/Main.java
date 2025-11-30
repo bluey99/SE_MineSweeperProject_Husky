@@ -8,6 +8,7 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import view.Menu;
 import view.SetupView;
+import view.HistoryView;
 
 public class Main extends Application {
 
@@ -71,9 +72,21 @@ public class Main extends Application {
             stage.centerOnScreen();
         });
 
-        // History button (placeholder)
+        // History button -> open HistoryView
         menu.historyBtn.setOnAction(e -> {
-            System.out.println("History clicked");
+            HistoryView historyView = new HistoryView();
+            Scene historyScene = new Scene(historyView, width, height);
+            stage.setScene(historyScene);
+
+            // keep the History window at menu size
+            stage.setMinWidth(width);
+            stage.setMaxWidth(width);
+            stage.setMinHeight(height);
+            stage.setMaxHeight(height);
+            stage.centerOnScreen();
+
+            // Back button inside HistoryView -> return to menu
+            historyView.backBtn.setOnAction(ev -> Main.showMainMenu(stage));
         });
 
         // Question Management
@@ -95,7 +108,7 @@ public class Main extends Application {
      * Called from SetupView after validation is done.
      */
     public void startGameFromSetup(String p1, String p2, String difficulty) {
-        // UPDATED: pass primaryStage into controller
+        // pass primaryStage into controller so it can return to menu
         GameController controller = new GameController(difficulty, p1, p2, primaryStage);
 
         // Get full usable screen area (excludes taskbar)
