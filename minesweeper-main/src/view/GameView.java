@@ -51,7 +51,7 @@ public class GameView extends BorderPane {
 
     // Bottom Buttons
     public final Button restartBtn = new Button("New Game");
-    public final Button endTurnBtn = new Button("End Turn");
+   // public final Button endTurnBtn = new Button("End Turn");
     public final Button exitBtn = new Button("Exit");
 
     public GameView(GameController controller) {
@@ -245,11 +245,11 @@ public class GameView extends BorderPane {
         box.setAlignment(Pos.CENTER);
 
         // Dark theme buttons
-        styleButton(endTurnBtn, "#22C55E", 150);   // green primary
+        //styleButton(endTurnBtn, "#22C55E", 150);   // green primary
         styleButton(restartBtn, "#2563EB", 140);   // blue
         styleButton(exitBtn, "#EF4444", 110);      // red
 
-        box.getChildren().addAll(endTurnBtn, restartBtn, exitBtn);
+        box.getChildren().addAll(restartBtn, exitBtn);
         bottomSection.getChildren().add(box);
     }
 
