@@ -46,6 +46,7 @@ public class QuestionManagementController {
 
             result.ifPresent(q -> {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
                 //  prevent empty question crash
                 if (q.getText() == null || q.getText().trim().isEmpty()) {
@@ -68,6 +69,10 @@ public class QuestionManagementController {
                 SysData.addQuestion(q);
                 refreshQuestions();
 >>>>>>> Stashed changes
+=======
+                SysData.addQuestion(q);
+                refreshQuestions();
+>>>>>>> Stashed changes
             });
         });
 
@@ -80,6 +85,7 @@ public class QuestionManagementController {
             Optional<Question> result = dialog.showAndWait();
 
             result.ifPresent(q -> {
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 
                 // - validation for empty editing
@@ -99,6 +105,10 @@ public class QuestionManagementController {
                 SysData.updateQuestion(q);
                 refreshQuestions();
 >>>>>>> Stashed changes
+=======
+                SysData.updateQuestion(q);
+                refreshQuestions();
+>>>>>>> Stashed changes
             });
         });
 
@@ -110,6 +120,7 @@ public class QuestionManagementController {
                 return;
             }
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
             // bayan added here – confirmation dialog before deleting
             Alert confirm = new Alert(Alert.AlertType.WARNING);
@@ -144,6 +155,15 @@ public class QuestionManagementController {
         alert.setHeaderText(null);
         alert.setContentText(msg);
         alert.showAndWait();
+=======
+            SysData.deleteQuestion(selected);
+            refreshQuestions();
+        });
+    }
+
+    private void refreshQuestions() {
+        questionList.setAll(SysData.loadQuestions());
+>>>>>>> Stashed changes
     }
 
     // ----------------------- REFRESH TABLE -----------------------
