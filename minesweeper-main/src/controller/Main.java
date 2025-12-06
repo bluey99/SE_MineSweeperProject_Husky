@@ -8,7 +8,9 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import view.Menu;
 import view.SetupView;
-import view.HistoryView;
+// import view.HistoryView;   // ❌ no longer needed
+// ✅ use HistoryController instead
+// (HistoryController is in the same package `controller`, so no extra import needed)
 
 public class Main extends Application {
 
@@ -72,10 +74,10 @@ public class Main extends Application {
             stage.centerOnScreen();
         });
 
-        // History button -> open HistoryView
+        // History button -> open History screen via controller (MVC)
         menu.historyBtn.setOnAction(e -> {
-            HistoryView historyView = new HistoryView();
-            Scene historyScene = new Scene(historyView, width, height);
+            HistoryController historyController = new HistoryController(stage);
+            Scene historyScene = historyController.createScene(width, height);
             stage.setScene(historyScene);
 
             // keep the History window at menu size
@@ -84,9 +86,6 @@ public class Main extends Application {
             stage.setMinHeight(height);
             stage.setMaxHeight(height);
             stage.centerOnScreen();
-
-            // Back button inside HistoryView -> return to menu
-            historyView.backBtn.setOnAction(ev -> Main.showMainMenu(stage));
         });
 
         // Question Management
