@@ -29,7 +29,6 @@ import model.GameHistoryEntry;
 import model.GameModel;
 import model.Question;
 import model.QuestionDifficulty;
-import model.QuestionRepository;
 import model.SysData;
 import view.GameView;
 
@@ -415,7 +414,7 @@ public class GameController {
     // -------------------------------------------------------------------------
     private void activateQuestionCell(CellController cellCtrl) {
         // Load questions from CSV
-        List<Question> all = QuestionRepository.loadQuestions();
+        List<Question> all = SysData.loadQuestions();
         if (all == null || all.isEmpty()) {
             showMessage("No Questions",
                     "No questions found in QuestionsCSV.csv");

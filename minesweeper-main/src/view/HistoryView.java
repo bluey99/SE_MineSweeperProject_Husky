@@ -10,7 +10,6 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import model.GameHistoryEntry;
-import model.SysData;
 
 public class HistoryView extends BorderPane {
 
@@ -113,8 +112,6 @@ public class HistoryView extends BorderPane {
         table.getColumns().addAll(
                 dateCol, diffCol, p1Col, p2Col, resultCol, scoreCol, lengthCol
         );
-
-        table.setItems(FXCollections.observableArrayList(SysData.loadHistory()));
 
         VBox centerBox = new VBox(10, table);
         centerBox.setPadding(new Insets(10, 30, 10, 30));

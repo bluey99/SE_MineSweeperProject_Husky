@@ -8,7 +8,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import model.Question;
 import model.QuestionDifficulty;
-import model.QuestionRepository;
+import model.SysData;
 
 import java.util.List;
 import java.util.Optional;
@@ -35,7 +35,7 @@ public class QuestionDialog {
         dialog.initModality(Modality.APPLICATION_MODAL);
 
         // Load all questions from CSV
-        List<Question> allQuestions = QuestionRepository.loadQuestions();
+        List<Question> allQuestions = SysData.loadQuestions();
         Question chosen = null;
 
         if (allQuestions != null && !allQuestions.isEmpty()) {
