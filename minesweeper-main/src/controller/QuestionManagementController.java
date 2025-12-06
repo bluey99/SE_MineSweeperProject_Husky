@@ -8,7 +8,7 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.ButtonBar;
 import javafx.stage.Stage;
 import model.Question;
-import model.QuestionRepository;
+import model.SysData;
 import view.QuestionFormDialog;
 import view.QuestionManagementView;
 
@@ -25,7 +25,7 @@ public class QuestionManagementController {
         this.primaryStage = primaryStage;
         this.view = new QuestionManagementView();
 
-        List<Question> loaded = QuestionRepository.loadQuestions();
+        List<Question> loaded = SysData.loadQuestions();
         this.questionList = FXCollections.observableArrayList(loaded);
         view.table.setItems(questionList);
 
@@ -36,7 +36,6 @@ public class QuestionManagementController {
 
         // ----------------------- BACK BUTTON -----------------------
         view.backBtn.setOnAction(e -> {
-            // Go back to main menu
             Main.showMainMenu(primaryStage);
         });
 
@@ -46,6 +45,7 @@ public class QuestionManagementController {
             Optional<Question> result = dialog.showAndWait();
 
             result.ifPresent(q -> {
+<<<<<<< Updated upstream
 
                 //  prevent empty question crash
                 if (q.getText() == null || q.getText().trim().isEmpty()) {
@@ -64,6 +64,10 @@ public class QuestionManagementController {
                             "Adding questions is disabled in CSV storage mode."
                     );
                 }
+=======
+                SysData.addQuestion(q);
+                refreshQuestions();
+>>>>>>> Stashed changes
             });
         });
 
@@ -76,6 +80,7 @@ public class QuestionManagementController {
             Optional<Question> result = dialog.showAndWait();
 
             result.ifPresent(q -> {
+<<<<<<< Updated upstream
 
                 // - validation for empty editing
                 if (q.getText() == null || q.getText().trim().isEmpty()) {
@@ -90,6 +95,10 @@ public class QuestionManagementController {
                     showError("Operation Not Supported",
                               "Editing questions is disabled in CSV storage mode.");
                 }
+=======
+                SysData.updateQuestion(q);
+                refreshQuestions();
+>>>>>>> Stashed changes
             });
         });
 
@@ -101,6 +110,7 @@ public class QuestionManagementController {
                 return;
             }
 
+<<<<<<< Updated upstream
             // bayan added here – confirmation dialog before deleting
             Alert confirm = new Alert(Alert.AlertType.WARNING);
             confirm.setTitle("Confirm Delete");
@@ -139,6 +149,15 @@ public class QuestionManagementController {
     // ----------------------- REFRESH TABLE -----------------------
     private void refreshFromRepository() {
         questionList.setAll(QuestionRepository.loadQuestions());
+=======
+            SysData.deleteQuestion(selected);
+            refreshQuestions();
+        });
+    }
+
+    private void refreshQuestions() {
+        questionList.setAll(SysData.loadQuestions());
+>>>>>>> Stashed changes
     }
 
     // ----------------------- SHOW SCENE -----------------------

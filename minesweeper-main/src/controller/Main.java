@@ -8,7 +8,12 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import view.Menu;
 import view.SetupView;
+<<<<<<< Updated upstream
 import view.HistoryView;
+=======
+import controller.HistoryController;
+
+>>>>>>> Stashed changes
 
 public class Main extends Application {
 
@@ -72,6 +77,7 @@ public class Main extends Application {
             stage.centerOnScreen();
         });
 
+<<<<<<< Updated upstream
         // History button -> open HistoryView
         menu.historyBtn.setOnAction(e -> {
             HistoryView historyView = new HistoryView();
@@ -88,6 +94,22 @@ public class Main extends Application {
             // Back button inside HistoryView -> return to menu
             historyView.backBtn.setOnAction(ev -> Main.showMainMenu(stage));
         });
+=======
+	     // History button
+	        menu.historyBtn.setOnAction(e -> {
+	            HistoryController historyController = new HistoryController(stage);
+	            Scene historyScene = historyController.createScene(width, height);
+	            stage.setScene(historyScene);
+	
+	            stage.setMinWidth(width);
+	            stage.setMaxWidth(width);
+	            stage.setMinHeight(height);
+	            stage.setMaxHeight(height);
+	
+	            stage.centerOnScreen();
+	        });
+
+>>>>>>> Stashed changes
 
         // Question Management
         menu.questionManagementBtn.setOnAction(e -> {

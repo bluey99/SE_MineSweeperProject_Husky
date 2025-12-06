@@ -25,6 +25,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import model.Board;
 import model.Cell;
+<<<<<<< Updated upstream
 import model.GameHistoryEntry;
 import model.GameModel;
 import model.Question;
@@ -39,6 +40,16 @@ import view.GameView;
  *   - Board / Cell (model)
  *   - CellController + GameView (view)
  */
+=======
+import model.GameHistoryEntry;  
+import model.GameModel;
+import model.Question;
+import model.QuestionDifficulty;
+import model.SysData;             
+import view.GameView;
+
+
+>>>>>>> Stashed changes
 public class GameController {
 
     // Board size
@@ -706,4 +717,118 @@ public class GameController {
         alert.setContentText(msg);
         alert.showAndWait();
     }
+<<<<<<< Updated upstream
+=======
+
+} // END OF GAMECONTROLLER
+
+
+/* =============================================================================
+   QUESTION DIALOG (TEAM VERSION — WITH INLINE COMMENTS)
+   =============================================================================
+   Uses CSV QuestionRepository. This was kept almost exactly the same, but
+   formatted and clearly separated from GameController.
+   Also compatible with applyQuestionReward() which expects difficulty text
+   like "Easy", "Intermediate", "Hard", "Expert".
+============================================================================= */
+
+class QuestionDialog {
+
+    private final Dialog<Boolean> dialog;
+    private String questionDifficulty;
+    private int correctIndex;
+
+    public QuestionDialog(String gameDifficulty) {
+
+        dialog = new Dialog<>();
+        dialog.initModality(Modality.APPLICATION_MODAL);
+
+        // Load all questions from CSV
+        List<Question> allQuestions = SysData.loadQuestions();
+        Question chosen = null;
+
+        if (allQuestions != null && !allQuestions.isEmpty()) {
+
+            chosen = allQuestions.get(new Random().nextInt(allQuestions.size()));
+
+            QuestionDifficulty diffEnum = chosen.getDifficulty();
+            questionDifficulty = mapDifficultyLabel(diffEnum);
+
+            dialog.setTitle("Question Cell");
+            dialog.setHeaderText(questionDifficulty + " Question");
+
+        } else {
+            // fallback
+            String[] diffs = {"Easy", "Intermediate", "Hard", "Expert"};
+            questionDifficulty = diffs[new Random().nextInt(diffs.length)];
+
+            dialog.setTitle("Question Cell");
+            dialog.setHeaderText(questionDifficulty + " Question");
+        }
+
+        VBox box = new VBox(12);
+        box.setPadding(new Insets(20));
+
+        String qText;
+        String[] answers;
+
+        if (chosen != null) {
+            qText = chosen.getText();
+            answers = chosen.getOptions();
+            correctIndex = chosen.getCorrectIndex();
+            if (answers == null || answers.length < 4) {
+                answers = new String[]{"A", "B", "C", "D"};
+                correctIndex = 0;
+            }
+        } else {
+            qText = "No questions found in CSV.";
+            answers = new String[]{"A", "B", "C", "D"};
+            correctIndex = 0;
+        }
+
+        Label question = new Label(qText);
+        question.setWrapText(true);
+        question.setMaxWidth(400);
+        box.getChildren().add(question);
+        box.getChildren().add(new Label(""));
+
+        for (int i = 0; i < 4; i++) {
+
+            final int idx = i;
+
+            Button btn = new Button((char)('A' + i) + ") " + answers[i]);
+            btn.setPrefWidth(400);
+            btn.setPrefHeight(45);
+
+            btn.setOnAction(e -> {
+                dialog.setResult(idx == correctIndex);
+                dialog.close();
+            });
+
+            box.getChildren().add(btn);
+        }
+
+        dialog.getDialogPane().setContent(box);
+        dialog.getDialogPane().getButtonTypes().clear();
+        dialog.getDialogPane().setPrefSize(480, 300);
+    }
+
+    private String mapDifficultyLabel(QuestionDifficulty diff) {
+        switch (diff) {
+            case EASY:    return "Easy";
+            case MEDIUM:  return "Intermediate";
+            case HARD:    return "Hard";
+            case EXPERT:  return "Expert";
+        }
+        return "Easy";
+    }
+
+    public String getQuestionDifficulty() {
+        return questionDifficulty;
+    }
+
+    public Optional<Boolean> showAndWait() {
+        return dialog.showAndWait();
+    }
+>>>>>>> Stashed changes
 }
