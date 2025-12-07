@@ -2,6 +2,7 @@ package controller;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -71,6 +72,8 @@ public class GameController {
     // Stage reference to return to menu
     private final Stage primaryStage;
 
+    private final Random rng = new Random();
+
     // -------------------------------------------------------------------------
     // CONSTRUCTOR
     // -------------------------------------------------------------------------
@@ -103,7 +106,7 @@ public class GameController {
                 N = M = 16;
                 mineCount = 44;
                 sharedLives = 6;    // Hard: 6 lives
-                cellSize = 22;   // smallest so it fits nicely
+                cellSize = 22;      // smallest so it fits nicely
                 break;
         }
 
@@ -230,10 +233,17 @@ public class GameController {
 
         // Activate already-discovered specials
         if (cell.isSurprise() && cell.isDiscovered() && !cell.isActivated()) {
-            activateSurpriseCell(cellCtrl);
-            switchPlayer();
+
+            boolean activated = activateSurpriseCell(cellCtrl);
+
+            // ❗ Switch turn ONLY if activation succeeded
+            if (activated) {
+                switchPlayer();
+            }
+
             return;
         }
+
         if (cell.isQuestion() && cell.isDiscovered() && !cell.isActivated()) {
             activateQuestionCell(cellCtrl);
             switchPlayer();
@@ -353,17 +363,18 @@ public class GameController {
     // -------------------------------------------------------------------------
     // SURPRISE CELL ACTIVATION
     // -------------------------------------------------------------------------
-    private void activateSurpriseCell(CellController cellCtrl) {
+    private boolean activateSurpriseCell(CellController cellCtrl) {
         Cell cell = cellCtrl.getCell();
 
         int cost = difficulty.equals("Easy") ? 5 :
                    difficulty.equals("Medium") ? 8 : 12;
 
+        // ❗ Not enough score → show message but DO NOT change turn
         if (gameModel.sharedScore < cost) {
             showMessage("Insufficient Score",
                     "You need " + cost + " points to activate this Surprise Cell.\n" +
                     "Current score: " + gameModel.sharedScore);
-            return;
+            return false;  // ❗ Activation failed
         }
 
         gameModel.sharedScore -= cost;
@@ -377,20 +388,20 @@ public class GameController {
             gameModel.sharedScore += bonusPoints;
 
             if (gameModel.sharedLives > 10) {
-                int extraLives = gameModel.sharedLives - 10;
+                int extra = gameModel.sharedLives - 10;
                 gameModel.sharedLives = 10;
-                int convertedPoints = extraLives *
+                int converted = extra *
                         (difficulty.equals("Easy") ? 5 :
                          difficulty.equals("Medium") ? 8 : 12);
-                gameModel.sharedScore += convertedPoints;
+                gameModel.sharedScore += converted;
 
                 showMessage("Good Surprise! ✓",
-                        "✓ +1 life (max reached, extra lives converted to +" +
-                        convertedPoints + " points)\n" +
-                        "✓ +" + bonusPoints + " bonus points!");
+                        "✓ +1 life (max reached, converted +" + converted + " points)\n" +
+                        "✓ +" + bonusPoints + " points");
             } else {
                 showMessage("Good Surprise! ✓",
-                        "✓ +1 life\n✓ +" + bonusPoints + " bonus points!");
+                        "✓ +1 life\n" +
+                        "✓ +" + bonusPoints + " points");
             }
         } else {
             gameModel.sharedLives--;
@@ -401,14 +412,17 @@ public class GameController {
 
             if (gameModel.sharedLives <= 0) {
                 endGame(false);
-                return;
             }
         }
 
+        // mark as activated
         cell.setActivated(true);
         cellCtrl.init();
         updateUI();
+
+        return true; // ❗ Activation succeeded
     }
+
 
     // -------------------------------------------------------------------------
     // QUESTION CELL ACTIVATION – INLINE DIALOG
@@ -423,7 +437,7 @@ public class GameController {
         }
 
         // Pick random question
-        Question q = all.get(new Random().nextInt(all.size()));
+        Question q = all.get(rng.nextInt(all.size()));
 
         // Map difficulty enum to label used by scoring table
         String qDiffLabel = mapDifficultyLabel(q.getDifficulty());
@@ -438,7 +452,7 @@ public class GameController {
         content.setPadding(new Insets(16));
 
         Label qLabel = new Label(q.getText());
-        qLabel.setWrapText(true);
+        qLabel.setWrapText(true        );
         qLabel.setMaxWidth(420);
 
         content.getChildren().add(qLabel);
@@ -497,39 +511,162 @@ public class GameController {
     }
 
     // -------------------------------------------------------------------------
-    // QUESTION REWARD TABLE
+    // QUESTION REWARD TABLE  (3.2.33–3.2.35)
     // -------------------------------------------------------------------------
     private void applyQuestionReward(boolean correct, String qDiff) {
         int points = 0;
         int lives = 0;
 
+        boolean grantMineGift = false;      // reveal 1 mine
+        boolean revealArea3x3 = false;      // reveal random 3×3 area
+
+        // ---------------- POSITIVE / NEGATIVE EFFECTS -----------------
         if (difficulty.equals("Easy")) {
             switch (qDiff) {
-                case "Easy":         points = correct ? 3  : -3;  lives = correct ? 1 : 0; break;
-                case "Intermediate": points = correct ? 6  : -6;  break;
-                case "Hard":         points = correct ? 10 : -10; break;
-                case "Expert":       points = correct ? 15 : -15; lives = correct ? 2 : -1; break;
+                case "Easy":
+                    if (correct) {
+                        points = 3;
+                        lives = 1;
+                    } else {
+                        // -3 pts OR no effect
+                        if (rng.nextBoolean()) {
+                            points = -3;
+                        }
+                    }
+                    break;
+
+                case "Intermediate":
+                    if (correct) {
+                        points = 6;
+                        grantMineGift = true;           // reveal 1 mine gift
+                    } else {
+                        // -6 pts OR no effect
+                        if (rng.nextBoolean()) {
+                            points = -6;
+                        }
+                    }
+                    break;
+
+                case "Hard":
+                    if (correct) {
+                        points = 10;
+                        revealArea3x3 = true;          // reveal 3×3 area
+                    } else {
+                        points = -10;
+                    }
+                    break;
+
+                case "Expert":
+                    if (correct) {
+                        points = 15;
+                        lives = 2;
+                    } else {
+                        points = -15;
+                        lives = -1;
+                    }
+                    break;
             }
+
         } else if (difficulty.equals("Medium")) {
+
             switch (qDiff) {
-                case "Easy":         points = correct ? 8  : -8;  lives = correct ? 1 : 0; break;
-                case "Intermediate": points = correct ? 10 : -10; lives = correct ? 1 : 0; break;
-                case "Hard":         points = correct ? 15 : -15; lives = correct ? 1 : -1; break;
-                case "Expert":       points = correct ? 20 : -20; lives = correct ? 2 : -2; break;
+                case "Easy":
+                    if (correct) {
+                        points = 8;
+                        lives = 1;
+                    } else {
+                        points = -8;
+                    }
+                    break;
+
+                case "Intermediate":
+                    if (correct) {
+                        points = 10;
+                        lives = 1;
+                    } else {
+                        // -10 pts and -1 life OR no effect
+                        if (rng.nextBoolean()) {
+                            points = -10;
+                            lives = -1;
+                        }
+                    }
+                    break;
+
+                case "Hard":
+                    if (correct) {
+                        points = 15;
+                        lives = 1;
+                    } else {
+                        points = -15;
+                        // -1 or -2 lives
+                        lives = (rng.nextBoolean() ? -1 : -2);
+                    }
+                    break;
+
+                case "Expert":
+                    if (correct) {
+                        points = 20;
+                        lives = 2;
+                    } else {
+                        points = -20;
+                        // -1 or -2 lives
+                        lives = (rng.nextBoolean() ? -1 : -2);
+                    }
+                    break;
             }
-        } else { // Hard
+
+        } else { // Hard game difficulty
+
             switch (qDiff) {
-                case "Easy":         points = correct ? 10 : -10; lives = correct ? 1 : -1; break;
-                case "Intermediate": points = correct ? 15 : -15; lives = correct ? 2 : -2; break;
-                case "Hard":         points = correct ? 20 : -20; lives = correct ? 2 : -2; break;
-                case "Expert":       points = correct ? 40 : -40; lives = correct ? 3 : -3; break;
+                case "Easy":
+                    if (correct) {
+                        points = 10;
+                        lives = 1;
+                    } else {
+                        points = -10;
+                        lives = -1;
+                    }
+                    break;
+
+                case "Intermediate":
+                    if (correct) {
+                        points = 15;
+                        // +1 or +2 lives
+                        lives = (rng.nextBoolean() ? 1 : 2);
+                    } else {
+                        points = -15;
+                        // -1 or -2 lives
+                        lives = (rng.nextBoolean() ? -1 : -2);
+                    }
+                    break;
+
+                case "Hard":
+                    if (correct) {
+                        points = 20;
+                        lives = 2;
+                    } else {
+                        points = -20;
+                        lives = -2;
+                    }
+                    break;
+
+                case "Expert":
+                    if (correct) {
+                        points = 40;
+                        lives = 3;
+                    } else {
+                        points = -40;
+                        lives = -3;
+                    }
+                    break;
             }
         }
 
+        // ---------------- APPLY SCORE & LIVES -----------------
         gameModel.sharedScore += points;
         gameModel.sharedLives += lives;
 
-        // Cap lives at 10, convert extras to points (same rule as Surprise)
+        // Cap lives at 10, convert extras to points (same rule as Surprise, 3.2.27–3.2.28)
         if (gameModel.sharedLives > 10) {
             int extraLives = gameModel.sharedLives - 10;
             gameModel.sharedLives = 10;
@@ -539,15 +676,130 @@ public class GameController {
             gameModel.sharedScore += convertedPoints;
         }
 
-        String msg = correct ?
-                "Correct ✓\n+" + Math.abs(points) + " points" +
-                (lives > 0 ? ", +" + lives + " lives" : "") :
-                "Wrong ✗\n" + points + " points" +
-                (lives < 0 ? ", " + lives + " lives" : "");
+        // ---------------- SPECIAL VISUAL EFFECTS -----------------
+        StringBuilder extraInfo = new StringBuilder();
 
-        showMessage("Question Result",
-                msg + "\n\nScore: " + gameModel.sharedScore +
-                " | Lives: " + gameModel.sharedLives);
+        if (correct && grantMineGift) {
+            boolean done = revealMineGiftCell();
+            if (done) {
+                extraInfo.append("\nMine gift: one hidden mine has been marked.");
+            }
+        }
+
+        if (correct && revealArea3x3) {
+            revealRandom3x3AreaForCurrentPlayer();
+            extraInfo.append("\nReveal bonus: a 3×3 area has been uncovered.");
+        }
+
+        // ---------------- MESSAGE TO PLAYER -----------------
+        String msg;
+        if (correct) {
+            msg = "Correct ✓\n+" + Math.abs(points) + " points";
+            if (lives > 0) {
+                msg += ", +" + lives + " lives";
+            }
+        } else {
+            if (points == 0 && lives == 0) {
+                msg = "Wrong ✗\nNo penalty this time.";
+            } else {
+                msg = "Wrong ✗\n" + points + " points";
+                if (lives != 0) {
+                    msg += ", " + lives + " lives";
+                }
+            }
+        }
+
+        msg += "\n\nScore: " + gameModel.sharedScore +
+               " | Lives: " + gameModel.sharedLives;
+
+        if (extraInfo.length() > 0) {
+            msg += "\n" + extraInfo.toString();
+        }
+
+        showMessage("Question Result", msg);
+    }
+
+    /**
+     * Reveal (flag) one hidden mine as a "mine gift".
+     * Implements 3.2.34: automatically reveal mine-gift cells.
+     *
+     * @return true if a mine was found and revealed.
+     */
+    private boolean revealMineGiftCell() {
+        List<CellController> candidates = new ArrayList<>();
+
+        // Search both boards
+        CellController[][][] boards = {board1, board2};
+        for (CellController[][] b : boards) {
+            if (b == null) continue;
+            for (int r = 0; r < N; r++) {
+                for (int c = 0; c < M; c++) {
+                    Cell cell = b[r][c].getCell();
+                    if (cell.isMine() && !cell.isOpen() && !cell.isFlag()) {
+                        candidates.add(b[r][c]);
+                    }
+                }
+            }
+        }
+
+        if (candidates.isEmpty()) {
+            return false;
+        }
+
+        CellController chosen = candidates.get(rng.nextInt(candidates.size()));
+        Cell mine = chosen.getCell();
+
+        // Flag it without giving extra score
+        mine.setFlag();              // toggles flag ON
+        mine.setFlagScored(true);    // prevent future flag bonuses
+        chosen.init();
+
+        return true;
+    }
+
+    /**
+     * Reveal a random 3×3 area on the current player's board,
+     * without changing score or lives (pure information bonus).
+     */
+    private void revealRandom3x3AreaForCurrentPlayer() {
+        CellController[][] board = getCurrentBoard();
+        if (board == null) return;
+
+        int centerRow = rng.nextInt(N);
+        int centerCol = rng.nextInt(M);
+
+        for (int r = centerRow - 1; r <= centerRow + 1; r++) {
+            for (int c = centerCol - 1; c <= centerCol + 1; c++) {
+                revealCellFromGift(board, r, c);
+            }
+        }
+    }
+
+    /**
+     * Helper for reward reveals: open a cell WITHOUT:
+     *  - adjusting score
+     *  - applying mine penalties
+     *  - flood-fill expansion
+     */
+    private void revealCellFromGift(CellController[][] board, int row, int col) {
+        if (!isInBoard(row, col)) return;
+        CellController cellCtrl = board[row][col];
+        Cell cell = cellCtrl.getCell();
+
+        if (cell.isOpen()) return;
+
+        cell.setOpen(true);
+        gameModel.revealedCells++;
+
+        if (cell.isSpecial() && !cell.isDiscovered()) {
+            cell.setDiscovered(true);
+        }
+
+        cellCtrl.init();
+    }
+
+    private CellController[][] getCurrentBoard() {
+        return (currentPlayer == 1) ? board1 : board2;
     }
 
     // -------------------------------------------------------------------------
@@ -609,41 +861,40 @@ public class GameController {
         return String.format("%02d:%02d", m, s);
     }
 
-	// -------------------------------------------------------------------------
-	// WIN CONDITION: game ends when ONE board is fully cleared
-	// -------------------------------------------------------------------------
-	private void checkWinCondition() {
-		if (isBoardCleared(board1) || isBoardCleared(board2)) {
-			endGame(true);
-		}
-	}
-	
-	/**
-	 * Returns true if this board has all NON-mine cells opened.
-	 * Used to end the game as soon as one player finishes their board.
-	 */
-	private boolean isBoardCleared(CellController[][] board) {
-	    if (board == null) return false;
+    // -------------------------------------------------------------------------
+    // WIN CONDITION: game ends when ONE board is fully cleared
+    // -------------------------------------------------------------------------
+    private void checkWinCondition() {
+        if (isBoardCleared(board1) || isBoardCleared(board2)) {
+            endGame(true);
+        }
+    }
 
-	    int safeCells = 0;
-	    int openedSafeCells = 0;
+    /**
+     * Returns true if this board has all NON-mine cells opened.
+     * Used to end the game as soon as one player finishes their board.
+     */
+    private boolean isBoardCleared(CellController[][] board) {
+        if (board == null) return false;
 
-	    for (int r = 0; r < N; r++) {
-	        for (int c = 0; c < M; c++) {
-	            Cell cell = board[r][c].getCell();
+        int safeCells = 0;
+        int openedSafeCells = 0;
 
-	            if (!cell.isMine()) {          // only care about safe cells
-	                safeCells++;
-	                if (cell.isOpen()) {
-	                    openedSafeCells++;
-	                }
-	            }
-	        }
-	    }
+        for (int r = 0; r < N; r++) {
+            for (int c = 0; c < M; c++) {
+                Cell cell = board[r][c].getCell();
 
-	    return safeCells > 0 && openedSafeCells == safeCells;
-	}
+                if (!cell.isMine()) {          // only care about safe cells
+                    safeCells++;
+                    if (cell.isOpen()) {
+                        openedSafeCells++;
+                    }
+                }
+            }
+        }
 
+        return safeCells > 0 && openedSafeCells == safeCells;
+    }
 
     private void startTimer() {
         if (gameTimer != null) gameTimer.cancel();
