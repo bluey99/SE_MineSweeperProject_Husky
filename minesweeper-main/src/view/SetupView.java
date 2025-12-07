@@ -21,8 +21,16 @@ public class SetupView extends BorderPane {
     private RadioButton mediumBtn;
     private RadioButton hardBtn;
 
+<<<<<<< Updated upstream
     // NEW: container for difficulty description
     private VBox diffInfoBox;
+=======
+    // Container for difficulty description
+    private VBox diffInfoBox;
+
+    // Back button (like in HistoryView)
+    public final Button backBtn = new Button("← Back to Menu");
+>>>>>>> Stashed changes
 
     public SetupView(Main mainApp) {
         this.mainApp = mainApp;
@@ -36,9 +44,29 @@ public class SetupView extends BorderPane {
         this.setBackground(new Background(new BackgroundFill(
                 Color.web("#0F0F1A"), CornerRadii.EMPTY, Insets.EMPTY)));
 
+<<<<<<< Updated upstream
         VBox root = new VBox(25);
         root.setAlignment(Pos.TOP_CENTER);
         root.setPadding(new Insets(60));
+=======
+        // ---------- TOP BAR WITH BACK BUTTON ----------
+        HBox topBar = new HBox();
+        topBar.setAlignment(Pos.CENTER_LEFT);
+        topBar.setPadding(new Insets(10, 20, 0, 20));
+
+        styleBackButton(backBtn);
+        backBtn.setOnAction(e -> Main.showMainMenu(Main.getPrimaryStage()));
+
+        topBar.getChildren().add(backBtn);
+        this.setTop(topBar);
+
+        // ---------- MAIN CONTENT ----------
+        VBox root = new VBox(18);                         // tighter spacing
+        root.setAlignment(Pos.CENTER);
+        root.setPadding(new Insets(20, 40, 24, 40));      // smaller top/bottom padding
+        root.setFillWidth(true);
+        root.setPrefWidth(Double.MAX_VALUE);
+>>>>>>> Stashed changes
 
         // Title
         Label title = new Label("Cooperative Minesweeper");
@@ -52,10 +80,16 @@ public class SetupView extends BorderPane {
         // Card container (dark style)
         VBox card = new VBox(20);
         card.setAlignment(Pos.CENTER);
+<<<<<<< Updated upstream
         card.setPadding(new Insets(30));
         card.setMaxWidth(500);
         VBox.setVgrow(card, Priority.ALWAYS);
 
+=======
+        card.setPadding(new Insets(24));          // was 30
+        card.setPrefWidth(520);
+        card.setMaxWidth(520);
+>>>>>>> Stashed changes
         card.setStyle(
                 "-fx-background-color: #1C1C2A;" +
                 "-fx-background-radius: 14;" +
@@ -82,7 +116,11 @@ public class SetupView extends BorderPane {
         HBox diffBox = new HBox(25, easyBtn, mediumBtn, hardBtn);
         diffBox.setAlignment(Pos.CENTER);
 
+<<<<<<< Updated upstream
         // === NEW: Difficulty description as VBox of labels ===
+=======
+        // === Difficulty description as VBox of labels ===
+>>>>>>> Stashed changes
         diffInfoBox = new VBox(2);
         diffInfoBox.setAlignment(Pos.CENTER);
         diffInfoBox.setPadding(new Insets(10, 0, 0, 0));
@@ -102,6 +140,15 @@ public class SetupView extends BorderPane {
                 diffInfoBox
         );
 
+<<<<<<< Updated upstream
+=======
+        // Wrap card to keep it centered
+        HBox cardWrapper = new HBox(card);
+        cardWrapper.setAlignment(Pos.CENTER);
+        cardWrapper.setMaxWidth(Double.MAX_VALUE);
+        cardWrapper.setPadding(new Insets(8, 0, 8, 0));
+
+>>>>>>> Stashed changes
         // Start button (blue)
         Button startBtn = new Button("Start Game");
         startBtn.setPrefSize(250, 55);
@@ -135,7 +182,11 @@ public class SetupView extends BorderPane {
         this.setCenter(root);
     }
 
+<<<<<<< Updated upstream
     // === NEW: build nice multi-line description ===
+=======
+    // === Build nice multi-line difficulty description ===
+>>>>>>> Stashed changes
     private void updateDifficultyInfo(String difficulty) {
         diffInfoBox.getChildren().clear();
 
@@ -180,6 +231,37 @@ public class SetupView extends BorderPane {
         }
     }
 
+<<<<<<< Updated upstream
+=======
+    // STYLE back button like in HistoryView
+    private void styleBackButton(Button btn) {
+        btn.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+        btn.setBackground(Background.EMPTY);
+        btn.setPadding(new Insets(4, 8, 4, 0));
+        btn.setStyle(
+                "-fx-text-fill: #BFDBFE;" +
+                "-fx-cursor: hand;" +
+                "-fx-background-color: transparent;"
+        );
+
+        btn.setOnMouseEntered(e ->
+                btn.setStyle(
+                        "-fx-text-fill: #FFFFFF;" +
+                        "-fx-underline: true;" +
+                        "-fx-cursor: hand;" +
+                        "-fx-background-color: transparent;"
+                ));
+
+        btn.setOnMouseExited(e ->
+                btn.setStyle(
+                        "-fx-text-fill: #BFDBFE;" +
+                        "-fx-underline: false;" +
+                        "-fx-cursor: hand;" +
+                        "-fx-background-color: transparent;"
+                ));
+    }
+
+>>>>>>> Stashed changes
     // Helpers
     private Label createLabel(String text) {
         Label lbl = new Label(text);
@@ -211,8 +293,11 @@ public class SetupView extends BorderPane {
     }
 
     private void onStartPressed() {
+<<<<<<< Updated upstream
 
         // Validation
+=======
+>>>>>>> Stashed changes
         String validationError = controller.validatePlayerNames(
                 player1Field.getText(),
                 player2Field.getText()

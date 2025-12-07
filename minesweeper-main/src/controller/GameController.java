@@ -66,9 +66,9 @@ public class GameController {
     // Difficulty
     private String difficulty;
     private int mineCount;
-    private int sharedLives;
+    private int sharedLives;   // initial lives based on difficulty (3.2.36)
 
-    // NEW: Stage reference to return to menu
+    // Stage reference to return to menu
     private final Stage primaryStage;
 
     // -------------------------------------------------------------------------
@@ -80,21 +80,21 @@ public class GameController {
         this.player1Name = p1Name;
         this.player2Name = p2Name;
 
-        // Difficulty rules
+        // Difficulty rules  (3.2.36)
         int cellSize;   // dynamic cell size per difficulty
 
         switch (difficulty) {
             case "Easy":
                 N = M = 9;
                 mineCount = 10;
-                sharedLives = 10;
+                sharedLives = 10;   // Easy: 10 lives
                 cellSize = 26;
                 break;
 
             case "Medium":
                 N = M = 13;
                 mineCount = 26;
-                sharedLives = 8;
+                sharedLives = 8;    // Medium: 8 lives
                 cellSize = 24;
                 break;
 
@@ -102,7 +102,7 @@ public class GameController {
             default:
                 N = M = 16;
                 mineCount = 44;
-                sharedLives = 6;
+                sharedLives = 6;    // Hard: 6 lives
                 cellSize = 22;   // smallest so it fits nicely
                 break;
         }
@@ -189,13 +189,13 @@ public class GameController {
             System.exit(0);
         });
 
-        // NEW: Return to Menu
+        // Return to Menu
         gameView.backToMenuBtn.setOnAction(e -> {
             if (gameTimer != null) gameTimer.cancel();
             Main.showMainMenu(primaryStage);
         });
 
-        // We removed "End Turn" button – turns change automatically
+        // No "End Turn" button – turns change automatically
     }
 
     // -------------------------------------------------------------------------
@@ -313,6 +313,7 @@ public class GameController {
             cell.setDiscovered(true);
         }
 
+        // 3.2.37 – update cumulative score after actions
         if (isRootClick && !isMine && !isSpecial) {
             gameModel.sharedScore += 1;
         }
@@ -410,7 +411,7 @@ public class GameController {
     }
 
     // -------------------------------------------------------------------------
-    // QUESTION CELL ACTIVATION – INLINE DIALOG (NO QuestionDialog CLASS)
+    // QUESTION CELL ACTIVATION – INLINE DIALOG
     // -------------------------------------------------------------------------
     private void activateQuestionCell(CellController cellCtrl) {
         // Load questions from CSV
@@ -528,7 +529,7 @@ public class GameController {
         gameModel.sharedScore += points;
         gameModel.sharedLives += lives;
 
-        // Cap lives at 10, convert extras to points
+        // Cap lives at 10, convert extras to points (same rule as Surprise)
         if (gameModel.sharedLives > 10) {
             int extraLives = gameModel.sharedLives - 10;
             gameModel.sharedLives = 10;
@@ -608,15 +609,41 @@ public class GameController {
         return String.format("%02d:%02d", m, s);
     }
 
-    private void checkWinCondition() {
-        int totalCells = N * M * 2;
-        int totalMines = mineCount * 2;
-        int safeCells = totalCells - totalMines;
+	// -------------------------------------------------------------------------
+	// WIN CONDITION: game ends when ONE board is fully cleared
+	// -------------------------------------------------------------------------
+	private void checkWinCondition() {
+		if (isBoardCleared(board1) || isBoardCleared(board2)) {
+			endGame(true);
+		}
+	}
+	
+	/**
+	 * Returns true if this board has all NON-mine cells opened.
+	 * Used to end the game as soon as one player finishes their board.
+	 */
+	private boolean isBoardCleared(CellController[][] board) {
+	    if (board == null) return false;
 
-        if (gameModel.revealedCells >= safeCells) {
-            endGame(true);
-        }
-    }
+	    int safeCells = 0;
+	    int openedSafeCells = 0;
+
+	    for (int r = 0; r < N; r++) {
+	        for (int c = 0; c < M; c++) {
+	            Cell cell = board[r][c].getCell();
+
+	            if (!cell.isMine()) {          // only care about safe cells
+	                safeCells++;
+	                if (cell.isOpen()) {
+	                    openedSafeCells++;
+	                }
+	            }
+	        }
+	    }
+
+	    return safeCells > 0 && openedSafeCells == safeCells;
+	}
+
 
     private void startTimer() {
         if (gameTimer != null) gameTimer.cancel();
@@ -642,6 +669,7 @@ public class GameController {
         gameActive = false;
         if (gameTimer != null) gameTimer.cancel();
 
+        // 3.2.38 – convert remaining lives into score
         int lifeBonus = gameModel.sharedLives *
                 (difficulty.equals("Easy") ? 5 :
                  difficulty.equals("Medium") ? 8 : 12);
@@ -650,6 +678,7 @@ public class GameController {
 
         saveGameToHistory(won, finalScore);
 
+        // 3.2.39 – display base score, life bonus and final score
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(won ? "🎉 Victory!" : "Game Over");
         alert.setHeaderText(

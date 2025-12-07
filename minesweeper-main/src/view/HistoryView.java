@@ -10,6 +10,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import model.GameHistoryEntry;
+import model.SysData;   // <-- IMPORTANT: import SysData
 
 public class HistoryView extends BorderPane {
 
@@ -115,7 +116,24 @@ public class HistoryView extends BorderPane {
 
         VBox centerBox = new VBox(10, table);
         centerBox.setPadding(new Insets(10, 30, 10, 30));
-
         setCenter(centerBox);
+
+        // === Load history from CSV via SysData ===
+        loadHistoryData(dateCol);
+    }
+
+    private void loadHistoryData(TableColumn<GameHistoryEntry, String> dateCol) {
+        // Uses your SysData.loadHistory()
+        var historyList = SysData.loadHistory();
+
+        if (historyList != null && !historyList.isEmpty()) {
+            table.setItems(FXCollections.observableArrayList(historyList));
+
+            // Optional: sort by date descending (last games first)
+            table.getSortOrder().clear();
+            dateCol.setSortType(TableColumn.SortType.DESCENDING);
+            table.getSortOrder().add(dateCol);
+            table.sort();
+        }
     }
 }

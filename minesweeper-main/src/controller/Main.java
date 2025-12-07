@@ -8,13 +8,12 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import view.Menu;
 import view.SetupView;
-// import view.HistoryView;   // ❌ no longer needed
-// ✅ use HistoryController instead
-// (HistoryController is in the same package `controller`, so no extra import needed)
+import view.HistoryView;
 
 public class Main extends Application {
 
-    private static Stage primaryStage;   // used so other screens can change the scene
+    // used so other screens can change the scene
+    private static Stage primaryStage;
 
     // Preferred menu size (will be clamped to screen)
     private static final double MENU_WIDTH = 900;
@@ -25,6 +24,10 @@ public class Main extends Application {
         primaryStage = stage;
         primaryStage.setTitle("Cooperative Minesweeper");
 
+<<<<<<< Updated upstream
+=======
+        // Use the instance method through the wrapper
+>>>>>>> Stashed changes
         showMainMenu(primaryStage);
 
         primaryStage.setOnCloseRequest(e -> {
@@ -33,8 +36,37 @@ public class Main extends Application {
         });
     }
 
+<<<<<<< Updated upstream
     // Called from Start + Back button
     public static void showMainMenu(Stage stage) {
+=======
+    // --- STATIC HELPERS ------------------------------------------------------
+
+    /**
+     * Static wrapper so older code can keep calling Main.showMainMenu(stage).
+     * It simply delegates to the running Main instance.
+     */
+    public static void showMainMenu(Stage stage) {
+        if (instance != null) {
+            instance.showMainMenuInstance(stage);
+        } else {
+            new Main().showMainMenuInstance(stage);
+        }
+    }
+
+    /** Static getter so views can access the primary stage (e.g. SetupView). */
+    public static Stage getPrimaryStage() {
+        return primaryStage;
+    }
+
+    // --- INSTANCE IMPLEMENTATION ---------------------------------------------
+
+    /**
+     * Actual instance implementation of showing the main menu.
+     * Kept as an instance method to allow 'this' to be passed into views (SetupView).
+     */
+    private void showMainMenuInstance(Stage stage) {
+>>>>>>> Stashed changes
         // Clear any old size constraints from the game screen
         stage.setMinWidth(0);
         stage.setMaxWidth(Double.MAX_VALUE);
@@ -54,6 +86,10 @@ public class Main extends Application {
 
         Scene menuScene = new Scene(menu, width, height);
         stage.setScene(menuScene);
+<<<<<<< Updated upstream
+=======
+        stage.sizeToScene();  // make window fit menu
+>>>>>>> Stashed changes
 
         // Fix menu size
         stage.setMinWidth(width);
@@ -68,17 +104,34 @@ public class Main extends Application {
 
         // Start game -> go to setup screen
         menu.startBtn.setOnAction(e -> {
+<<<<<<< Updated upstream
             SetupView setup = new SetupView(new Main()); // Main used as callback
             Scene setupScene = new Scene(setup, width, height);
             stage.setScene(setupScene);
+=======
+            SetupView setup = new SetupView(this);
+            Scene setupScene = new Scene(setup, width, height);
+            stage.setScene(setupScene);
+            stage.sizeToScene();
+
+            // keep the Setup window at menu size
+            stage.setMinWidth(width);
+            stage.setMaxWidth(width);
+            stage.setMinHeight(height);
+            stage.setMaxHeight(height);
+>>>>>>> Stashed changes
             stage.centerOnScreen();
         });
 
-        // History button -> open History screen via controller (MVC)
+        // History button -> open HistoryView
         menu.historyBtn.setOnAction(e -> {
-            HistoryController historyController = new HistoryController(stage);
-            Scene historyScene = historyController.createScene(width, height);
+            HistoryView historyView = new HistoryView();
+            Scene historyScene = new Scene(historyView, width, height);
             stage.setScene(historyScene);
+<<<<<<< Updated upstream
+=======
+            stage.sizeToScene();
+>>>>>>> Stashed changes
 
             // keep the History window at menu size
             stage.setMinWidth(width);
@@ -86,6 +139,12 @@ public class Main extends Application {
             stage.setMinHeight(height);
             stage.setMaxHeight(height);
             stage.centerOnScreen();
+<<<<<<< Updated upstream
+=======
+
+            // Back button inside HistoryView -> return to menu
+            historyView.backBtn.setOnAction(ev -> Main.showMainMenu(stage));
+>>>>>>> Stashed changes
         });
 
         // Question Management
@@ -93,6 +152,10 @@ public class Main extends Application {
             QuestionManagementController qm = new QuestionManagementController(stage);
             Scene qmScene = qm.createScene();
             stage.setScene(qmScene);
+<<<<<<< Updated upstream
+=======
+            stage.sizeToScene();
+>>>>>>> Stashed changes
 
             // keep the QM window at menu size
             stage.setMinWidth(width);

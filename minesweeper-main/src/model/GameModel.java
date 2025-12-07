@@ -26,9 +26,10 @@ public class GameModel {
     private Board board1;
     private Board board2;
 
-    // Shared game state (same semantics as before)
+    // Shared game state
+    // 3.2.37 – shared cumulative score, starts from 0
     public int sharedScore = 0;
-    public int sharedLives;
+    public int sharedLives;        // 3.2.36 – initialized by difficulty
     public int revealedCells = 0;
 
     // Game parameters
@@ -40,7 +41,7 @@ public class GameModel {
     public GameModel(GameController controller, int mineCount, int initialLives) {
         this.controller = controller;
         this.mineCount = mineCount;
-        this.initialLives = initialLives;
+        this.initialLives = initialLives;   // keep for re-initialization
         this.sharedLives = initialLives;
     }
 
@@ -54,10 +55,13 @@ public class GameModel {
         return board2;
     }
 
+    /**
+     * Initialize both boards and reset shared state for a new game.
+     */
     public void initializeBoards(int rows, int cols) {
-        sharedScore = 0;
+        sharedScore = 0;          // 3.2.37 – score starts from 0
         revealedCells = 0;
-        sharedLives = initialLives;
+        sharedLives = initialLives; // 3.2.36 – reset to difficulty-based life count
 
         board1 = generateBoard(rows, cols);
         board2 = generateBoard(rows, cols);
@@ -128,7 +132,7 @@ public class GameModel {
             for (int c = 0; c < cols; c++) {
 
                 if (mines[r][c]) {
-                    neighborMines[r][c] = -1; // same convention as old CellModel
+                    neighborMines[r][c] = -1; // convention for mines
                     continue;
                 }
 
@@ -152,7 +156,7 @@ public class GameModel {
     /**
      * Selects Surprise and Question cells:
      *  - Only on cells that are NOT mines and have 0 neighboring mines.
-     *  - surpriseRate and questionRate are the same as in your old GameModel.
+     *  - surpriseRate and questionRate are the same as the old version.
      */
     private void selectSpecialCells(boolean[][] mines,
                                     int[][] neighborMines,
