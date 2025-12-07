@@ -21,6 +21,9 @@ public class SetupView extends BorderPane {
     private RadioButton mediumBtn;
     private RadioButton hardBtn;
 
+    // NEW: container for difficulty description
+    private VBox diffInfoBox;
+
     public SetupView(Main mainApp) {
         this.mainApp = mainApp;
         this.controller = new SetupController();
@@ -51,7 +54,7 @@ public class SetupView extends BorderPane {
         card.setAlignment(Pos.CENTER);
         card.setPadding(new Insets(30));
         card.setMaxWidth(500);
-        VBox.setVgrow(card, Priority.ALWAYS);  // allow card to expand
+        VBox.setVgrow(card, Priority.ALWAYS);
 
         card.setStyle(
                 "-fx-background-color: #1C1C2A;" +
@@ -79,28 +82,27 @@ public class SetupView extends BorderPane {
         HBox diffBox = new HBox(25, easyBtn, mediumBtn, hardBtn);
         diffBox.setAlignment(Pos.CENTER);
 
-        // dynamic difficulty info label
-        Label diffInfo = new Label(getDifficultyText("Easy"));
-        diffInfo.setFont(Font.font("Arial", 12));
-        diffInfo.setTextFill(Color.web("#A5A5A5"));
-        diffInfo.setAlignment(Pos.CENTER);
-        diffInfo.setWrapText(true);
-        VBox.setVgrow(diffInfo, Priority.ALWAYS);   
-        diffInfo.setPadding(new Insets(10, 0, 0, 0));  
-        
-        // update difficulty info dynamically
-        easyBtn.setOnAction(e -> diffInfo.setText(getDifficultyText("Easy")));
-        mediumBtn.setOnAction(e -> diffInfo.setText(getDifficultyText("Medium")));
-        hardBtn.setOnAction(e -> diffInfo.setText(getDifficultyText("Hard")));
+        // === NEW: Difficulty description as VBox of labels ===
+        diffInfoBox = new VBox(2);
+        diffInfoBox.setAlignment(Pos.CENTER);
+        diffInfoBox.setPadding(new Insets(10, 0, 0, 0));
+        diffInfoBox.setMaxWidth(350);
+
+        updateDifficultyInfo("Easy"); // initial text
+
+        // Update difficulty info dynamically
+        easyBtn.setOnAction(e -> updateDifficultyInfo("Easy"));
+        mediumBtn.setOnAction(e -> updateDifficultyInfo("Medium"));
+        hardBtn.setOnAction(e -> updateDifficultyInfo("Hard"));
 
         card.getChildren().addAll(
                 p1Label, player1Field,
                 p2Label, player2Field,
                 diffLabel, diffBox,
-                diffInfo
+                diffInfoBox
         );
 
-        // Start button (blue like menu)
+        // Start button (blue)
         Button startBtn = new Button("Start Game");
         startBtn.setPrefSize(250, 55);
         startBtn.setFont(Font.font("Arial", FontWeight.BOLD, 18));
@@ -133,33 +135,52 @@ public class SetupView extends BorderPane {
         this.setCenter(root);
     }
 
-    // bayan added here - helper for difficulty descriptions
-    private String getDifficultyText(String difficulty) {
+    // === NEW: build nice multi-line description ===
+    private void updateDifficultyInfo(String difficulty) {
+        diffInfoBox.getChildren().clear();
+
+        // Title line: "Easy Mode:" etc.
+        Label title = new Label(difficulty + " Mode:");
+        title.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+        title.setTextFill(Color.web("#A5A5A5"));
+        diffInfoBox.getChildren().add(title);
+
+        String[] lines;
         switch (difficulty) {
             case "Easy":
-                return "Easy Mode:\n" +
-                       "• 9×9 grid\n" +
-                       "• 10 mines\n" +
-                       "• 10 shared lives";
-
+                lines = new String[]{
+                        "9×9 grid",
+                        "10 mines",
+                        "10 shared lives"
+                };
+                break;
             case "Medium":
-                return "Medium Mode:\n" +
-                       "• 13×13 grid\n" +
-                       "• 26 mines\n" +
-                       "• 8 shared lives";
-
+                lines = new String[]{
+                        "13×13 grid",
+                        "26 mines",
+                        "8 shared lives"
+                };
+                break;
             case "Hard":
-                return "Hard Mode:\n" +
-                       "• 16×16 grid\n" +
-                       "• 44 mines\n" +
-                       "• 6 shared lives";
-
+                lines = new String[]{
+                        "16×16 grid",
+                        "44 mines",
+                        "6 shared lives"
+                };
+                break;
             default:
-                return "";
+                lines = new String[0];
+        }
+
+        for (String line : lines) {
+            Label l = new Label("• " + line);
+            l.setFont(Font.font("Arial", 12));
+            l.setTextFill(Color.web("#A5A5A5"));
+            diffInfoBox.getChildren().add(l);
         }
     }
 
-    // Helper for labels
+    // Helpers
     private Label createLabel(String text) {
         Label lbl = new Label(text);
         lbl.setFont(Font.font("Arial", FontWeight.BOLD, 14));
@@ -167,7 +188,6 @@ public class SetupView extends BorderPane {
         return lbl;
     }
 
-    // Helper for text fields
     private TextField createInput(String placeholder) {
         TextField field = new TextField(placeholder);
         field.setPrefWidth(300);
@@ -181,7 +201,6 @@ public class SetupView extends BorderPane {
         return field;
     }
 
-    // Helper for radio buttons
     private RadioButton createRadio(String text, ToggleGroup group) {
         RadioButton rb = new RadioButton(text);
         rb.setToggleGroup(group);
@@ -193,7 +212,7 @@ public class SetupView extends BorderPane {
 
     private void onStartPressed() {
 
-        // Validation via SetupController
+        // Validation
         String validationError = controller.validatePlayerNames(
                 player1Field.getText(),
                 player2Field.getText()
@@ -211,7 +230,6 @@ public class SetupView extends BorderPane {
         String difficulty = easyBtn.isSelected() ? "Easy" :
                 mediumBtn.isSelected() ? "Medium" : "Hard";
 
-        // Pass info to Main
         mainApp.startGameFromSetup(p1, p2, difficulty);
     }
 }
