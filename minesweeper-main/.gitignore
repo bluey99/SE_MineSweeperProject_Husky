@@ -1,5 +1,41 @@
-libs/
-out/
-bin/
-production/
+# -------------------------------
+# Eclipse IDE
+# -------------------------------
 .classpath
+.project
+.settings/
+bin/
+out/
+production/
+
+# Eclipse working files
+.recommenders/
+.loadpath
+
+# -------------------------------
+# Java / Maven / Gradle outputs
+# -------------------------------
+target/
+*.class
+
+# -------------------------------
+# IntelliJ IDEA (if someone uses it)
+# -------------------------------
+.idea/
+*.iml
+
+# -------------------------------
+# JavaFX runtime and local SDK paths
+# -------------------------------
+src/libs/javafx.properties
+
+# -------------------------------
+# OS-specific junk
+# -------------------------------
+.DS_Store
+Thumbs.db
+
+# -------------------------------
+# Logs
+# -------------------------------
+*.log
