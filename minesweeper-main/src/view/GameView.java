@@ -184,8 +184,8 @@ public class GameView extends BorderPane {
 
     private void setupPlayer1Panel() {
         player1Panel.setAlignment(Pos.TOP_CENTER);
-        player1Panel.setSpacing(8);
-        player1Panel.setPadding(new Insets(12));
+        player1Panel.setSpacing(10);
+        player1Panel.setPadding(new Insets(16));
         player1Panel.setPrefWidth(PANEL_WIDTH);
         player1Panel.setStyle(
                 "-fx-border-color: #22C55E;" +
@@ -199,21 +199,28 @@ public class GameView extends BorderPane {
         player1Label.setFont(Font.font("Arial", FontWeight.BOLD, 18));
         player1Label.setTextFill(Color.web("#DCFCE7"));
 
-        gridPane1.setHgap(2);
-        gridPane1.setVgap(2);
+        // Grid (only cells, no background)
+        gridPane1.setHgap(3);
+        gridPane1.setVgap(3);
         gridPane1.setAlignment(Pos.CENTER);
-        gridPane1.setStyle(
+
+        // Black board background that hugs the cells
+        StackPane boardContainer1 = new StackPane();
+        boardContainer1.setStyle(
                 "-fx-background-color: #020617;" +
                 "-fx-background-radius: 10;"
         );
+        boardContainer1.setPadding(new Insets(2)); // <-- black margin around cells
+        boardContainer1.getChildren().add(gridPane1);
 
-        player1Panel.getChildren().addAll(player1Label, gridPane1);
+        player1Panel.getChildren().addAll(player1Label, boardContainer1);
     }
+
 
     private void setupPlayer2Panel() {
         player2Panel.setAlignment(Pos.TOP_CENTER);
-        player2Panel.setSpacing(8);
-        player2Panel.setPadding(new Insets(12));
+        player2Panel.setSpacing(10);
+        player2Panel.setPadding(new Insets(16));
         player2Panel.setPrefWidth(PANEL_WIDTH);
         player2Panel.setStyle(
                 "-fx-border-color: #374151;" +
@@ -227,16 +234,23 @@ public class GameView extends BorderPane {
         player2Label.setFont(Font.font("Arial", FontWeight.BOLD, 18));
         player2Label.setTextFill(Color.web("#FCA5A5"));
 
-        gridPane2.setHgap(2);
-        gridPane2.setVgap(2);
+        // Grid (only cells, no background)
+        gridPane2.setHgap(3);
+        gridPane2.setVgap(3);
         gridPane2.setAlignment(Pos.CENTER);
-        gridPane2.setStyle(
+
+        // Black board background that hugs the cells
+        StackPane boardContainer2 = new StackPane();
+        boardContainer2.setStyle(
                 "-fx-background-color: #020617;" +
                 "-fx-background-radius: 10;"
         );
+        boardContainer2.setPadding(new Insets(2)); // <-- black margin around cells
+        boardContainer2.getChildren().add(gridPane2);
 
-        player2Panel.getChildren().addAll(player2Label, gridPane2);
+        player2Panel.getChildren().addAll(player2Label, boardContainer2);
     }
+
 
     private void setupCenterSection() {
         centerSection.setAlignment(Pos.CENTER);

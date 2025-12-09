@@ -6,13 +6,13 @@
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="src/libs/javafx.base.jar"/>
-	<classpathentry kind="lib" path="src/libs/javafx.controls.jar"/>
-	<classpathentry kind="lib" path="src/libs/javafx.fxml.jar"/>
-	<classpathentry kind="lib" path="src/libs/javafx.graphics.jar"/>
-	<classpathentry kind="lib" path="src/libs/javafx.media.jar"/>
-	<classpathentry kind="lib" path="src/libs/javafx.swing.jar"/>
-	<classpathentry kind="lib" path="src/libs/javafx.web.jar"/>
-	<classpathentry kind="lib" path="src/libs/javafx-swt.jar"/>
+	<classpathentry kind="lib" path="C:/Users/jawad/OneDrive/שולחן העבודה/MineSweeperJar/javafx-sdk-18.0.1/lib/javafx.base.jar"/>
+	<classpathentry kind="lib" path="C:/Users/jawad/OneDrive/שולחן העבודה/MineSweeperJar/javafx-sdk-18.0.1/lib/javafx.controls.jar"/>
+	<classpathentry kind="lib" path="C:/Users/jawad/OneDrive/שולחן העבודה/MineSweeperJar/javafx-sdk-18.0.1/lib/javafx.fxml.jar"/>
+	<classpathentry kind="lib" path="C:/Users/jawad/OneDrive/שולחן העבודה/MineSweeperJar/javafx-sdk-18.0.1/lib/javafx.graphics.jar"/>
+	<classpathentry kind="lib" path="C:/Users/jawad/OneDrive/שולחן העבודה/MineSweeperJar/javafx-sdk-18.0.1/lib/javafx.media.jar"/>
+	<classpathentry kind="lib" path="C:/Users/jawad/OneDrive/שולחן העבודה/MineSweeperJar/javafx-sdk-18.0.1/lib/javafx.swing.jar"/>
+	<classpathentry kind="lib" path="C:/Users/jawad/OneDrive/שולחן העבודה/MineSweeperJar/javafx-sdk-18.0.1/lib/javafx.web.jar"/>
+	<classpathentry kind="lib" path="C:/Users/jawad/OneDrive/שולחן העבודה/MineSweeperJar/javafx-sdk-18.0.1/lib/javafx-swt.jar"/>
 	<classpathentry kind="output" path="out/production/MineSweeper"/>
 </classpath>

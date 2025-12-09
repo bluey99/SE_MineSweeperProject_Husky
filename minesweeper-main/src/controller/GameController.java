@@ -12,6 +12,7 @@ import java.util.TimerTask;
 import javafx.application.Platform;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar.ButtonData;
@@ -23,6 +24,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Modality;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import model.Board;
 import model.Cell;
@@ -32,15 +34,9 @@ import model.Question;
 import model.QuestionDifficulty;
 import model.SysData;
 import view.GameView;
-import javafx.geometry.Rectangle2D;
-import javafx.stage.Screen;
-
 
 /**
  * Main game controller for cooperative two-player Minesweeper.
- * Uses:
- *   - Board / Cell (model)
- *   - CellController + GameView (view)
  */
 public class GameController {
 
@@ -70,7 +66,7 @@ public class GameController {
     // Difficulty
     private String difficulty;
     private int mineCount;
-    private int sharedLives;   // initial lives based on difficulty (3.2.36)
+    private int sharedLives;   // initial lives
 
     // Stage reference to return to menu
     private final Stage primaryStage;
@@ -91,29 +87,28 @@ public class GameController {
         double screenHeight = bounds.getHeight();
         double screenWidth  = bounds.getWidth();
 
-        // How much vertical space we roughly have for the board
-        // (rest is title, top text, buttons, padding…)
-        double boardHeightBudget = screenHeight - 260;   // tweak if needed
-        if (boardHeightBudget < 200) {
-            boardHeightBudget = 200;
+        // We leave generous space for title + subtitle + bottom buttons
+        double boardHeightBudget = screenHeight - 360;   // reserved top+bottom area
+        if (boardHeightBudget < 220) {
+            boardHeightBudget = 220;
         }
 
-        int baseCellSize;   // "nice" size before clamping
+        // ===== 2. Logical sizes per difficulty =====
+        int baseCellSize;   // "ideal" cell size for this difficulty
 
-        // ===== 2. Original logical sizes per difficulty =====
         switch (difficulty) {
             case "Easy":
                 N = M = 9;
                 mineCount = 10;
                 sharedLives = 10;
-                baseCellSize = 40;      // will be clamped later
+                baseCellSize = 36;    // was 40
                 break;
 
             case "Medium":
                 N = M = 13;
                 mineCount = 26;
                 sharedLives = 8;
-                baseCellSize = 34;
+                baseCellSize = 28;    // was 32
                 break;
 
             case "Hard":
@@ -121,7 +116,7 @@ public class GameController {
                 N = M = 16;
                 mineCount = 44;
                 sharedLives = 6;
-                baseCellSize = 26;   // was 32 → too big for your screen
+                baseCellSize = 22;    // was 26
                 break;
         }
 
@@ -129,29 +124,29 @@ public class GameController {
         int maxByHeight = (int) Math.floor(boardHeightBudget / N);
 
         // ===== 4. Clamp by WIDTH =====
-        // Two boards + center panel (~340px) + side paddings.
-        // Each board can use at most half of the remaining width.
-        double centerArea = 340; // approx middle column width + margins
-        double perBoardWidthBudget = (screenWidth - centerArea) / 2.0;
-        if (perBoardWidthBudget < 150) {
-            perBoardWidthBudget = 150;
+        double centerAreaWidth = 340;  // approx shared panel width + spacing
+        double perBoardWidthBudget = (screenWidth - centerAreaWidth) / 2.0;
+        if (perBoardWidthBudget < 180) {
+            perBoardWidthBudget = 180;
         }
         int maxByWidth = (int) Math.floor(perBoardWidthBudget / M);
 
         // ===== 5. Final cell size =====
-        int cellSize = baseCellSize;
         int maxAllowed = Math.min(maxByHeight, maxByWidth);
-        if (maxAllowed < cellSize) {
-            cellSize = maxAllowed;
+
+        int cellSize = Math.min(baseCellSize, maxAllowed);
+
+        // Small safety margin so there is always a bit of breathing room
+        if (cellSize > 20) {
+            cellSize -= 2;
         }
 
-        // avoid becoming ridiculously tiny
+        // Avoid being too tiny
         cellSize = Math.max(cellSize, 18);
 
-        // Apply final cell size
         CellController.setCellSide(cellSize);
 
-        // Create model & view
+        // ===== 6. Create model & view =====
         gameModel = new GameModel(this, mineCount, sharedLives);
         gameView = new GameView(this);
 
@@ -159,6 +154,8 @@ public class GameController {
         setupEventHandlers();
         startTimer();
     }
+
+
 
     // -------------------------------------------------------------------------
     // INIT
@@ -360,7 +357,7 @@ public class GameController {
             cell.setDiscovered(true);
         }
 
-        // 3.2.37 – update cumulative score after actions
+        // update cumulative score after actions
         if (isRootClick && !isMine && !isSpecial) {
             gameModel.sharedScore += 1;
         }
@@ -547,7 +544,7 @@ public class GameController {
     }
 
     // -------------------------------------------------------------------------
-    // QUESTION REWARD TABLE  (3.2.33–3.2.35)
+    // QUESTION REWARD TABLE
     // -------------------------------------------------------------------------
     private void applyQuestionReward(boolean correct, String qDiff) {
         int points = 0;
@@ -556,7 +553,6 @@ public class GameController {
         boolean grantMineGift = false;      // reveal 1 mine
         boolean revealArea3x3 = false;      // reveal random 3×3 area
 
-        // POSITIVE / NEGATIVE EFFECTS
         if (difficulty.equals("Easy")) {
             switch (qDiff) {
                 case "Easy":
@@ -564,7 +560,6 @@ public class GameController {
                         points = 3;
                         lives = 1;
                     } else {
-                        // -3 pts OR no effect
                         if (rng.nextBoolean()) {
                             points = -3;
                         }
@@ -574,9 +569,8 @@ public class GameController {
                 case "Intermediate":
                     if (correct) {
                         points = 6;
-                        grantMineGift = true;           // reveal 1 mine gift
+                        grantMineGift = true;
                     } else {
-                        // -6 pts OR no effect
                         if (rng.nextBoolean()) {
                             points = -6;
                         }
@@ -586,7 +580,7 @@ public class GameController {
                 case "Hard":
                     if (correct) {
                         points = 10;
-                        revealArea3x3 = true;          // reveal 3×3 area
+                        revealArea3x3 = true;
                     } else {
                         points = -10;
                     }
@@ -620,7 +614,6 @@ public class GameController {
                         points = 10;
                         lives = 1;
                     } else {
-                        // -10 pts and -1 life OR no effect
                         if (rng.nextBoolean()) {
                             points = -10;
                             lives = -1;
@@ -634,7 +627,6 @@ public class GameController {
                         lives = 1;
                     } else {
                         points = -15;
-                        // -1 or -2 lives
                         lives = (rng.nextBoolean() ? -1 : -2);
                     }
                     break;
@@ -645,7 +637,6 @@ public class GameController {
                         lives = 2;
                     } else {
                         points = -20;
-                        // -1 or -2 lives
                         lives = (rng.nextBoolean() ? -1 : -2);
                     }
                     break;
@@ -667,11 +658,9 @@ public class GameController {
                 case "Intermediate":
                     if (correct) {
                         points = 15;
-                        // +1 or +2 lives
                         lives = (rng.nextBoolean() ? 1 : 2);
                     } else {
                         points = -15;
-                        // -1 or -2 lives
                         lives = (rng.nextBoolean() ? -1 : -2);
                     }
                     break;
@@ -702,7 +691,7 @@ public class GameController {
         gameModel.sharedScore += points;
         gameModel.sharedLives += lives;
 
-        // Cap lives at 10, convert extras to points (same rule as Surprise, 3.2.27–3.2.28)
+        // Cap lives at 10, convert extras to points
         if (gameModel.sharedLives > 10) {
             int extraLives = gameModel.sharedLives - 10;
             gameModel.sharedLives = 10;
@@ -757,9 +746,6 @@ public class GameController {
 
     /**
      * Reveal (flag) one hidden mine as a "mine gift".
-     * Implements 3.2.34: automatically reveal mine-gift cells.
-     *
-     * @return true if a mine was found and revealed.
      */
     private boolean revealMineGiftCell() {
         List<CellController> candidates = new ArrayList<>();
@@ -786,8 +772,8 @@ public class GameController {
         Cell mine = chosen.getCell();
 
         // Flag it without giving extra score
-        mine.setFlag();              // toggles flag ON
-        mine.setFlagScored(true);    // prevent future flag bonuses
+        mine.setFlag();
+        mine.setFlagScored(true);
         chosen.init();
 
         return true;
@@ -795,7 +781,7 @@ public class GameController {
 
     /**
      * Reveal a random 3×3 area on the current player's board,
-     * without changing score or lives (pure information bonus).
+     * without changing score or lives.
      */
     private void revealRandom3x3AreaForCurrentPlayer() {
         CellController[][] board = getCurrentBoard();
@@ -811,12 +797,6 @@ public class GameController {
         }
     }
 
-    /**
-     * Helper for reward reveals: open a cell WITHOUT:
-     *  - adjusting score
-     *  - applying mine penalties
-     *  - flood-fill expansion
-     */
     private void revealCellFromGift(CellController[][] board, int row, int col) {
         if (!isInBoard(row, col)) return;
         CellController cellCtrl = board[row][col];
@@ -898,7 +878,7 @@ public class GameController {
     }
 
     // -------------------------------------------------------------------------
-    // WIN CONDITION: game ends when ONE board is fully cleared
+    // WIN CONDITION
     // -------------------------------------------------------------------------
     private void checkWinCondition() {
         if (isBoardCleared(board1) || isBoardCleared(board2)) {
@@ -906,10 +886,6 @@ public class GameController {
         }
     }
 
-    /**
-     * Returns true if this board has all NON-mine cells opened.
-     * Used to end the game as soon as one player finishes their board.
-     */
     private boolean isBoardCleared(CellController[][] board) {
         if (board == null) return false;
 
@@ -920,7 +896,7 @@ public class GameController {
             for (int c = 0; c < M; c++) {
                 Cell cell = board[r][c].getCell();
 
-                if (!cell.isMine()) {          // only care about safe cells
+                if (!cell.isMine()) {
                     safeCells++;
                     if (cell.isOpen()) {
                         openedSafeCells++;
@@ -956,7 +932,6 @@ public class GameController {
         gameActive = false;
         if (gameTimer != null) gameTimer.cancel();
 
-        // 3.2.38 – convert remaining lives into score
         int lifeBonus = gameModel.sharedLives *
                 (difficulty.equals("Easy") ? 5 :
                  difficulty.equals("Medium") ? 8 : 12);
@@ -965,7 +940,6 @@ public class GameController {
 
         saveGameToHistory(won, finalScore);
 
-        // 3.2.39 – display base score, life bonus and final score
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(won ? "🎉 Victory!" : "Game Over");
         alert.setHeaderText(
@@ -1011,9 +985,6 @@ public class GameController {
         SysData.saveGame(entry);
     }
 
-    // -------------------------------------------------------------------------
-    // SMALL HELPER
-    // -------------------------------------------------------------------------
     private void showMessage(String title, String msg) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
