@@ -32,6 +32,9 @@ import model.Question;
 import model.QuestionDifficulty;
 import model.SysData;
 import view.GameView;
+import javafx.geometry.Rectangle2D;
+import javafx.stage.Screen;
+
 
 /**
  * Main game controller for cooperative two-player Minesweeper.
@@ -83,34 +86,69 @@ public class GameController {
         this.player1Name = p1Name;
         this.player2Name = p2Name;
 
-        // Difficulty rules + cell size
-        int cellSize;
+        // ===== 1. Screen-aware sizing =====
+        Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
+        double screenHeight = bounds.getHeight();
+        double screenWidth  = bounds.getWidth();
 
+        // How much vertical space we roughly have for the board
+        // (rest is title, top text, buttons, padding…)
+        double boardHeightBudget = screenHeight - 260;   // tweak if needed
+        if (boardHeightBudget < 200) {
+            boardHeightBudget = 200;
+        }
+
+        int baseCellSize;   // "nice" size before clamping
+
+        // ===== 2. Original logical sizes per difficulty =====
         switch (difficulty) {
             case "Easy":
                 N = M = 9;
                 mineCount = 10;
-                sharedLives = 10;   // Easy: 10 lives
-                cellSize = 40;      // big, comfy tiles
+                sharedLives = 10;
+                baseCellSize = 40;      // will be clamped later
                 break;
 
             case "Medium":
                 N = M = 13;
                 mineCount = 26;
-                sharedLives = 8;    // Medium: 8 lives
-                cellSize = 32;      // medium tiles
+                sharedLives = 8;
+                baseCellSize = 34;
                 break;
 
             case "Hard":
             default:
                 N = M = 16;
                 mineCount = 44;
-                sharedLives = 6;    // Hard: 6 lives
-                cellSize = 26;      // smaller, 16x16 fits nicely
+                sharedLives = 6;
+                baseCellSize = 26;   // was 32 → too big for your screen
                 break;
         }
 
-        // Tell CellController what cell size to use (global for this game)
+        // ===== 3. Clamp by HEIGHT =====
+        int maxByHeight = (int) Math.floor(boardHeightBudget / N);
+
+        // ===== 4. Clamp by WIDTH =====
+        // Two boards + center panel (~340px) + side paddings.
+        // Each board can use at most half of the remaining width.
+        double centerArea = 340; // approx middle column width + margins
+        double perBoardWidthBudget = (screenWidth - centerArea) / 2.0;
+        if (perBoardWidthBudget < 150) {
+            perBoardWidthBudget = 150;
+        }
+        int maxByWidth = (int) Math.floor(perBoardWidthBudget / M);
+
+        // ===== 5. Final cell size =====
+        int cellSize = baseCellSize;
+        int maxAllowed = Math.min(maxByHeight, maxByWidth);
+        if (maxAllowed < cellSize) {
+            cellSize = maxAllowed;
+        }
+
+        // avoid becoming ridiculously tiny
+        cellSize = Math.max(cellSize, 18);
+
+        // Apply final cell size
         CellController.setCellSide(cellSize);
 
         // Create model & view

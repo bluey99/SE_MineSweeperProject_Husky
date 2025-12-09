@@ -53,10 +53,6 @@ public class Main extends Application {
 
     // --- INSTANCE IMPLEMENTATION ---------------------------------------------
 
-    /**
-     * Actual implementation of showing the main menu.
-     * Kept as an instance method to allow 'this' to be passed into views.
-     */
     private void showMainMenuInstance(Stage stage) {
         // Clear any old size constraints from the game screen
         stage.setMinWidth(0);
@@ -160,21 +156,28 @@ public class Main extends Application {
         primaryStage.setMinHeight(0);
         primaryStage.setMaxHeight(Double.MAX_VALUE);
 
-        // Create scene that matches the screen size
-        Scene gameScene = new Scene(controller.gameView, screenW, screenH);
+        // --- GAME WINDOW SIZE ---
+        // use full screen height, but only 92% of the width
+        double gameW = screenW * 0.92;
+        double gameH = screenH;          // full height so bottom buttons are visible
+
+        // center horizontally, stick to top vertically
+        double x = screenX + (screenW - gameW) / 2;
+        double y = screenY;
+
+        Scene gameScene = new Scene(controller.gameView, gameW, gameH);
         primaryStage.setScene(gameScene);
 
-        // Position window at top-left and stretch to full visible screen
-        primaryStage.setX(screenX);
-        primaryStage.setY(screenY);
-        primaryStage.setWidth(screenW);
-        primaryStage.setHeight(screenH);
+        primaryStage.setX(x);
+        primaryStage.setY(y);
+        primaryStage.setWidth(gameW);
+        primaryStage.setHeight(gameH);
 
         // Lock size so layout stays stable
-        primaryStage.setMinWidth(screenW);
-        primaryStage.setMaxWidth(screenW);
-        primaryStage.setMinHeight(screenH);
-        primaryStage.setMaxHeight(screenH);
+        primaryStage.setMinWidth(gameW);
+        primaryStage.setMaxWidth(gameW);
+        primaryStage.setMinHeight(gameH);
+        primaryStage.setMaxHeight(gameH);
 
         primaryStage.setResizable(false);
     }
