@@ -41,7 +41,7 @@ import view.GameView;
  */
 public class GameController {
 
-    // Board size
+    // Board size (N rows, M cols)
     public int N, M;
 
     // MVC parts
@@ -83,22 +83,22 @@ public class GameController {
         this.player1Name = p1Name;
         this.player2Name = p2Name;
 
-        // Difficulty rules  (3.2.36)
-        int cellSize;   // dynamic cell size per difficulty
+        // Difficulty rules + cell size
+        int cellSize;
 
         switch (difficulty) {
             case "Easy":
                 N = M = 9;
                 mineCount = 10;
                 sharedLives = 10;   // Easy: 10 lives
-                cellSize = 26;
+                cellSize = 40;      // big, comfy tiles
                 break;
 
             case "Medium":
                 N = M = 13;
                 mineCount = 26;
                 sharedLives = 8;    // Medium: 8 lives
-                cellSize = 24;
+                cellSize = 32;      // medium tiles
                 break;
 
             case "Hard":
@@ -106,7 +106,7 @@ public class GameController {
                 N = M = 16;
                 mineCount = 44;
                 sharedLives = 6;    // Hard: 6 lives
-                cellSize = 22;      // smallest so it fits nicely
+                cellSize = 26;      // smaller, 16x16 fits nicely
                 break;
         }
 
@@ -166,11 +166,12 @@ public class GameController {
         return uiBoard;
     }
 
-    private void createCellsGrid(CellController[][] board, javafx.scene.layout.GridPane gridPane) {
+    private void createCellsGrid(CellController[][] board,
+                                 javafx.scene.layout.GridPane gridPane) {
         gridPane.getChildren().clear();
-        for (int i = 0; i < N; i++) {
-            for (int j = 0; j < M; j++) {
-                gridPane.add(board[i][j].cellView, i, j, 1, 1);
+        for (int r = 0; r < N; r++) {
+            for (int c = 0; c < M; c++) {
+                gridPane.add(board[r][c].cellView, c, r); // col, row
             }
         }
     }
@@ -197,8 +198,6 @@ public class GameController {
             if (gameTimer != null) gameTimer.cancel();
             Main.showMainMenu(primaryStage);
         });
-
-        // No "End Turn" button – turns change automatically
     }
 
     // -------------------------------------------------------------------------
@@ -236,7 +235,7 @@ public class GameController {
 
             boolean activated = activateSurpriseCell(cellCtrl);
 
-            // ❗ Switch turn ONLY if activation succeeded
+            // Switch turn ONLY if activation succeeded
             if (activated) {
                 switchPlayer();
             }
@@ -369,12 +368,12 @@ public class GameController {
         int cost = difficulty.equals("Easy") ? 5 :
                    difficulty.equals("Medium") ? 8 : 12;
 
-        // ❗ Not enough score → show message but DO NOT change turn
+        // Not enough score → show message but DO NOT change turn
         if (gameModel.sharedScore < cost) {
             showMessage("Insufficient Score",
                     "You need " + cost + " points to activate this Surprise Cell.\n" +
                     "Current score: " + gameModel.sharedScore);
-            return false;  // ❗ Activation failed
+            return false;
         }
 
         gameModel.sharedScore -= cost;
@@ -420,9 +419,8 @@ public class GameController {
         cellCtrl.init();
         updateUI();
 
-        return true; // ❗ Activation succeeded
+        return true;
     }
-
 
     // -------------------------------------------------------------------------
     // QUESTION CELL ACTIVATION – INLINE DIALOG
@@ -452,7 +450,7 @@ public class GameController {
         content.setPadding(new Insets(16));
 
         Label qLabel = new Label(q.getText());
-        qLabel.setWrapText(true        );
+        qLabel.setWrapText(true);
         qLabel.setMaxWidth(420);
 
         content.getChildren().add(qLabel);
@@ -520,7 +518,7 @@ public class GameController {
         boolean grantMineGift = false;      // reveal 1 mine
         boolean revealArea3x3 = false;      // reveal random 3×3 area
 
-        // ---------------- POSITIVE / NEGATIVE EFFECTS -----------------
+        // POSITIVE / NEGATIVE EFFECTS
         if (difficulty.equals("Easy")) {
             switch (qDiff) {
                 case "Easy":
@@ -662,7 +660,7 @@ public class GameController {
             }
         }
 
-        // ---------------- APPLY SCORE & LIVES -----------------
+        // APPLY SCORE & LIVES
         gameModel.sharedScore += points;
         gameModel.sharedLives += lives;
 
@@ -676,7 +674,7 @@ public class GameController {
             gameModel.sharedScore += convertedPoints;
         }
 
-        // ---------------- SPECIAL VISUAL EFFECTS -----------------
+        // SPECIAL VISUAL EFFECTS
         StringBuilder extraInfo = new StringBuilder();
 
         if (correct && grantMineGift) {
@@ -691,7 +689,7 @@ public class GameController {
             extraInfo.append("\nReveal bonus: a 3×3 area has been uncovered.");
         }
 
-        // ---------------- MESSAGE TO PLAYER -----------------
+        // MESSAGE TO PLAYER
         String msg;
         if (correct) {
             msg = "Correct ✓\n+" + Math.abs(points) + " points";

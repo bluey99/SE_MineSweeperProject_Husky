@@ -22,6 +22,9 @@ public class GameView extends BorderPane {
 
     private final GameController controller;
 
+    // width of each player panel; tweak if needed
+    private static final double PANEL_WIDTH = 620;
+
     // Top Section
     private final VBox topSection = new VBox();
 
@@ -70,7 +73,6 @@ public class GameView extends BorderPane {
     }
 
     private void setupLayout() {
-        // slightly smaller padding so it fits better horizontally
         this.setPadding(new Insets(10));
         this.setTop(topSection);
         this.setCenter(centerSection);
@@ -104,9 +106,8 @@ public class GameView extends BorderPane {
     }
 
     private void setupSharedPanel() {
-        // slightly narrower panel
-        sharedInfoPanel.setPrefWidth(210);
-        sharedInfoPanel.setMinWidth(210);
+        sharedInfoPanel.setPrefWidth(220);
+        sharedInfoPanel.setMinWidth(220);
         sharedInfoPanel.setAlignment(Pos.TOP_CENTER);
         sharedInfoPanel.setSpacing(14);
         sharedInfoPanel.setPadding(new Insets(16));
@@ -185,6 +186,7 @@ public class GameView extends BorderPane {
         player1Panel.setAlignment(Pos.TOP_CENTER);
         player1Panel.setSpacing(8);
         player1Panel.setPadding(new Insets(12));
+        player1Panel.setPrefWidth(PANEL_WIDTH);
         player1Panel.setStyle(
                 "-fx-border-color: #22C55E;" +
                 "-fx-border-width: 2.5;" +
@@ -197,6 +199,9 @@ public class GameView extends BorderPane {
         player1Label.setFont(Font.font("Arial", FontWeight.BOLD, 18));
         player1Label.setTextFill(Color.web("#DCFCE7"));
 
+        gridPane1.setHgap(2);
+        gridPane1.setVgap(2);
+        gridPane1.setAlignment(Pos.CENTER);
         gridPane1.setStyle(
                 "-fx-background-color: #020617;" +
                 "-fx-background-radius: 10;"
@@ -209,6 +214,7 @@ public class GameView extends BorderPane {
         player2Panel.setAlignment(Pos.TOP_CENTER);
         player2Panel.setSpacing(8);
         player2Panel.setPadding(new Insets(12));
+        player2Panel.setPrefWidth(PANEL_WIDTH);
         player2Panel.setStyle(
                 "-fx-border-color: #374151;" +
                 "-fx-border-width: 2;" +
@@ -221,6 +227,9 @@ public class GameView extends BorderPane {
         player2Label.setFont(Font.font("Arial", FontWeight.BOLD, 18));
         player2Label.setTextFill(Color.web("#FCA5A5"));
 
+        gridPane2.setHgap(2);
+        gridPane2.setVgap(2);
+        gridPane2.setAlignment(Pos.CENTER);
         gridPane2.setStyle(
                 "-fx-background-color: #020617;" +
                 "-fx-background-radius: 10;"
@@ -231,8 +240,8 @@ public class GameView extends BorderPane {
 
     private void setupCenterSection() {
         centerSection.setAlignment(Pos.CENTER);
-        centerSection.setSpacing(12);                      // tighter
-        centerSection.setPadding(new Insets(8, 6, 16, 6)); // smaller padding
+        centerSection.setSpacing(16);
+        centerSection.setPadding(new Insets(8, 4, 16, 4));
 
         centerSection.getChildren().addAll(player1Panel, sharedInfoPanel, player2Panel);
     }
@@ -242,7 +251,6 @@ public class GameView extends BorderPane {
         bottomSection.setSpacing(8);
         bottomSection.setPadding(new Insets(0, 0, 14, 0));
 
-        // Single row of three buttons
         HBox box = new HBox(14);
         box.setAlignment(Pos.CENTER);
 

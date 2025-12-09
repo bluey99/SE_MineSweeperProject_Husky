@@ -1,11 +1,12 @@
 package view;
 
 import controller.CellController;
+import javafx.geometry.Pos;
 import javafx.scene.layout.StackPane;
 
 /**
- * Cell view - visual representation of a cell.
- * The CellController decides which image is shown.
+ * Visual node of a single cell.
+ * All styling is done in CellController.
  */
 public class CellView extends StackPane {
 
@@ -13,6 +14,12 @@ public class CellView extends StackPane {
 
     public CellView(CellController cellController) {
         this.cellController = cellController;
+
+        int side = CellController.getCellSide();
+        setPrefSize(side, side);
+        setMinSize(side, side);
+        setMaxSize(side, side);
+        setAlignment(Pos.CENTER);
     }
 
     public CellController getCellController() {
