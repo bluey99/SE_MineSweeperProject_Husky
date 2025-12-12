@@ -111,12 +111,20 @@ public class GameController {
                 baseCellSize = 28;    // was 32
                 break;
 
-            case "Hard":
+     /*       case "Hard":
             default:
                 N = M = 16;
                 mineCount = 44;
                 sharedLives = 6;
                 baseCellSize = 22;    // was 26
+                break; */ 
+                
+            case "Hard":
+            default:
+                N = M = 16;
+                mineCount = 44;
+                sharedLives = 6;
+                baseCellSize = 26;   // 👈 bigger cells
                 break;
         }
 
