@@ -22,7 +22,7 @@ import java.util.Random;
  *
  * GameController also calls getQuestionDifficulty() to know
  * if it was Easy / Intermediate / Hard / Expert for scoring.
- */
+ **/ 
 public class QuestionDialog {
 
     private final Dialog<Boolean> dialog;
@@ -102,9 +102,7 @@ public class QuestionDialog {
         dialog.getDialogPane().setPrefSize(480, 300);
     }
 
-    /**
-     * Map enum difficulty from Question to string used by GameController.
-     */
+  
     private String mapDifficultyLabel(QuestionDifficulty diff) {
         if (diff == null) return "Easy";
         switch (diff) {
@@ -124,3 +122,8 @@ public class QuestionDialog {
         return dialog.showAndWait();
     }
 }
+
+
+
+
+

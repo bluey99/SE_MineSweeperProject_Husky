@@ -476,7 +476,7 @@ public class GameController {
     // -------------------------------------------------------------------------
     // QUESTION CELL ACTIVATION – INLINE DIALOG
     // -------------------------------------------------------------------------
-    private void activateQuestionCell(CellController cellCtrl) {
+ /*   private void activateQuestionCell(CellController cellCtrl) {
         // Load questions from CSV
         List<Question> all = SysData.loadQuestions();
         if (all == null || all.isEmpty()) {
@@ -546,8 +546,37 @@ public class GameController {
                 endGame(false);
             }
         }
+    }*/
+
+    private void activateQuestionCell(CellController cellCtrl) {
+
+        List<Question> all = SysData.loadQuestions();
+        if (all == null || all.isEmpty()) {
+            showMessage("No Questions", "No questions found in QuestionsCSV.csv");
+            return;
+        }
+
+        Question q = all.get(rng.nextInt(all.size()));
+        String qDiffLabel = mapDifficultyLabel(q.getDifficulty());
+
+        Optional<Boolean> result = QuestionPopup.show(primaryStage, q, qDiffLabel);
+
+        if (result.isPresent()) {
+            boolean correct = result.get();
+            applyQuestionReward(correct, qDiffLabel);
+
+            Cell cell = cellCtrl.getCell();
+            cell.setActivated(true);
+            cellCtrl.init();
+            updateUI();
+
+            if (gameModel.sharedLives <= 0) {
+                endGame(false);
+            }
+        }
     }
 
+    
     private String mapDifficultyLabel(QuestionDifficulty diff) {
         if (diff == null) return "Easy";
         switch (diff) {

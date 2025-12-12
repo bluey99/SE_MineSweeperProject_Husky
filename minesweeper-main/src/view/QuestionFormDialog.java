@@ -1,6 +1,7 @@
 package view;
 
 import javafx.geometry.Insets;
+
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
@@ -12,6 +13,13 @@ import model.Question;
 import model.QuestionDifficulty;
 
 import java.util.Optional;
+
+/***
+ * QuestionFormDialog is a dialog used in the Question Management screen to add or edit trivia questions.
+   It lets the user enter a question, four answers, 
+   select the correct answer and difficulty level, 
+   validates the input, and returns a Question object if confirmed or nothing if canceled.
+ ***/
 
 public class QuestionFormDialog {
 
