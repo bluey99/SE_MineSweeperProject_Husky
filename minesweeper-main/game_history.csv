@@ -4,3 +4,7 @@ dateTime,difficulty,player1Name,player2Name,result,finalScore,gameLengthSeconds
 2025-12-06T16:06:29.7470876,Easy,Salim,Donald Trump,LOSE,26,69
 2025-12-07T15:38:12.3776055,Easy,jawad,mona,WIN,103,274
 2025-12-07T15:58:33.3221494,Easy,jawad,mona,WIN,90,250
+2025-12-12T13:56:55.9274907,Medium,Player 1,Player 2,LOSE,2,88
+2025-12-12T14:06:48.2241715,Easy,Player 1,Player 2,WIN,31,65
+2025-12-12T14:07:35.3374628,Easy,Player 1,Player 2,LOSE,13,38
+2025-12-12T14:15:42.283817,Easy,Player 1,Player 2,LOSE,14,52

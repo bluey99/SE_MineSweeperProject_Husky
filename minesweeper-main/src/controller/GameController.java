@@ -34,6 +34,14 @@ import model.Question;
 import model.QuestionDifficulty;
 import model.SysData;
 import view.GameView;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.effect.DropShadow;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
+import javafx.stage.StageStyle;
 
 /**
  * Main game controller for cooperative two-player Minesweeper.
@@ -936,7 +944,7 @@ public class GameController {
     // -------------------------------------------------------------------------
     // END GAME + SAVE HISTORY
     // -------------------------------------------------------------------------
-    private void endGame(boolean won) {
+/*    private void endGame(boolean won) {
         gameActive = false;
         if (gameTimer != null) gameTimer.cancel();
 
@@ -973,7 +981,25 @@ public class GameController {
                 startTimer();
             }
         });
+    }*/
+    
+    
+    private void endGame(boolean won) {
+        gameActive = false;
+        if (gameTimer != null) gameTimer.cancel();
+
+        int lifeBonus = gameModel.sharedLives *
+                (difficulty.equals("Easy") ? 5 :
+                 difficulty.equals("Medium") ? 8 : 12);
+
+        int finalScore = gameModel.sharedScore + lifeBonus;
+
+        saveGameToHistory(won, finalScore);
+
+        // ✅ show custom UI instead of Windows Alert
+        showEndGameDialog(won, lifeBonus, finalScore);
     }
+
 
     private void saveGameToHistory(boolean won, int finalScore) {
         String dateTime = LocalDateTime.now()
@@ -993,11 +1019,197 @@ public class GameController {
         SysData.saveGame(entry);
     }
 
-    private void showMessage(String title, String msg) {
+    /*private void showMessage(String title, String msg) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(msg);
         alert.showAndWait();
+    }*/
+    
+    private void showMessage(String title, String msg) {
+
+        Stage dialog = new Stage(StageStyle.TRANSPARENT);
+        dialog.initOwner(primaryStage);
+        dialog.initModality(Modality.WINDOW_MODAL);
+
+        // ===== HEADER =====
+        Label titleLabel = new Label(title);
+        titleLabel.setStyle("""
+            -fx-font-size: 18px;
+            -fx-font-weight: bold;
+            -fx-text-fill: white;
+        """);
+
+        Button closeX = new Button("✕");
+        closeX.setStyle("""
+            -fx-background-color: transparent;
+            -fx-text-fill: #93C5FD;
+            -fx-font-size: 14px;
+            -fx-font-weight: bold;
+            -fx-padding: 4 10;
+        """);
+        closeX.setOnAction(e -> dialog.close());
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        HBox header = new HBox(10, titleLabel, spacer, closeX);
+        header.setAlignment(Pos.CENTER_LEFT);
+
+        // ===== MESSAGE =====
+        Label messageLabel = new Label(msg);
+        messageLabel.setWrapText(true);
+        messageLabel.setMaxWidth(480);
+        messageLabel.setStyle("""
+            -fx-font-size: 14px;
+            -fx-text-fill: #D7E1FF;
+            -fx-line-spacing: 4px;
+        """);
+
+        // ===== OK BUTTON =====
+        Button ok = new Button("OK ✓");
+        ok.setStyle("""
+            -fx-background-color: #4C7DFF;
+            -fx-text-fill: white;
+            -fx-font-weight: bold;
+            -fx-padding: 10 32;
+            -fx-background-radius: 14;
+        """);
+        ok.setOnAction(e -> dialog.close());
+
+        HBox btnBox = new HBox(ok);
+        btnBox.setAlignment(Pos.CENTER_RIGHT);
+
+        // ===== CARD ONLY =====
+        VBox card = new VBox(16, header, messageLabel, btnBox);
+        card.setPadding(new Insets(20));
+        card.setMaxWidth(520);
+        card.setStyle("""
+            -fx-background-color: rgba(15, 15, 26, 0.97);
+            -fx-background-radius: 16;
+            -fx-border-radius: 16;
+            -fx-border-color: rgba(76, 125, 255, 0.55);
+            -fx-border-width: 1.2;
+        """);
+        card.setEffect(new DropShadow(18, Color.color(0,0,0,0.55)));
+
+        Scene scene = new Scene(card);
+        scene.setFill(Color.TRANSPARENT);
+
+        dialog.setScene(scene);
+        dialog.sizeToScene();
+        dialog.centerOnScreen();
+        dialog.showAndWait();
     }
+
+    
+    private void showEndGameDialog(boolean won, int lifeBonus, int finalScore) {
+
+        Stage dialog = new Stage(StageStyle.TRANSPARENT);
+        dialog.initOwner(primaryStage);
+        dialog.initModality(Modality.WINDOW_MODAL);
+
+        // ===== HEADER =====
+        Label icon = new Label(won ? "✓" : "!");
+        icon.setStyle("""
+            -fx-font-size: 26px;
+            -fx-font-weight: bold;
+            -fx-text-fill: %s;
+        """.formatted(won ? "#22C55E" : "#F87171"));
+
+        Label titleLabel = new Label(won ? "Victory!" : "Game Over");
+        titleLabel.setStyle("""
+            -fx-font-size: 24px;
+            -fx-font-weight: bold;
+            -fx-text-fill: white;
+        """);
+
+        HBox titleBox = new HBox(10, icon, titleLabel);
+        titleBox.setAlignment(Pos.CENTER_LEFT);
+
+        Button closeX = new Button("✕");
+        closeX.setStyle("""
+            -fx-background-color: transparent;
+            -fx-text-fill: #93C5FD;
+            -fx-font-size: 14px;
+            -fx-font-weight: bold;
+            -fx-padding: 4 10;
+        """);
+        closeX.setOnAction(e -> dialog.close());
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        HBox header = new HBox(10, titleBox, spacer, closeX);
+        header.setAlignment(Pos.CENTER_LEFT);
+
+        // ===== SUBTITLE =====
+        Label sub = new Label(
+                won
+                        ? "Well done " + player1Name + " & " + player2Name + "!"
+                        : "Out of Lives!"
+        );
+        sub.setStyle("-fx-font-size: 16px; -fx-text-fill: #D7E1FF;");
+
+        // ===== BODY =====
+        String bodyText =
+                "Difficulty: " + difficulty + "\n" +
+                "Time: " + formatTime(elapsedTime) + "\n\n" +
+                "Base Score: " + gameModel.sharedScore + "\n" +
+                "Lives Bonus: +" + lifeBonus + "\n" +
+                "═══════ FINAL SCORE ═══════\n" +
+                finalScore;
+
+        Label body = new Label(bodyText);
+        body.setWrapText(true);
+        body.setMaxWidth(560);
+        body.setStyle("""
+            -fx-font-size: 16px;
+            -fx-text-fill: #D7E1FF;
+            -fx-line-spacing: 4px;
+        """);
+
+        // ===== BUTTON =====
+        Button newGameBtn = new Button("New Game 🎮");
+        newGameBtn.setStyle("""
+            -fx-background-color: #4C7DFF;
+            -fx-text-fill: white;
+            -fx-font-weight: bold;
+            -fx-font-size: 15px;
+            -fx-padding: 12 36;
+            -fx-background-radius: 16;
+        """);
+
+        newGameBtn.setOnAction(e -> {
+            dialog.close();
+            init();
+            startTimer();
+        });
+
+        HBox buttons = new HBox(newGameBtn);
+        buttons.setAlignment(Pos.CENTER_RIGHT);
+
+        // ===== CARD ONLY =====
+        VBox card = new VBox(18, header, sub, body, buttons);
+        card.setPadding(new Insets(26));
+        card.setMaxWidth(650);
+        card.setStyle("""
+            -fx-background-color: rgba(15, 15, 26, 0.97);
+            -fx-background-radius: 18;
+            -fx-border-radius: 18;
+            -fx-border-color: rgba(76, 125, 255, 0.6);
+            -fx-border-width: 1.5;
+        """);
+        card.setEffect(new DropShadow(22, Color.color(0,0,0,0.65)));
+
+        Scene scene = new Scene(card);
+        scene.setFill(Color.TRANSPARENT);
+
+        dialog.setScene(scene);
+        dialog.sizeToScene();
+        dialog.centerOnScreen();
+        dialog.showAndWait();
+    }
+
 }
