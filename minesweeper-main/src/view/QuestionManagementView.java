@@ -6,7 +6,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -40,7 +39,7 @@ public class QuestionManagementView extends BorderPane {
             "-fx-cursor: hand;"
         );
 
-        Label iconLabel = new Label("\uD83D\uDCDA");
+        Label iconLabel = new Label("\uD83D\uDCDA"); // 📚
         iconLabel.setTextFill(Color.web("#8B5CF6"));
         iconLabel.setFont(Font.font("Arial", FontWeight.BOLD, 28));
 
@@ -64,78 +63,61 @@ public class QuestionManagementView extends BorderPane {
         setTop(topBar);
 
         // ---------------------------------------------------------------------
-        // Table
+        // Center table
         // ---------------------------------------------------------------------
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
-        table.setPlaceholder(new Label("No questions yet. Click \"Add Question\" to create one."));
+        Label placeholder = new Label("No questions yet. Click \"Add Question\" to create one.");
+        placeholder.setTextFill(Color.web("#9CA3AF"));
+        placeholder.setFont(Font.font("Arial", 14));
+        table.setPlaceholder(placeholder);
 
-        // ✅ TABLE COLORS (inline styling)
+        // ✅ ONLY TABLE COLORS (no rowFactory — selection will work properly)
         table.setStyle(
+            // background + borders
             "-fx-background-color: #020617;" +
+            "-fx-control-inner-background: #020617;" +
             "-fx-border-color: #1E293B;" +
             "-fx-border-radius: 10;" +
             "-fx-background-radius: 10;" +
-            "-fx-control-inner-background: #020617;" +
+
+            // selection colors (THIS makes selected row visible)
+            "-fx-accent: #2563EB;" +                    // main selection color
             "-fx-selection-bar: #2563EB;" +
-            "-fx-selection-bar-non-focused: #2563EB;"
+            "-fx-selection-bar-non-focused: #2563EB;" +
+            "-fx-selection-bar-text: white;" +          // selected text color
+
+            // hover color
+            "-fx-cell-hover-color: #1E293B;" +
+
+            // reduce gridlines
+            "-fx-table-cell-border-color: transparent;" +
+            "-fx-table-header-border-color: #1E293B;"
         );
-
-        // Row coloring (hover + selection)
-        table.setRowFactory(tv -> new TableRow<>() {
-            @Override
-            protected void updateItem(Question item, boolean empty) {
-                super.updateItem(item, empty);
-
-                if (empty || item == null) {
-                    setStyle("");
-                } else if (isSelected()) {
-                    setStyle("-fx-background-color: #2563EB;");
-                } else {
-                    setStyle("-fx-background-color: #020617;");
-                }
-            }
-
-            {
-                hoverProperty().addListener((obs, oldVal, isHover) -> {
-                    if (!isSelected()) {
-                        setStyle(isHover
-                            ? "-fx-background-color: #1E293B;"
-                            : "-fx-background-color: #020617;"
-                        );
-                    }
-                });
-            }
-        });
 
         // ---------------------------------------------------------------------
         // Columns
         // ---------------------------------------------------------------------
         TableColumn<Question, String> qCol = new TableColumn<>("Question");
-        qCol.setCellValueFactory(data ->
-            new javafx.beans.property.SimpleStringProperty(
+        qCol.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(
                 data.getValue().getText()
-            )
-        );
+        ));
 
         TableColumn<Question, String> diffCol = new TableColumn<>("Difficulty");
-        diffCol.setCellValueFactory(data ->
-            new javafx.beans.property.SimpleStringProperty(
+        diffCol.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(
                 data.getValue().getDifficulty().toString()
-            )
-        );
+        ));
 
         diffCol.setCellFactory(col -> new TableCell<Question, String>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-
                 if (empty || item == null) {
                     setText(null);
                     setGraphic(null);
                 } else {
                     Label tag = new Label(item);
-                    tag.setPadding(new Insets(4, 12, 4, 12));
+                    tag.setPadding(new Insets(4, 10, 4, 10));
                     tag.setTextFill(Color.WHITE);
                     tag.setFont(Font.font("Arial", FontWeight.BOLD, 12));
 
@@ -146,11 +128,8 @@ public class QuestionManagementView extends BorderPane {
                         case "Expert": color = "#7C3AED"; break;
                         default:       color = "#059669"; // Easy
                     }
+                    tag.setStyle("-fx-background-radius: 999; -fx-background-color: " + color + ";");
 
-                    tag.setStyle(
-                        "-fx-background-radius: 999;" +
-                        "-fx-background-color: " + color + ";"
-                    );
                     setGraphic(tag);
                     setText(null);
                 }
@@ -158,23 +137,11 @@ public class QuestionManagementView extends BorderPane {
         });
 
         TableColumn<Question, String> correctCol = new TableColumn<>("Correct Answer");
-        correctCol.setCellValueFactory(data ->
-            new javafx.beans.property.SimpleStringProperty(
+        correctCol.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(
                 data.getValue().getCorrectAnswerText()
-            )
-        );
+        ));
 
         table.getColumns().addAll(qCol, diffCol, correctCol);
-
-        // Style column headers
-        for (TableColumn<?, ?> col : table.getColumns()) {
-            col.setStyle(
-                "-fx-background-color: #020617;" +
-                "-fx-border-color: transparent transparent #1E293B transparent;" +
-                "-fx-text-fill: #E5E7EB;" +
-                "-fx-font-weight: bold;"
-            );
-        }
 
         VBox centerBox = new VBox(10, table);
         centerBox.setPadding(new Insets(10, 30, 10, 30));
@@ -194,9 +161,6 @@ public class QuestionManagementView extends BorderPane {
         setBottom(bottom);
     }
 
-    // -------------------------------------------------------------------------
-    // Button styles
-    // -------------------------------------------------------------------------
     private void stylePrimary(Button btn) {
         btn.setPrefHeight(36);
         btn.setFont(Font.font("Arial", FontWeight.BOLD, 14));
@@ -204,7 +168,7 @@ public class QuestionManagementView extends BorderPane {
             "-fx-background-color: #2563EB;" +
             "-fx-text-fill: white;" +
             "-fx-background-radius: 18;" +
-            "-fx-padding: 0 18;" +
+            "-fx-padding: 0 18 0 18;" +
             "-fx-cursor: hand;"
         );
     }
@@ -216,7 +180,7 @@ public class QuestionManagementView extends BorderPane {
             "-fx-background-color: #1F2937;" +
             "-fx-text-fill: #E5E7EB;" +
             "-fx-background-radius: 8;" +
-            "-fx-padding: 0 14;" +
+            "-fx-padding: 0 14 0 14;" +
             "-fx-cursor: hand;"
         );
     }
