@@ -218,14 +218,26 @@ public class GameController {
     }
 
     private void createCellsGrid(CellController[][] board,
-                                 javafx.scene.layout.GridPane gridPane) {
-        gridPane.getChildren().clear();
-        for (int r = 0; r < N; r++) {
-            for (int c = 0; c < M; c++) {
-                gridPane.add(board[r][c].cellView, c, r); // col, row
-            }
-        }
-    }
+            javafx.scene.layout.GridPane gridPane) {
+
+gridPane.getChildren().clear();
+
+//  assign board-specific color
+Color boardTint =
+(gridPane == gameView.gridPane1)
+   ? Color.web("#6FAF8F")   // Player 1 → green
+   : Color.web("#C26A6A");  // Player 2 → red
+
+for (int r = 0; r < N; r++) {
+for (int c = 0; c < M; c++) {
+CellController cellCtrl = board[r][c];
+cellCtrl.setBoardTint(boardTint); // 🔑 this line
+cellCtrl.init();                  // redraw with tint
+gridPane.add(cellCtrl.cellView, c, r);
+}
+}
+}
+
 
     // -------------------------------------------------------------------------
     // EVENT HANDLERS FOR BUTTONS
