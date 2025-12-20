@@ -91,22 +91,19 @@ public class BoardController {
 
         CellController cellCtrl = uiBoard[row][col];
         Cell cell = cellCtrl.getCell();
+        
+        // NOTE: activating special cells does NOT end the turn
 
         if (cell.isSurprise() && cell.isDiscovered() && !cell.isActivated()) {
-            boolean activated = gameController.activateSurpriseCell(cellCtrl);
-            if (activated && gameController.isGameActive()) {
-                gameController.switchPlayer();
-            }
-            return;
+            gameController.activateSurpriseCell(cellCtrl);
+            return; // ✅ stay on same player
         }
 
         if (cell.isQuestion() && cell.isDiscovered() && !cell.isActivated()) {
             gameController.activateQuestionCell(cellCtrl);
-            if (gameController.isGameActive()) {
-                gameController.switchPlayer();
-            }
-            return;
+            return; // ✅ stay on same player
         }
+
 
         if (cell.isOpen() || cell.isFlag()) return;
 

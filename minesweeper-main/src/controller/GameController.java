@@ -172,6 +172,8 @@ public class GameController {
 
         updateUI();
         highlightCurrentPlayer();
+        
+        
     }
 
     private CellController[][] createUiBoard(Board logicalBoard) {
@@ -454,8 +456,10 @@ public void switchPlayer() {
 
         if (res.actions.contains(SpecialAction.MINE_GIFT)) {
             boolean done = revealMineGiftCell();
-            if (done) extraInfo.append("\nMine gift: one hidden mine has been marked.");
+            if (done) extraInfo.append("\nMine gift: one hidden mine has been marked on your board.");
+            else extraInfo.append("\nMine gift: no hidden mines left to mark.");
         }
+
 
         if (res.actions.contains(SpecialAction.REVEAL_AREA_3X3)) {
             revealRandom3x3AreaForCurrentPlayer();
@@ -475,45 +479,34 @@ public void switchPlayer() {
     }
 
     private boolean revealMineGiftCell() {
-        class Candidate {
-            final BoardController bc;
+
+        BoardController bc = (currentPlayer == 1) ? board1Controller : board2Controller;
+        CellController[][] uiBoard = (currentPlayer == 1) ? board1 : board2;
+
+        if (bc == null || uiBoard == null) return false;
+
+        class Pos {
             final int row, col;
-            Candidate(BoardController bc, int row, int col) {
-                this.bc = bc;
-                this.row = row;
-                this.col = col;
-            }
+            Pos(int r, int c) { row = r; col = c; }
         }
 
-        List<Candidate> candidates = new ArrayList<>();
+        List<Pos> candidates = new ArrayList<>();
 
-        if (board1 != null && board1Controller != null) {
-            for (int r = 0; r < N; r++) {
-                for (int c = 0; c < M; c++) {
-                    Cell cell = board1[r][c].getCell();
-                    if (cell.isMine() && !cell.isOpen() && !cell.isFlag()) {
-                        candidates.add(new Candidate(board1Controller, r, c));
-                    }
-                }
-            }
-        }
-
-        if (board2 != null && board2Controller != null) {
-            for (int r = 0; r < N; r++) {
-                for (int c = 0; c < M; c++) {
-                    Cell cell = board2[r][c].getCell();
-                    if (cell.isMine() && !cell.isOpen() && !cell.isFlag()) {
-                        candidates.add(new Candidate(board2Controller, r, c));
-                    }
+        for (int r = 0; r < N; r++) {
+            for (int c = 0; c < M; c++) {
+                Cell cell = uiBoard[r][c].getCell();
+                if (cell.isMine() && !cell.isOpen() && !cell.isFlag()) {
+                    candidates.add(new Pos(r, c));
                 }
             }
         }
 
         if (candidates.isEmpty()) return false;
 
-        Candidate chosen = candidates.get(rng.nextInt(candidates.size()));
-        return chosen.bc.applyMineGiftFlag(chosen.row, chosen.col);
+        Pos chosen = candidates.get(rng.nextInt(candidates.size()));
+        return bc.applyMineGiftFlag(chosen.row, chosen.col);
     }
+
 
     private void revealRandom3x3AreaForCurrentPlayer() {
         CellController[][] board = getCurrentBoard();
