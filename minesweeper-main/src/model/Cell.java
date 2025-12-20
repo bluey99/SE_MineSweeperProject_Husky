@@ -2,7 +2,7 @@ package model;
 
 /**
  * Base logical cell on the Minesweeper board.
- * 
+ *
  * It holds:
  *  - position (row, col)
  *  - neighbor mines count
@@ -14,7 +14,7 @@ package model;
  */
 public abstract class Cell {
 
-    // ---- Shared image paths (moved from old CellModel) ----
+    // ---- Shared image paths ----
     public static final String COVER_IMG_URL    = "img/cover.png";
     public static final String FLAG_IMG_URL     = "img/flag.png";
     public static final String MINE_IMG_URL     = "img/mine.png";
@@ -25,19 +25,16 @@ public abstract class Cell {
         return "img/" + num + ".png";
     }
 
-    // ---- Basic position ----
     protected final int row;
     protected final int col;
 
-    // -1 for mines, 0–8 otherwise
     protected int neighborMines;
 
-    // ---- State flags (same semantics as old CellModel) ----
     protected boolean open       = false;
     protected boolean flag       = false;
-    protected boolean discovered = false;   // special cell revealed but not activated
-    protected boolean activated  = false;   // special cell used
-    protected boolean flagScored = false;   // flag already affected score
+    protected boolean discovered = false;
+    protected boolean activated  = false;
+    protected boolean flagScored = false;
 
     protected Cell(int row, int col, int neighborMines) {
         this.row = row;
@@ -45,11 +42,9 @@ public abstract class Cell {
         this.neighborMines = neighborMines;
     }
 
-    // ---- Basic getters ----
     public int getRow() { return row; }
     public int getCol() { return col; }
 
-    /** Same name as in old CellModel for easy migration. */
     public int getNeighborMinesNum() {
         return neighborMines;
     }
@@ -60,9 +55,13 @@ public abstract class Cell {
     public boolean isActivated()  { return activated; }
     public boolean isFlagScored() { return flagScored; }
 
-    // ---- State setters (same semantics as old CellModel) ----
     public void setOpen(boolean open) {
         this.open = open;
+        if (open) {
+            // When opened, it's usually safest to remove flag to avoid weird states.
+            // If your rules allow "open+flag", remove this.
+            this.flag = false;
+        }
     }
 
     /** Toggle flag on/off (used on right-click). */
@@ -72,9 +71,21 @@ public abstract class Cell {
         }
     }
 
-    /** Backwards-compatibility with CellModel.setFlag(). */
+    /**
+     * Backwards-compatibility with old CellModel.setFlag().
+     * FIX: This should NOT toggle. It should set flag = true deterministically.
+     */
     public void setFlag() {
-        toggleFlag();
+        if (!open) {
+            this.flag = true;
+        }
+    }
+
+    /** Utility if you want to unflag deterministically. */
+    public void clearFlag() {
+        if (!open) {
+            this.flag = false;
+        }
     }
 
     public void setDiscovered(boolean discovered) {
@@ -89,7 +100,6 @@ public abstract class Cell {
         this.flagScored = flagScored;
     }
 
-    // ---- Type helpers (replacing isMine/isSurprise/isQuestion booleans) ----
     public boolean isMine()     { return this instanceof MineCell; }
     public boolean isSurprise() { return this instanceof SurpriseCell; }
     public boolean isQuestion() { return this instanceof QuestionCell; }
@@ -98,6 +108,5 @@ public abstract class Cell {
         return isSurprise() || isQuestion();
     }
 
-    /** For UI / logic if you want to switch on type instead of instanceof. */
     public abstract CellType getType();
 }

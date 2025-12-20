@@ -22,19 +22,12 @@ public class GameView extends BorderPane {
 
     private final GameController controller;
 
-    // width of each player panel; tweak if needed
     private static final double PANEL_WIDTH = 620;
 
-    // Top Section
     private final VBox topSection = new VBox();
-
-    // Center Section (3 columns)
     private final HBox centerSection = new HBox();
-
-    // Bottom Section
     private final VBox bottomSection = new VBox();
 
-    // Shared Info Panel
     public final VBox sharedInfoPanel = new VBox();
     public final Label sharedScoreLabel = new Label("0");
     public final Label sharedLivesLabel = new Label("0");
@@ -42,17 +35,16 @@ public class GameView extends BorderPane {
     public final Label timeLabel = new Label("00:00");
     public final Label currentPlayerLabel = new Label("Player 1's Turn");
 
-    // Player 1 Panel + Board Grid
     public final VBox player1Panel = new VBox();
     public final GridPane gridPane1 = new GridPane();
     private final Label player1Label;
+    public final Label player1MinesLeftLabel = new Label("Mines Left: 0");
 
-    // Player 2 Panel + Board Grid
     public final VBox player2Panel = new VBox();
     public final GridPane gridPane2 = new GridPane();
     private final Label player2Label;
+    public final Label player2MinesLeftLabel = new Label("Mines Left: 0");
 
-    // Bottom Buttons
     public final Button restartBtn = new Button("New Game");
     public final Button exitBtn = new Button("Exit");
     public final Button backToMenuBtn = new Button("Return to Menu");
@@ -79,7 +71,7 @@ public class GameView extends BorderPane {
         this.setBottom(bottomSection);
 
         BackgroundFill bg = new BackgroundFill(
-                Color.web("#0F172A"),   // dark navy
+                Color.web("#0F172A"),
                 CornerRadii.EMPTY,
                 Insets.EMPTY
         );
@@ -124,7 +116,6 @@ public class GameView extends BorderPane {
         header.setFont(Font.font("Arial", FontWeight.BOLD, 16));
         header.setTextFill(Color.web("#BFDBFE"));
 
-        // SCORE
         VBox scoreBox = new VBox(4);
         scoreBox.setAlignment(Pos.CENTER);
         Label scoreTitle = new Label("SCORE");
@@ -136,7 +127,6 @@ public class GameView extends BorderPane {
 
         scoreBox.getChildren().addAll(scoreTitle, sharedScoreLabel);
 
-        // LIVES
         VBox livesBox = new VBox(4);
         livesBox.setAlignment(Pos.CENTER);
         Label livesTitle = new Label("LIVES");
@@ -151,7 +141,6 @@ public class GameView extends BorderPane {
         div1.setPrefHeight(1.5);
         div1.setStyle("-fx-background-color: #1F2937;");
 
-        // Difficulty + Time
         VBox infoBox = new VBox(6);
         infoBox.setAlignment(Pos.CENTER);
 
@@ -199,23 +188,26 @@ public class GameView extends BorderPane {
         player1Label.setFont(Font.font("Arial", FontWeight.BOLD, 18));
         player1Label.setTextFill(Color.web("#DCFCE7"));
 
-        // Grid (only cells, no background)
+        player1MinesLeftLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+        player1MinesLeftLabel.setTextFill(Color.web("#93C5FD"));
+
+        HBox header = new HBox(12, player1Label, player1MinesLeftLabel);
+        header.setAlignment(Pos.CENTER);
+
         gridPane1.setHgap(3);
         gridPane1.setVgap(3);
         gridPane1.setAlignment(Pos.CENTER);
 
-        // Black board background that hugs the cells
         StackPane boardContainer1 = new StackPane();
         boardContainer1.setStyle(
                 "-fx-background-color: #020617;" +
                 "-fx-background-radius: 10;"
         );
-        boardContainer1.setPadding(new Insets(2)); // <-- black margin around cells
+        boardContainer1.setPadding(new Insets(2));
         boardContainer1.getChildren().add(gridPane1);
 
-        player1Panel.getChildren().addAll(player1Label, boardContainer1);
+        player1Panel.getChildren().addAll(header, boardContainer1);
     }
-
 
     private void setupPlayer2Panel() {
         player2Panel.setAlignment(Pos.TOP_CENTER);
@@ -234,23 +226,26 @@ public class GameView extends BorderPane {
         player2Label.setFont(Font.font("Arial", FontWeight.BOLD, 18));
         player2Label.setTextFill(Color.web("#FCA5A5"));
 
-        // Grid (only cells, no background)
+        player2MinesLeftLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+        player2MinesLeftLabel.setTextFill(Color.web("#93C5FD"));
+
+        HBox header = new HBox(12, player2Label, player2MinesLeftLabel);
+        header.setAlignment(Pos.CENTER);
+
         gridPane2.setHgap(3);
         gridPane2.setVgap(3);
         gridPane2.setAlignment(Pos.CENTER);
 
-        // Black board background that hugs the cells
         StackPane boardContainer2 = new StackPane();
         boardContainer2.setStyle(
                 "-fx-background-color: #020617;" +
                 "-fx-background-radius: 10;"
         );
-        boardContainer2.setPadding(new Insets(2)); // <-- black margin around cells
+        boardContainer2.setPadding(new Insets(2));
         boardContainer2.getChildren().add(gridPane2);
 
-        player2Panel.getChildren().addAll(player2Label, boardContainer2);
+        player2Panel.getChildren().addAll(header, boardContainer2);
     }
-
 
     private void setupCenterSection() {
         centerSection.setAlignment(Pos.CENTER);
