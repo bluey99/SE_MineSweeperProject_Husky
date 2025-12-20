@@ -6,6 +6,7 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import model.Question;
 import model.SysData;
+import view.DeleteQuestionConfirmDialog;
 import view.QuestionFormDialog;
 import view.QuestionManagementView;
 
@@ -61,9 +62,18 @@ public class QuestionManagementController {
             Question selected = view.table.getSelectionModel().getSelectedItem();
             if (selected == null) return;
 
+            DeleteQuestionConfirmDialog dialog =
+                    new DeleteQuestionConfirmDialog(selected);
+
+            Optional<Boolean> result = dialog.showAndWait();
+            if (result.isEmpty() || !result.get()) return;
+
             SysData.deleteQuestion(selected);
             refreshQuestions();
         });
+
+
+
     }
 
     private void refreshQuestions() {
@@ -73,4 +83,7 @@ public class QuestionManagementController {
     public Scene createScene() {
         return new Scene(view, 900, 600);
     }
+    
+   
+
 }
