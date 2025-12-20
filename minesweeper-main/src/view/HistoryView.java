@@ -10,11 +10,11 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import model.GameHistoryEntry;
-import model.SysData;   // <-- IMPORTANT: import SysData
+import model.SysData;
 
 public class HistoryView extends BorderPane {
 
-    public final Button backBtn = new Button("← Back to Menu");
+    public final Button backBtn = new Button("Menu");
     public final TableView<GameHistoryEntry> table = new TableView<>();
 
     public HistoryView() {
@@ -27,14 +27,31 @@ public class HistoryView extends BorderPane {
         topBar.setPadding(new Insets(20, 30, 10, 30));
         topBar.setAlignment(Pos.CENTER_LEFT);
 
-        backBtn.setStyle(
-                "-fx-background-color: transparent;" +
-                "-fx-text-fill: #60A5FA;" +
-                "-fx-font-size: 14px;" +
-                "-fx-cursor: hand;"
-        );
+        // ==== MENU BUTTON (text-only) ====
+        backBtn.setFont(Font.font("Arial", FontWeight.BOLD, 14));
 
-        Label icon = new Label("📜"); // scroll icon for history
+        String normalStyle = """
+            -fx-background-color: #1e293b;
+            -fx-text-fill: #e5e7eb;
+            -fx-background-radius: 999;
+            -fx-padding: 7 18 7 18;
+            -fx-cursor: hand;
+        """;
+
+        String hoverStyle = """
+            -fx-background-color: #334155;
+            -fx-text-fill: #ffffff;
+            -fx-background-radius: 999;
+            -fx-padding: 7 18 7 18;
+            -fx-cursor: hand;
+        """;
+
+        backBtn.setStyle(normalStyle);
+        backBtn.setOnMouseEntered(e -> backBtn.setStyle(hoverStyle));
+        backBtn.setOnMouseExited(e -> backBtn.setStyle(normalStyle));
+
+        // Title icon (scroll icon for history)
+        Label icon = new Label();
         icon.setTextFill(Color.web("#FBBF24"));
         icon.setFont(Font.font("Arial", FontWeight.BOLD, 28));
 
@@ -106,13 +123,10 @@ public class HistoryView extends BorderPane {
         TableColumn<GameHistoryEntry, Number> scoreCol = new TableColumn<>("Final Score");
         scoreCol.setCellValueFactory(new PropertyValueFactory<>("finalScore"));
 
-        TableColumn<GameHistoryEntry, Number> lengthCol =
-                new TableColumn<>("Game Length (sec)");
+        TableColumn<GameHistoryEntry, Number> lengthCol = new TableColumn<>("Game Length (sec)");
         lengthCol.setCellValueFactory(new PropertyValueFactory<>("gameLengthSeconds"));
 
-        table.getColumns().addAll(
-                dateCol, diffCol, p1Col, p2Col, resultCol, scoreCol, lengthCol
-        );
+        table.getColumns().addAll(dateCol, diffCol, p1Col, p2Col, resultCol, scoreCol, lengthCol);
 
         VBox centerBox = new VBox(10, table);
         centerBox.setPadding(new Insets(10, 30, 10, 30));
@@ -123,13 +137,11 @@ public class HistoryView extends BorderPane {
     }
 
     private void loadHistoryData(TableColumn<GameHistoryEntry, String> dateCol) {
-        // Uses your SysData.loadHistory()
         var historyList = SysData.loadHistory();
 
         if (historyList != null && !historyList.isEmpty()) {
             table.setItems(FXCollections.observableArrayList(historyList));
 
-            // Optional: sort by date descending (last games first)
             table.getSortOrder().clear();
             dateCol.setSortType(TableColumn.SortType.DESCENDING);
             table.getSortOrder().add(dateCol);
