@@ -79,10 +79,11 @@ public class RevealService {
             cell.setDiscovered(true);
         }
 
-        // +1 only for root click on normal (non-mine, non-special)
-        if (isRootClick && !isMine && !isSpecial) {
+     // +1 point for every revealed non-mine cell
+        if (!isMine) {
             gameModel.sharedScore += 1;
         }
+
 
         // ✅ REVERTED: special cells SHOULD cascade (as course incharge said)
         boolean shouldExpand = !isMine && (neighbors == 0 || isSpecial);
