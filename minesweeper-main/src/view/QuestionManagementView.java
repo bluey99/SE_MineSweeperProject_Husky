@@ -15,7 +15,7 @@ import model.Question;
 
 public class QuestionManagementView extends BorderPane {
 
-    public final Button backBtn = new Button("← Back to Menu");
+    public final Button backBtn = new Button("Menu");
     public final Button addBtn = new Button("+ Add Question");
     public final Button editBtn = new Button("Edit Selected");
     public final Button deleteBtn = new Button("Delete Selected");
@@ -23,7 +23,8 @@ public class QuestionManagementView extends BorderPane {
     public final TableView<Question> table = new TableView<>();
 
     public QuestionManagementView() {
-        setStyle("-fx-background-color: #0f172a;"); // dark background
+
+        setStyle("-fx-background-color: #0f172a;");
 
         // ---------------------------------------------------------------------
         // Top bar
@@ -32,14 +33,31 @@ public class QuestionManagementView extends BorderPane {
         topBar.setPadding(new Insets(20, 30, 10, 30));
         topBar.setAlignment(Pos.CENTER_LEFT);
 
-        backBtn.setStyle(
-            "-fx-background-color: transparent;" +
-            "-fx-text-fill: #60A5FA;" +
-            "-fx-font-size: 14px;" +
-            "-fx-cursor: hand;"
-        );
+        // ==== MENU BUTTON (same as HistoryView) ====
+        backBtn.setFont(Font.font("Arial", FontWeight.BOLD, 14));
 
-        Label iconLabel = new Label("\uD83D\uDCDA"); // 📚
+        String normalStyle = """
+            -fx-background-color: #1e293b;
+            -fx-text-fill: #e5e7eb;
+            -fx-background-radius: 999;
+            -fx-padding: 7 18 7 18;
+            -fx-cursor: hand;
+        """;
+
+        String hoverStyle = """
+            -fx-background-color: #334155;
+            -fx-text-fill: #ffffff;
+            -fx-background-radius: 999;
+            -fx-padding: 7 18 7 18;
+            -fx-cursor: hand;
+        """;
+
+        backBtn.setStyle(normalStyle);
+        backBtn.setOnMouseEntered(e -> backBtn.setStyle(hoverStyle));
+        backBtn.setOnMouseExited(e -> backBtn.setStyle(normalStyle));
+
+        // Title icon
+        Label iconLabel = new Label("📚");
         iconLabel.setTextFill(Color.web("#8B5CF6"));
         iconLabel.setFont(Font.font("Arial", FontWeight.BOLD, 28));
 
@@ -72,25 +90,17 @@ public class QuestionManagementView extends BorderPane {
         placeholder.setFont(Font.font("Arial", 14));
         table.setPlaceholder(placeholder);
 
-        // ✅ ONLY TABLE COLORS (no rowFactory — selection will work properly)
         table.setStyle(
-            // background + borders
             "-fx-background-color: #020617;" +
             "-fx-control-inner-background: #020617;" +
             "-fx-border-color: #1E293B;" +
             "-fx-border-radius: 10;" +
             "-fx-background-radius: 10;" +
-
-            // selection colors (THIS makes selected row visible)
-            "-fx-accent: #2563EB;" +                    // main selection color
+            "-fx-accent: #2563EB;" +
             "-fx-selection-bar: #2563EB;" +
             "-fx-selection-bar-non-focused: #2563EB;" +
-            "-fx-selection-bar-text: white;" +          // selected text color
-
-            // hover color
+            "-fx-selection-bar-text: white;" +
             "-fx-cell-hover-color: #1E293B;" +
-
-            // reduce gridlines
             "-fx-table-cell-border-color: transparent;" +
             "-fx-table-header-border-color: #1E293B;"
         );
@@ -99,16 +109,18 @@ public class QuestionManagementView extends BorderPane {
         // Columns
         // ---------------------------------------------------------------------
         TableColumn<Question, String> qCol = new TableColumn<>("Question");
-        qCol.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(
-                data.getValue().getText()
-        ));
+        qCol.setCellValueFactory(data ->
+            new javafx.beans.property.SimpleStringProperty(data.getValue().getText())
+        );
 
         TableColumn<Question, String> diffCol = new TableColumn<>("Difficulty");
-        diffCol.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(
+        diffCol.setCellValueFactory(data ->
+            new javafx.beans.property.SimpleStringProperty(
                 data.getValue().getDifficulty().toString()
-        ));
+            )
+        );
 
-        diffCol.setCellFactory(col -> new TableCell<Question, String>() {
+        diffCol.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
@@ -129,17 +141,17 @@ public class QuestionManagementView extends BorderPane {
                         default:       color = "#059669"; // Easy
                     }
                     tag.setStyle("-fx-background-radius: 999; -fx-background-color: " + color + ";");
-
                     setGraphic(tag);
-                    setText(null);
                 }
             }
         });
 
         TableColumn<Question, String> correctCol = new TableColumn<>("Correct Answer");
-        correctCol.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(
+        correctCol.setCellValueFactory(data ->
+            new javafx.beans.property.SimpleStringProperty(
                 data.getValue().getCorrectAnswerText()
-        ));
+            )
+        );
 
         table.getColumns().addAll(qCol, diffCol, correctCol);
 
