@@ -284,16 +284,18 @@ gridPane.add(cellCtrl.cellView, c, r);
         return gameActive && !endGameTriggered;
     }
 
-    public int getCurrentPlayer() {
-        return currentPlayer;
-    }
+   public int getCurrentPlayer() {
+    return currentPlayer;
+}
 
-    public void switchPlayer() {
-        if (!isGameActive()) return;
-        currentPlayer = (currentPlayer == 1 ? 2 : 1);
-        highlightCurrentPlayer();
-        updateUI();
-    }
+public void switchPlayer() {
+    if (!isGameActive()) return;
+
+    currentPlayer = (currentPlayer == 1 ? 2 : 1);
+    highlightCurrentPlayer();
+    updateUI();
+}
+
 
     private void highlightCurrentPlayer() {
         String activeBorder =
@@ -905,4 +907,5 @@ gridPane.add(cellCtrl.cellView, c, r);
         dialog.centerOnScreen();
         dialog.showAndWait();
     }
+
 }
