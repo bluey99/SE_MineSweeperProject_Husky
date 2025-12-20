@@ -244,23 +244,50 @@ gridPane.add(cellCtrl.cellView, c, r);
     // -------------------------------------------------------------------------
     private void setupEventHandlers() {
         // Restart
-        gameView.restartBtn.addEventHandler(MouseEvent.MOUSE_CLICKED, e -> {
-            if (gameTimer != null) gameTimer.cancel();
-            init();
-            startTimer();
-        });
+    	gameView.restartBtn.addEventHandler(MouseEvent.MOUSE_CLICKED, e -> {
+    	    boolean ok = showConfirmation(
+    	            "Start New Game",
+    	            "Start a new game?\nCurrent progress will be lost.",
+    	            "New Game"
+    	    );
+
+    	    if (!ok) return;
+
+    	    if (gameTimer != null) gameTimer.cancel();
+    	    init();
+    	    startTimer();
+    	});
+
 
         // Exit
-        gameView.exitBtn.addEventHandler(MouseEvent.MOUSE_CLICKED, e -> {
-            Platform.exit();
-            System.exit(0);
-        });
+    	gameView.exitBtn.addEventHandler(MouseEvent.MOUSE_CLICKED, e -> {
+    	    boolean ok = showConfirmation(
+    	            "Exit Game",
+    	            "Are you sure you want to exit the game?",
+    	            "Exit"
+    	    );
+
+    	    if (!ok) return;
+
+    	    Platform.exit();
+    	    System.exit(0);
+    	});
+
 
         // Return to Menu
         gameView.backToMenuBtn.setOnAction(e -> {
+            boolean ok = showConfirmation(
+                    "Return to Menu",
+                    "Return to the main menu?\nCurrent game progress will be lost.",
+                    "Return"
+            );
+
+            if (!ok) return;
+
             if (gameTimer != null) gameTimer.cancel();
             Main.showMainMenu(primaryStage);
         });
+
     }
 
     // -------------------------------------------------------------------------
@@ -1143,6 +1170,79 @@ gridPane.add(cellCtrl.cellView, c, r);
         dialog.centerOnScreen();
         dialog.showAndWait();
     }
+    
+ // bayan added here - confirmation dialog for critical actions
+    private boolean showConfirmation(String title, String message, String confirmText) {
+
+        Stage dialog = new Stage(StageStyle.TRANSPARENT);
+        dialog.initOwner(primaryStage);
+        dialog.initModality(Modality.WINDOW_MODAL);
+
+        Label titleLabel = new Label(title);
+        titleLabel.setStyle("""
+            -fx-font-size: 18px;
+            -fx-font-weight: bold;
+            -fx-text-fill: white;
+        """);
+
+        Label msgLabel = new Label(message);
+        msgLabel.setWrapText(true);
+        msgLabel.setMaxWidth(420);
+        msgLabel.setStyle("""
+            -fx-font-size: 14px;
+            -fx-text-fill: #D7E1FF;
+        """);
+
+        Button cancelBtn = new Button("Cancel");
+        cancelBtn.setStyle("""
+            -fx-background-color: #64748B;
+            -fx-text-fill: white;
+            -fx-font-weight: bold;
+            -fx-padding: 8 26;
+            -fx-background-radius: 14;
+        """);
+
+        Button confirmBtn = new Button(confirmText);
+        confirmBtn.setStyle("""
+            -fx-background-color: #EF4444;
+            -fx-text-fill: white;
+            -fx-font-weight: bold;
+            -fx-padding: 8 26;
+            -fx-background-radius: 14;
+        """);
+
+        final boolean[] confirmed = {false};
+
+        cancelBtn.setOnAction(e -> dialog.close());
+        confirmBtn.setOnAction(e -> {
+            confirmed[0] = true;
+            dialog.close();
+        });
+
+        HBox buttons = new HBox(12, cancelBtn, confirmBtn);
+        buttons.setAlignment(Pos.CENTER_RIGHT);
+
+        VBox card = new VBox(16, titleLabel, msgLabel, buttons);
+        card.setPadding(new Insets(20));
+        card.setStyle("""
+            -fx-background-color: rgba(15, 15, 26, 0.97);
+            -fx-background-radius: 16;
+            -fx-border-radius: 16;
+            -fx-border-color: rgba(239, 68, 68, 0.6);
+            -fx-border-width: 1.2;
+        """);
+
+        Scene scene = new Scene(card);
+        scene.setFill(Color.TRANSPARENT);
+
+        dialog.setScene(scene);
+        dialog.sizeToScene();
+        dialog.centerOnScreen();
+        dialog.showAndWait();
+
+        return confirmed[0];
+    }
+
 
     
     private void showEndGameDialog(boolean won, int lifeBonus, int finalScore) {
