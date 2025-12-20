@@ -4,6 +4,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundImage;
@@ -24,13 +25,13 @@ public class Menu extends StackPane {
 
     public Menu() {
 
-        // === BACKGROUND IMAGE (blue + green diagonals) ===
+        // === BACKGROUND IMAGE ===
         Image bg = new Image("img/menuBackground.jpg");
 
         BackgroundSize bgSize = new BackgroundSize(
-                100, 100,           // width, height
-                true, true,         // as % of region
-                false, true         // contain=false, cover=true
+                100, 100,
+                true, true,
+                false, true
         );
 
         BackgroundImage bgImage = new BackgroundImage(
@@ -43,31 +44,49 @@ public class Menu extends StackPane {
 
         this.setBackground(new Background(bgImage));
 
-        // === FULL-SCREEN OVERLAY PANEL (the "blue box") ===
+        // === FULL-SCREEN OVERLAY PANEL ===
         StackPane overlay = new StackPane();
-        // make overlay always match the window size
         overlay.prefWidthProperty().bind(widthProperty());
         overlay.prefHeightProperty().bind(heightProperty());
 
         overlay.setStyle(
-                "-fx-background-color: rgba(3,10,25,0.82);" + // dark blue, transparent
+                "-fx-background-color: rgba(3,10,25,0.82);" +
                 "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.65), 30, 0, 0, 10);"
         );
 
-        // === CONTENT INSIDE THE OVERLAY ===
+        // === CONTENT ===
         VBox content = new VBox(20);
         content.setAlignment(Pos.CENTER);
-        content.setPadding(new Insets(80, 0, 100, 0)); // top/bottom padding so it breathes
+        content.setPadding(new Insets(80, 0, 100, 0));
 
-        // Title
-        Label title = new Label("Cooperative Minesweeper");
-        title.setFont(Font.font("Arial", FontWeight.BOLD, 40));
-        title.setTextFill(Color.WHITE);
+        // -------- TITLE (MineMates + custom font + color) --------
+        Label title = new Label("MineMates");
 
-        // Subtitle
+        Font arcade = Font.loadFont(
+                getClass().getResourceAsStream("/fonts/ka1.ttf"),
+                78
+        );
+
+        // Fallback in case the font fails to load for any reason
+        if (arcade != null) {
+            title.setFont(arcade);
+        } else {
+            title.setFont(Font.font("Arial", FontWeight.EXTRA_BOLD, 52));
+        }
+
+        // Title color + glow (green/teal vibe)
+        title.setTextFill(Color.web("#EAFBF4")); // soft white-green
+
+        DropShadow glow = new DropShadow();
+        glow.setRadius(18);
+        glow.setSpread(0.25);
+        glow.setColor(Color.web("#22C55E")); // green glow
+        title.setEffect(glow);
+
+        // -------- SUBTITLE --------
         Label subtitle = new Label("Two players • One goal • Shared victory");
         subtitle.setFont(Font.font("Arial", 16));
-        subtitle.setTextFill(Color.web("#E5E7EB"));
+        subtitle.setTextFill(Color.web("#C7D2FE")); // slightly blue/purple tint
 
         // Buttons styling
         stylePrimaryButton(startBtn);
@@ -84,57 +103,63 @@ public class Menu extends StackPane {
 
         content.getChildren().addAll(title, subtitle, btnContainer);
 
-        // put content in the overlay, overlay in the root StackPane
         overlay.getChildren().add(content);
         this.getChildren().add(overlay);
     }
 
-    // Bright blue main button
+ // Neon green main button (matches title)
     private void stylePrimaryButton(Button btn) {
-        btn.setPrefSize(220, 45);
+        btn.setPrefSize(240, 48);
         btn.setFont(Font.font("Arial", FontWeight.BOLD, 16));
         btn.setStyle(
-                "-fx-background-color: linear-gradient(#4F46E5, #2563EB);" +
-                "-fx-text-fill: white;" +
-                "-fx-background-radius: 12;" +
-                "-fx-cursor: hand;"
+                "-fx-background-color: linear-gradient(#22C55E, #16A34A);" +
+                "-fx-text-fill: #ECFDF5;" +
+                "-fx-background-radius: 14;" +
+                "-fx-cursor: hand;" +
+                "-fx-effect: dropshadow(gaussian, rgba(34,197,94,0.45), 14, 0, 0, 6);"
         );
 
         btn.setOnMouseEntered(e ->
                 btn.setStyle(
-                        "-fx-background-color: linear-gradient(#60A5FA, #3B82F6);" +
-                        "-fx-text-fill: white;" +
-                        "-fx-background-radius: 12;" +
-                        "-fx-cursor: hand;"
+                        "-fx-background-color: linear-gradient(#4ADE80, #22C55E);" +
+                        "-fx-text-fill: #ECFDF5;" +
+                        "-fx-background-radius: 14;" +
+                        "-fx-cursor: hand;" +
+                        "-fx-effect: dropshadow(gaussian, rgba(34,197,94,0.75), 18, 0, 0, 8);"
                 )
         );
 
         btn.setOnMouseExited(e ->
                 btn.setStyle(
-                        "-fx-background-color: linear-gradient(#4F46E5, #2563EB);" +
-                        "-fx-text-fill: white;" +
-                        "-fx-background-radius: 12;" +
-                        "-fx-cursor: hand;"
+                        "-fx-background-color: linear-gradient(#22C55E, #16A34A);" +
+                        "-fx-text-fill: #ECFDF5;" +
+                        "-fx-background-radius: 14;" +
+                        "-fx-cursor: hand;" +
+                        "-fx-effect: dropshadow(gaussian, rgba(34,197,94,0.45), 14, 0, 0, 6);"
                 )
         );
     }
 
-    // Dark glass secondary buttons
+
+    // Dark glass secondary buttons + green hover
     private void styleSecondaryButton(Button btn) {
-        btn.setPrefSize(220, 45);
+        btn.setPrefSize(240, 48);
         btn.setFont(Font.font("Arial", FontWeight.NORMAL, 15));
         btn.setStyle(
                 "-fx-background-color: rgba(15,23,42,0.90);" +
                 "-fx-text-fill: white;" +
-                "-fx-background-radius: 12;" +
+                "-fx-background-radius: 14;" +
                 "-fx-cursor: hand;"
         );
 
         btn.setOnMouseEntered(e ->
                 btn.setStyle(
-                        "-fx-background-color: rgba(30,64,175,0.95);" +
+                        "-fx-background-color: rgba(34,197,94,0.35);" + // green tint
+                        "-fx-border-color: rgba(34,197,94,0.65);" +
+                        "-fx-border-radius: 14;" +
+                        "-fx-border-width: 1.2;" +
                         "-fx-text-fill: white;" +
-                        "-fx-background-radius: 12;" +
+                        "-fx-background-radius: 14;" +
                         "-fx-cursor: hand;"
                 )
         );
@@ -143,7 +168,7 @@ public class Menu extends StackPane {
                 btn.setStyle(
                         "-fx-background-color: rgba(15,23,42,0.90);" +
                         "-fx-text-fill: white;" +
-                        "-fx-background-radius: 12;" +
+                        "-fx-background-radius: 14;" +
                         "-fx-cursor: hand;"
                 )
         );

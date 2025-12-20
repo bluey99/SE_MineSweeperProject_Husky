@@ -189,32 +189,72 @@ public class GameController {
     }
 
     private void createCellsGrid(CellController[][] board,
-                                 javafx.scene.layout.GridPane gridPane) {
-        gridPane.getChildren().clear();
-        for (int r = 0; r < N; r++) {
-            for (int c = 0; c < M; c++) {
-                gridPane.add(board[r][c].cellView, c, r);
-            }
-        }
-    }
+            javafx.scene.layout.GridPane gridPane) {
+
+gridPane.getChildren().clear();
+
+//  assign board-specific color
+Color boardTint =
+(gridPane == gameView.gridPane1)
+   ? Color.web("#6FAF8F")   // Player 1 → green
+   : Color.web("#C26A6A");  // Player 2 → red
+
+for (int r = 0; r < N; r++) {
+for (int c = 0; c < M; c++) {
+CellController cellCtrl = board[r][c];
+cellCtrl.setBoardTint(boardTint); // 🔑 this line
+cellCtrl.init();                  // redraw with tint
+gridPane.add(cellCtrl.cellView, c, r);
+}
+}
+}
+
 
     private void setupEventHandlers() {
-        gameView.restartBtn.addEventHandler(MouseEvent.MOUSE_CLICKED, e -> {
-            stopTimer();
-            init();
-            startTimer();
-        });
+        // Restart
+    	gameView.restartBtn.addEventHandler(MouseEvent.MOUSE_CLICKED, e -> {
+    	    boolean ok = showConfirmation(
+    	            "Start New Game",
+    	            "Start a new game?\nCurrent progress will be lost.",
+    	            "New Game"
+    	    );
 
-        gameView.exitBtn.addEventHandler(MouseEvent.MOUSE_CLICKED, e -> {
-            stopTimer();
-            Platform.exit();
-            System.exit(0);
-        });
+    	    if (!ok) return;
+
+    	    if (gameTimer != null) gameTimer.cancel();
+    	    init();
+    	    startTimer();
+    	});
+
+
+        // Exit
+    	gameView.exitBtn.addEventHandler(MouseEvent.MOUSE_CLICKED, e -> {
+    	    boolean ok = showConfirmation(
+    	            "Exit Game",
+    	            "Are you sure you want to exit the game?",
+    	            "Exit"
+    	    );
+
+    	    if (!ok) return;
+
+    	    Platform.exit();
+    	    System.exit(0);
+    	});
+
 
         gameView.backToMenuBtn.setOnAction(e -> {
-            stopTimer();
+            boolean ok = showConfirmation(
+                    "Return to Menu",
+                    "Return to the main menu?\nCurrent game progress will be lost.",
+                    "Return"
+            );
+
+            if (!ok) return;
+
+            if (gameTimer != null) gameTimer.cancel();
             Main.showMainMenu(primaryStage);
         });
+
     }
 
     private void addEventHandlersToBoard(BoardController bc) {
@@ -678,6 +718,79 @@ public class GameController {
         dialog.centerOnScreen();
         dialog.showAndWait();
     }
+    
+ // bayan added here - confirmation dialog for critical actions
+    private boolean showConfirmation(String title, String message, String confirmText) {
+
+        Stage dialog = new Stage(StageStyle.TRANSPARENT);
+        dialog.initOwner(primaryStage);
+        dialog.initModality(Modality.WINDOW_MODAL);
+
+        Label titleLabel = new Label(title);
+        titleLabel.setStyle("""
+            -fx-font-size: 18px;
+            -fx-font-weight: bold;
+            -fx-text-fill: white;
+        """);
+
+        Label msgLabel = new Label(message);
+        msgLabel.setWrapText(true);
+        msgLabel.setMaxWidth(420);
+        msgLabel.setStyle("""
+            -fx-font-size: 14px;
+            -fx-text-fill: #D7E1FF;
+        """);
+
+        Button cancelBtn = new Button("Cancel");
+        cancelBtn.setStyle("""
+            -fx-background-color: #64748B;
+            -fx-text-fill: white;
+            -fx-font-weight: bold;
+            -fx-padding: 8 26;
+            -fx-background-radius: 14;
+        """);
+
+        Button confirmBtn = new Button(confirmText);
+        confirmBtn.setStyle("""
+            -fx-background-color: #EF4444;
+            -fx-text-fill: white;
+            -fx-font-weight: bold;
+            -fx-padding: 8 26;
+            -fx-background-radius: 14;
+        """);
+
+        final boolean[] confirmed = {false};
+
+        cancelBtn.setOnAction(e -> dialog.close());
+        confirmBtn.setOnAction(e -> {
+            confirmed[0] = true;
+            dialog.close();
+        });
+
+        HBox buttons = new HBox(12, cancelBtn, confirmBtn);
+        buttons.setAlignment(Pos.CENTER_RIGHT);
+
+        VBox card = new VBox(16, titleLabel, msgLabel, buttons);
+        card.setPadding(new Insets(20));
+        card.setStyle("""
+            -fx-background-color: rgba(15, 15, 26, 0.97);
+            -fx-background-radius: 16;
+            -fx-border-radius: 16;
+            -fx-border-color: rgba(239, 68, 68, 0.6);
+            -fx-border-width: 1.2;
+        """);
+
+        Scene scene = new Scene(card);
+        scene.setFill(Color.TRANSPARENT);
+
+        dialog.setScene(scene);
+        dialog.sizeToScene();
+        dialog.centerOnScreen();
+        dialog.showAndWait();
+
+        return confirmed[0];
+    }
+
 
     private void showEndGameDialog(boolean won, int lifeBonus, int finalScore) {
         Stage dialog = new Stage(StageStyle.TRANSPARENT);
@@ -701,22 +814,16 @@ public class GameController {
         HBox titleBox = new HBox(10, icon, titleLabel);
         titleBox.setAlignment(Pos.CENTER_LEFT);
 
-        Button closeX = new Button("✕");
-        closeX.setStyle("""
-            -fx-background-color: transparent;
-            -fx-text-fill: #93C5FD;
-            -fx-font-size: 14px;
-            -fx-font-weight: bold;
-            -fx-padding: 4 10;
-        """);
-        closeX.setOnAction(e -> dialog.close());
+       
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        HBox header = new HBox(10, titleBox, spacer, closeX);
+        HBox header = new HBox(titleBox);
         header.setAlignment(Pos.CENTER_LEFT);
 
+
+        // ===== SUBTITLE =====
         Label sub = new Label(
                 won
                         ? "Well done " + player1Name + " & " + player2Name + "!"
@@ -757,9 +864,27 @@ public class GameController {
             startTimer();
         });
 
-        HBox buttons = new HBox(newGameBtn);
+        
+        Button menuBtn = new Button("Return to Menu");
+        menuBtn.setStyle("""
+            -fx-background-color: #64748B;
+            -fx-text-fill: white;
+            -fx-font-weight: bold;
+            -fx-font-size: 15px;
+            -fx-padding: 12 36;
+            -fx-background-radius: 16;
+        """);
+
+        menuBtn.setOnAction(e -> {
+            dialog.close();
+            Main.showMainMenu(primaryStage);
+        });
+        
+        HBox buttons = new HBox(14, newGameBtn, menuBtn);
         buttons.setAlignment(Pos.CENTER_RIGHT);
 
+
+        // ===== CARD ONLY =====
         VBox card = new VBox(18, header, sub, body, buttons);
         card.setPadding(new Insets(26));
         card.setMaxWidth(650);

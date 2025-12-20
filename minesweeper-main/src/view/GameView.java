@@ -5,6 +5,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -65,29 +66,46 @@ public class GameView extends BorderPane {
     }
 
     private void setupLayout() {
-        this.setPadding(new Insets(10));
-        this.setTop(topSection);
-        this.setCenter(centerSection);
-        this.setBottom(bottomSection);
+        setPadding(new Insets(10));
+        setTop(topSection);
+        setCenter(centerSection);
+        setBottom(bottomSection);
 
-        BackgroundFill bg = new BackgroundFill(
+        setBackground(new Background(new BackgroundFill(
                 Color.web("#0F172A"),
                 CornerRadii.EMPTY,
                 Insets.EMPTY
-        );
-        setBackground(new Background(bg));
+        )));
     }
 
+    // ===== TOP SECTION (MineMates logo like Setup UI) =====
     private void setupTopSection() {
         topSection.setAlignment(Pos.CENTER);
         topSection.setSpacing(6);
         topSection.setPadding(new Insets(14, 0, 18, 0));
 
-        Label titleLabel = new Label("Cooperative Minesweeper");
-        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 30));
-        titleLabel.setTextFill(Color.web("#F9FAFB"));
+        // Load same logo font
+        Font logoFont = Font.loadFont(
+                getClass().getResourceAsStream("/fonts/ka1.ttf"),
+                28
+        );
 
-        currentPlayerLabel.setFont(Font.font("Arial", FontWeight.BOLD, 20));
+        Label titleLabel = new Label("MineMates");
+        if (logoFont != null) {
+            titleLabel.setFont(logoFont);
+        } else {
+            titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 26));
+        }
+
+        titleLabel.setTextFill(Color.web("#ECFDF5"));
+
+        DropShadow glow = new DropShadow();
+        glow.setRadius(8);
+        glow.setSpread(0.15);
+        glow.setColor(Color.web("#22C55E"));
+        titleLabel.setEffect(glow);
+
+        currentPlayerLabel.setFont(Font.font("Arial", FontWeight.BOLD, 18));
         currentPlayerLabel.setTextFill(Color.web("#60A5FA"));
 
         Label subtitle = new Label("Two players • One goal • Shared victory");
@@ -97,6 +115,7 @@ public class GameView extends BorderPane {
         topSection.getChildren().addAll(titleLabel, currentPlayerLabel, subtitle);
     }
 
+    // ===== SHARED PANEL =====
     private void setupSharedPanel() {
         sharedInfoPanel.setPrefWidth(220);
         sharedInfoPanel.setMinWidth(220);
@@ -124,7 +143,6 @@ public class GameView extends BorderPane {
 
         sharedScoreLabel.setFont(Font.font("Arial", FontWeight.BOLD, 34));
         sharedScoreLabel.setTextFill(Color.web("#FDBA74"));
-
         scoreBox.getChildren().addAll(scoreTitle, sharedScoreLabel);
 
         VBox livesBox = new VBox(4);
@@ -163,11 +181,7 @@ public class GameView extends BorderPane {
         infoBox.getChildren().addAll(diffBox, timeBox);
 
         sharedInfoPanel.getChildren().addAll(
-                header,
-                scoreBox,
-                livesBox,
-                div1,
-                infoBox
+                header, scoreBox, livesBox, div1, infoBox
         );
     }
 
@@ -181,8 +195,7 @@ public class GameView extends BorderPane {
                 "-fx-border-width: 2.5;" +
                 "-fx-background-color: #111827;" +
                 "-fx-border-radius: 14;" +
-                "-fx-background-radius: 14;" +
-                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 12, 0, 0, 6);"
+                "-fx-background-radius: 14;"
         );
 
         player1Label.setFont(Font.font("Arial", FontWeight.BOLD, 18));
@@ -199,10 +212,7 @@ public class GameView extends BorderPane {
         gridPane1.setAlignment(Pos.CENTER);
 
         StackPane boardContainer1 = new StackPane();
-        boardContainer1.setStyle(
-                "-fx-background-color: #020617;" +
-                "-fx-background-radius: 10;"
-        );
+        boardContainer1.setStyle("-fx-background-color: #020617; -fx-background-radius: 10;");
         boardContainer1.setPadding(new Insets(2));
         boardContainer1.getChildren().add(gridPane1);
 
@@ -219,8 +229,7 @@ public class GameView extends BorderPane {
                 "-fx-border-width: 2;" +
                 "-fx-background-color: #111827;" +
                 "-fx-border-radius: 14;" +
-                "-fx-background-radius: 14;" +
-                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 12, 0, 0, 6);"
+                "-fx-background-radius: 14;"
         );
 
         player2Label.setFont(Font.font("Arial", FontWeight.BOLD, 18));
@@ -237,10 +246,7 @@ public class GameView extends BorderPane {
         gridPane2.setAlignment(Pos.CENTER);
 
         StackPane boardContainer2 = new StackPane();
-        boardContainer2.setStyle(
-                "-fx-background-color: #020617;" +
-                "-fx-background-radius: 10;"
-        );
+        boardContainer2.setStyle("-fx-background-color: #020617; -fx-background-radius: 10;");
         boardContainer2.setPadding(new Insets(2));
         boardContainer2.getChildren().add(gridPane2);
 
@@ -251,13 +257,11 @@ public class GameView extends BorderPane {
         centerSection.setAlignment(Pos.CENTER);
         centerSection.setSpacing(16);
         centerSection.setPadding(new Insets(8, 4, 16, 4));
-
         centerSection.getChildren().addAll(player1Panel, sharedInfoPanel, player2Panel);
     }
 
     private void setupBottomSection() {
         bottomSection.setAlignment(Pos.CENTER);
-        bottomSection.setSpacing(8);
         bottomSection.setPadding(new Insets(0, 0, 14, 0));
 
         HBox box = new HBox(14);
@@ -278,9 +282,7 @@ public class GameView extends BorderPane {
                 "-fx-background-color: " + color + ";" +
                 "-fx-text-fill: white;" +
                 "-fx-background-radius: 999;" +
-                "-fx-cursor: hand;" +
-                "-fx-background-insets: 0;" +
-                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.7), 10, 0, 0, 4);"
+                "-fx-cursor: hand;"
         );
     }
 }

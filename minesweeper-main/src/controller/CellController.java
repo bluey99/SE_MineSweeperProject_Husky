@@ -21,6 +21,14 @@ public class CellController {
 
     // Size of each cell – GameController sets this per difficulty
     private static int CELL_SIDE = 26;
+    // board-specific tint (player color)
+    private Color boardTint = null;
+
+    // setter from GameController
+    public void setBoardTint(Color tint) {
+        this.boardTint = tint;
+    }
+
 
     public static void setCellSide(int size) {
         CELL_SIDE = size;
@@ -54,22 +62,27 @@ public class CellController {
     // CLOSED / FLAGGED
     // ---------------------------------------------------------------------
     private void drawClosedCell() {
-        // Covered style: bright green rounded square
+
+        //  use board tint if provided
+        Color base = (boardTint != null) ? boardTint : Color.web("#65A30D");
+
         String baseStyle =
-                "-fx-background-color: linear-gradient(#A3E635, #65A30D);" +
+                "-fx-background-color: linear-gradient(" +
+                toCssColor(base.brighter()) + ", " +
+                toCssColor(base.darker()) + ");" +
                 "-fx-border-color: #365314;" +
                 "-fx-border-width: 1;" +
                 "-fx-background-radius: 6;" +
                 "-fx-border-radius: 6;";
 
+        cellView.setStyle(baseStyle);
+
         if (cell.isFlag()) {
             Label flag = makeLabel("🚩", Color.web("#F97373"));
-            cellView.setStyle(baseStyle);
             cellView.getChildren().add(flag);
-        } else {
-            cellView.setStyle(baseStyle);
         }
     }
+
 
     // ---------------------------------------------------------------------
     // OPEN STATES
@@ -171,4 +184,15 @@ public class CellController {
             default: return Color.web("#E5E7EB");
         }
     }
+    
+ // convert JavaFX Color to CSS rgb
+    private String toCssColor(Color c) {
+        return String.format(
+                "rgb(%d,%d,%d)",
+                (int) (c.getRed() * 255),
+                (int) (c.getGreen() * 255),
+                (int) (c.getBlue() * 255)
+        );
+    }
+
 }
