@@ -1269,21 +1269,14 @@ gridPane.add(cellCtrl.cellView, c, r);
         HBox titleBox = new HBox(10, icon, titleLabel);
         titleBox.setAlignment(Pos.CENTER_LEFT);
 
-        Button closeX = new Button("✕");
-        closeX.setStyle("""
-            -fx-background-color: transparent;
-            -fx-text-fill: #93C5FD;
-            -fx-font-size: 14px;
-            -fx-font-weight: bold;
-            -fx-padding: 4 10;
-        """);
-        closeX.setOnAction(e -> dialog.close());
+       
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        HBox header = new HBox(10, titleBox, spacer, closeX);
+        HBox header = new HBox(titleBox);
         header.setAlignment(Pos.CENTER_LEFT);
+
 
         // ===== SUBTITLE =====
         Label sub = new Label(
@@ -1328,8 +1321,25 @@ gridPane.add(cellCtrl.cellView, c, r);
             startTimer();
         });
 
-        HBox buttons = new HBox(newGameBtn);
+        
+        Button menuBtn = new Button("Return to Menu");
+        menuBtn.setStyle("""
+            -fx-background-color: #64748B;
+            -fx-text-fill: white;
+            -fx-font-weight: bold;
+            -fx-font-size: 15px;
+            -fx-padding: 12 36;
+            -fx-background-radius: 16;
+        """);
+
+        menuBtn.setOnAction(e -> {
+            dialog.close();
+            Main.showMainMenu(primaryStage);
+        });
+        
+        HBox buttons = new HBox(14, newGameBtn, menuBtn);
         buttons.setAlignment(Pos.CENTER_RIGHT);
+
 
         // ===== CARD ONLY =====
         VBox card = new VBox(18, header, sub, body, buttons);
