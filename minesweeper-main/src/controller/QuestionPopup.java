@@ -51,16 +51,8 @@ public class QuestionPopup {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Button close = new Button("✕");
-        close.setStyle("""
-            -fx-background-color: transparent;
-            -fx-text-fill: #93C5FD;
-            -fx-font-size: 14px;
-            -fx-cursor: hand;
-        """);
-        close.setOnAction(e -> stage.close());
+        header.getChildren().addAll(title, spacer);
 
-        header.getChildren().addAll(title, spacer, close);
 
         // Difficulty tag
         Label diffLabel = new Label(qDiffLabel + " Question");
@@ -77,10 +69,13 @@ public class QuestionPopup {
         Label questionLbl = new Label(q.getText());
         questionLbl.setWrapText(true);
         questionLbl.setMaxWidth(410);
+        questionLbl.setAlignment(Pos.CENTER);
+        questionLbl.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
         questionLbl.setStyle("""
             -fx-text-fill: white;
             -fx-font-size: 16px;
         """);
+
 
         VBox answersBox = new VBox(10);
         answersBox.setAlignment(Pos.CENTER);
