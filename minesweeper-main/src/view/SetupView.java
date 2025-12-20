@@ -66,9 +66,26 @@ public class SetupView extends BorderPane {
         root.setAlignment(Pos.TOP_CENTER);
         root.setPadding(new Insets(10, 30, 20, 30));
 
-        Label title = new Label("Cooperative Minesweeper");
-        title.setFont(Font.font("Arial", FontWeight.EXTRA_BOLD, 34));
-        title.setTextFill(Color.WHITE);
+        // ===== SMALL LOGO TITLE (same font as menu) =====
+        Font logoFont = Font.loadFont(
+                getClass().getResourceAsStream("/fonts/ka1.ttf"),
+                28 // much smaller than menu title
+        );
+
+        Label title = new Label("MineMates");
+        if (logoFont != null) {
+            title.setFont(logoFont);
+        } else {
+            title.setFont(Font.font("Arial", FontWeight.BOLD, 26));
+        }
+
+        title.setTextFill(Color.web("#ECFDF5")); // soft green-white
+
+        DropShadow logoGlow = new DropShadow();
+        logoGlow.setRadius(8);
+        logoGlow.setSpread(0.15);
+        logoGlow.setColor(Color.web("#22C55E")); // subtle green glow
+        title.setEffect(logoGlow);
 
         Label subtitle = new Label("Two players • One goal • Shared victory");
         subtitle.setFont(Font.font("Arial", 15));
@@ -87,7 +104,7 @@ public class SetupView extends BorderPane {
                 Insets.EMPTY
         )));
 
-        VBox heading = new VBox(6, title, subtitle, accent);
+        VBox heading = new VBox(4, title, subtitle, accent);
         heading.setAlignment(Pos.CENTER);
 
         // ===== FORM CARD =====
@@ -170,16 +187,15 @@ public class SetupView extends BorderPane {
         );
 
         String normal = """
-            -fx-background-color: #2563EB;
-            -fx-text-fill: white;
+            -fx-background-color: #22C55E;
+            -fx-text-fill: #ECFDF5;
             -fx-background-radius: 14;
             -fx-cursor: hand;
         """;
 
-        // Hover: blue -> green gradient
         String hover = """
-            -fx-background-color: linear-gradient(to right, #1D4ED8, #22C55E);
-            -fx-text-fill: white;
+            -fx-background-color: linear-gradient(to right, #4ADE80, #16A34A);
+            -fx-text-fill: #ECFDF5;
             -fx-background-radius: 14;
             -fx-cursor: hand;
         """;
@@ -199,9 +215,9 @@ public class SetupView extends BorderPane {
         diffInfoBox.getChildren().clear();
 
         String borderColor = switch (difficulty) {
-            case "Easy" -> "#22C55E";   // green
-            case "Medium" -> "#3B82F6"; // blue
-            case "Hard" -> "#EF4444";   // red
+            case "Easy" -> "#22C55E";
+            case "Medium" -> "#3B82F6";
+            case "Hard" -> "#EF4444";
             default -> "#334155";
         };
 
@@ -260,7 +276,6 @@ public class SetupView extends BorderPane {
         rb.setTextFill(Color.web("#E5E7EB"));
         rb.setStyle("-fx-cursor: hand;");
 
-        // Add green (Easy), blue (Medium), red (Hard)
         switch (text) {
             case "Easy" -> rb.setStyle(rb.getStyle() + "-fx-mark-color: #22C55E;");
             case "Medium" -> rb.setStyle(rb.getStyle() + "-fx-mark-color: #3B82F6;");
