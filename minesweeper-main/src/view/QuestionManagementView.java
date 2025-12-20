@@ -59,7 +59,7 @@ public class QuestionManagementView extends BorderPane {
 
         stylePrimary(addBtn);
 
-        topBar.getChildren().addAll(backBtn, iconLabel, titleBox, spacer, addBtn);
+        topBar.getChildren().addAll(backBtn, iconLabel, titleBox, spacer);
         setTop(topBar);
 
         // ---------------------------------------------------------------------
@@ -154,10 +154,16 @@ public class QuestionManagementView extends BorderPane {
         bottom.setPadding(new Insets(10, 30, 20, 30));
         bottom.setAlignment(Pos.CENTER_RIGHT);
 
+     // same style for all 3 buttons
+        styleSecondary(addBtn);
         styleSecondary(editBtn);
         styleSecondary(deleteBtn);
+     // optional: make them same width for clean alignment
+        addBtn.setPrefWidth(140);
+        editBtn.setPrefWidth(140);
+        deleteBtn.setPrefWidth(140);
 
-        bottom.getChildren().addAll(editBtn, deleteBtn);
+        bottom.getChildren().addAll(addBtn, editBtn, deleteBtn);
         setBottom(bottom);
     }
 
