@@ -12,7 +12,9 @@ import javafx.stage.Window;
 import model.Question;
 import model.QuestionDifficulty;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 public class QuestionFormDialog {
 
@@ -208,6 +210,23 @@ public class QuestionFormDialog {
                     evt.consume();
                     return;
                 }
+            }
+
+         // ✅ Prevent duplicate answers (case-insensitive)
+            Set<String> uniqueAnswers = new HashSet<>();
+
+            for (TextField tf : optionFields) {
+                String answer = tf.getText().trim().toLowerCase();
+                uniqueAnswers.add(answer);
+            }
+
+            if (uniqueAnswers.size() < optionFields.length) {
+                showError(
+                    "Invalid Answers",
+                    "All answer options must be different."
+                );
+                evt.consume();
+                return;
             }
 
             if (difficultyGroup.getSelectedToggle() == null) {
