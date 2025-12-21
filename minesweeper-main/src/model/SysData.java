@@ -162,80 +162,103 @@ public class SysData {
      *  - Add new one
      *  - Rewrite file
      */
-    public static void addQuestion(Question q) {
+    public static boolean addQuestion(Question q) {
         List<Question> all = loadQuestions();
+
+        // Assign next ID based on list size (temporary)
+        q.setId(all.size() + 1);
+
         all.add(q);
-        saveQuestions(all);
+
+        // Reassign IDs to guarantee consistency
+        reassignQuestionIds(all);
+
+        return saveQuestions(all);
     }
+
+
 
     /**
      * Update an existing question in storage.
      * This assumes equality by ID.
      */
-    public static void updateQuestion(Question updated) {
+    public static boolean updateQuestion(Question updated) {
         List<Question> all = loadQuestions();
 
         for (int i = 0; i < all.size(); i++) {
-            Question existing = all.get(i);
-            if (existing.getId() == updated.getId()) {  // adjust getter name if needed
+            if (all.get(i).getId() == updated.getId()) {
                 all.set(i, updated);
                 break;
             }
         }
 
-        saveQuestions(all);
+        // Ensure IDs are still aligned
+        reassignQuestionIds(all);
+
+        return saveQuestions(all);
     }
+
+    
+    
 
     /**
      * Delete a question from storage.
      */
-    public static void deleteQuestion(Question toDelete) {
+    public static boolean deleteQuestion(Question toDelete) {
         List<Question> all = loadQuestions();
-        all.removeIf(q -> q.getId() == toDelete.getId()); // adjust getter if needed
-        saveQuestions(all);
+
+        boolean removed = all.removeIf(q -> q.getId() == toDelete.getId());
+        if (!removed) {
+            return false; // nothing to delete
+        }
+
+        reassignQuestionIds(all);
+        return saveQuestions(all);
     }
+
+
 
     /**
      * Helper: write full list of questions back to CSV.
      */
-    private static void saveQuestions(List<Question> questions) {
+    private static boolean saveQuestions(List<Question> questions) {
         File file = new File(QUESTIONS_FILE);
 
         try (BufferedWriter writer = new BufferedWriter(
                 new OutputStreamWriter(new FileOutputStream(file, false), StandardCharsets.UTF_8))) {
 
-            // header
             writer.write(QUESTIONS_HEADER);
             writer.newLine();
 
             for (Question q : questions) {
-                // Assuming Question has appropriate getters; adjust names if needed.
-                int id = q.getId();
-                String text = q.getText();
-                QuestionDifficulty diff = q.getDifficulty();
-                String[] options = q.getOptions(); // length 4: A,B,C,D
-                int correctIndex = q.getCorrectIndex(); // or getCorrectAnswerIndex()
-
-                String correctLetter = indexToLetter(correctIndex);
-
                 StringBuilder sb = new StringBuilder();
-                sb.append(id).append(",");
-                sb.append(escape(text)).append(",");
-                sb.append(diff.toString()).append(",");
+
+                sb.append(q.getId()).append(",");
+                sb.append(escape(q.getText())).append(",");
+                sb.append(q.getDifficulty().toString()).append(",");
+
+                String[] options = q.getOptions();
                 sb.append(escape(options[0])).append(",");
                 sb.append(escape(options[1])).append(",");
                 sb.append(escape(options[2])).append(",");
                 sb.append(escape(options[3])).append(",");
-                sb.append(correctLetter);
+
+                sb.append(indexToLetter(q.getCorrectIndex()));
 
                 writer.write(sb.toString());
                 writer.newLine();
             }
 
+            return true;
+
         } catch (IOException e) {
-            e.printStackTrace();
+            // bayan added here - silent failure, controller handles user notification
+            return false;
         }
+
     }
+
+
 
     // ====== Helpers ======
 
@@ -264,5 +287,12 @@ public class SysData {
     private static String escape(String s) {
         if (s == null) return "";
         return s.replace("\n", " ").replace("\r", " ");
+    }
+    
+ // 🔒 MODEL-ONLY helper (not visible to controllers)
+    private static void reassignQuestionIds(List<Question> questions) {
+        for (int i = 0; i < questions.size(); i++) {
+            questions.get(i).setId(i + 1);
+        }
     }
 }

@@ -40,11 +40,27 @@ public class QuestionManagementController {
         view.addBtn.setOnAction(e -> {
             QuestionFormDialog dialog = new QuestionFormDialog("Add New Question", null);
             Optional<Question> result = dialog.showAndWait();
+
             result.ifPresent(q -> {
-                SysData.addQuestion(q);
-                refreshQuestions();
+                boolean success = SysData.addQuestion(q);
+
+                if (success) {
+                    showInfo(
+                        "Question Added",
+                        "The question was added successfully."
+                    );
+                    refreshQuestions();
+                } else {
+                    showError(
+                        "Add Failed",
+                        "Unable to save the question.\n\n" +
+                        "The questions file may be open in another program.\n" +
+                        "Please close it and try again."
+                    );
+                }
             });
         });
+
 
         view.editBtn.setOnAction(e -> {
             Question selected = view.table.getSelectionModel().getSelectedItem();
@@ -52,11 +68,27 @@ public class QuestionManagementController {
 
             QuestionFormDialog dialog = new QuestionFormDialog("Edit Question", selected);
             Optional<Question> result = dialog.showAndWait();
+
             result.ifPresent(q -> {
-                SysData.updateQuestion(q);
-                refreshQuestions();
+                boolean success = SysData.updateQuestion(q);
+
+                if (success) {
+                    showInfo(
+                        "Question Updated",
+                        "The question was updated successfully."
+                    );
+                    refreshQuestions();
+                } else {
+                    showError(
+                        "Update Failed",
+                        "Unable to update the question.\n\n" +
+                        "The questions file may be open in another program.\n" +
+                        "Please close it and try again."
+                    );
+                }
             });
         });
+
 
         view.deleteBtn.setOnAction(e -> {
             Question selected = view.table.getSelectionModel().getSelectedItem();
@@ -68,9 +100,24 @@ public class QuestionManagementController {
             Optional<Boolean> result = dialog.showAndWait();
             if (result.isEmpty() || !result.get()) return;
 
-            SysData.deleteQuestion(selected);
-            refreshQuestions();
+            boolean success = SysData.deleteQuestion(selected);
+
+            if (success) {
+                showInfo(
+                    "Question Deleted",
+                    "The question was deleted successfully."
+                );
+                refreshQuestions();
+            } else {
+                showError(
+                    "Delete Failed",
+                    "Unable to delete the question.\n\n" +
+                    "The questions file may be open in another program.\n" +
+                    "Please close it and try again."
+                );
+            }
         });
+
 
 
 
@@ -84,6 +131,24 @@ public class QuestionManagementController {
         return new Scene(view, 900, 600);
     }
     
+    private void showInfo(String title, String message) {
+        javafx.scene.control.Alert alert =
+                new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private void showError(String title, String message) {
+        javafx.scene.control.Alert alert =
+                new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
    
 
 }
