@@ -7,13 +7,14 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
-	<classpathentry kind="lib" path="C:/Users/salim/Desktop/Software Engineering/openjfx-21.0.9_windows-x64_bin-sdk/javafx-sdk-21.0.9/lib/javafx-swt.jar"/>
-	<classpathentry kind="lib" path="C:/Users/salim/Desktop/Software Engineering/openjfx-21.0.9_windows-x64_bin-sdk/javafx-sdk-21.0.9/lib/javafx.web.jar"/>
-	<classpathentry kind="lib" path="C:/Users/salim/Desktop/Software Engineering/openjfx-21.0.9_windows-x64_bin-sdk/javafx-sdk-21.0.9/lib/javafx.swing.jar"/>
-	<classpathentry kind="lib" path="C:/Users/salim/Desktop/Software Engineering/openjfx-21.0.9_windows-x64_bin-sdk/javafx-sdk-21.0.9/lib/javafx.media.jar"/>
-	<classpathentry kind="lib" path="C:/Users/salim/Desktop/Software Engineering/openjfx-21.0.9_windows-x64_bin-sdk/javafx-sdk-21.0.9/lib/javafx.graphics.jar"/>
-	<classpathentry kind="lib" path="C:/Users/salim/Desktop/Software Engineering/openjfx-21.0.9_windows-x64_bin-sdk/javafx-sdk-21.0.9/lib/javafx.fxml.jar"/>
-	<classpathentry kind="lib" path="C:/Users/salim/Desktop/Software Engineering/openjfx-21.0.9_windows-x64_bin-sdk/javafx-sdk-21.0.9/lib/javafx.controls.jar"/>
-	<classpathentry kind="lib" path="C:/Users/salim/Desktop/Software Engineering/openjfx-21.0.9_windows-x64_bin-sdk/javafx-sdk-21.0.9/lib/javafx.base.jar"/>
+	<classpathentry kind="lib" path="C:/Users/jawad/OneDrive/שולחן העבודה/MineSweeperJar/javafx-sdk-18.0.1/lib/javafx.base.jar"/>
+	<classpathentry kind="lib" path="C:/Users/jawad/OneDrive/שולחן העבודה/MineSweeperJar/javafx-sdk-18.0.1/lib/javafx.controls.jar"/>
+	<classpathentry kind="lib" path="C:/Users/jawad/OneDrive/שולחן העבודה/MineSweeperJar/javafx-sdk-18.0.1/lib/javafx.fxml.jar"/>
+	<classpathentry kind="lib" path="C:/Users/jawad/OneDrive/שולחן העבודה/MineSweeperJar/javafx-sdk-18.0.1/lib/javafx.graphics.jar"/>
+	<classpathentry kind="lib" path="C:/Users/jawad/OneDrive/שולחן העבודה/MineSweeperJar/javafx-sdk-18.0.1/lib/javafx.media.jar"/>
+	<classpathentry kind="lib" path="C:/Users/jawad/OneDrive/שולחן העבודה/MineSweeperJar/javafx-sdk-18.0.1/lib/javafx.swing.jar"/>
+	<classpathentry kind="lib" path="C:/Users/jawad/OneDrive/שולחן העבודה/MineSweeperJar/javafx-sdk-18.0.1/lib/javafx.web.jar"/>
+	<classpathentry kind="lib" path="C:/Users/jawad/OneDrive/שולחן העבודה/MineSweeperJar/javafx-sdk-18.0.1/lib/javafx-swt.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/5"/>
 	<classpathentry kind="output" path="out/production/MineSweeper"/>
 </classpath>
