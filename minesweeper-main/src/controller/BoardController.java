@@ -127,15 +127,11 @@ public class BoardController {
             }
 
         } else if (cell.isSurprise()) {
-            gameController.showMessage("Surprise Cell Discovered!",
-                    "You can activate it on your next turn.");
             if (gameController.isGameActive()) {
                 gameController.switchPlayer();
             }
 
         } else if (cell.isQuestion()) {
-            gameController.showMessage("Question Cell Discovered!",
-                    "You can activate it on your next turn.");
             if (gameController.isGameActive()) {
                 gameController.switchPlayer();
             }
