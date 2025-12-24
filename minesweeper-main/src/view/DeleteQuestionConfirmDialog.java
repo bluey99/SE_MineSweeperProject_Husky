@@ -12,8 +12,14 @@ import model.Question;
 
 import java.util.Optional;
 
+/**
+ * Confirmation dialog for deleting a question.
+ * Presents a clear warning and requires explicit user approval
+ * before performing a destructive action.
+ */
 public class DeleteQuestionConfirmDialog {
 
+    // Dialog returns true only if the user confirms deletion
     private final Dialog<Boolean> dialog = new Dialog<>();
 
     public DeleteQuestionConfirmDialog(Question q) {
@@ -22,6 +28,7 @@ public class DeleteQuestionConfirmDialog {
         dialog.setHeaderText(null);
         dialog.setResizable(false);
 
+        // Define dialog actions
         ButtonType deleteType = new ButtonType(
                 "Delete",
                 ButtonBar.ButtonData.OK_DONE
@@ -33,14 +40,15 @@ public class DeleteQuestionConfirmDialog {
 
         dialog.getDialogPane().getButtonTypes().addAll(deleteType, cancelType);
 
+        // Dialog content layout
         VBox root = new VBox(12);
         root.setPadding(new Insets(18));
-        // ✅ NO background color → use native light theme
+        // Use default dialog styling for consistency
 
         Label title = new Label("Delete Question?");
         title.setFont(Font.font("Arial", FontWeight.BOLD, 18));
-        // default text color (black)
 
+        // Show question text to avoid accidental deletion
         Label msg = new Label(
                 "Are you sure you want to delete this question?\n\n" +
                 "\"" + q.getText() + "\"\n\n" +
@@ -52,13 +60,14 @@ public class DeleteQuestionConfirmDialog {
         root.getChildren().addAll(title, msg);
 
         dialog.getDialogPane().setContent(root);
-        // ✅ NO dialog pane styling
 
+        // Convert button choice to boolean result
         dialog.setResultConverter(btn ->
                 btn.getButtonData() == ButtonBar.ButtonData.OK_DONE
         );
     }
 
+    // Displays the dialog and returns the user's decision
     public Optional<Boolean> showAndWait() {
         return dialog.showAndWait();
     }
