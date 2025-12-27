@@ -29,13 +29,15 @@ public class SysData {
     // ============================================================
     //                      GAME HISTORY API
     // ============================================================
+
+    // Append a game history entry to the CSV file
     public static void saveGame(GameHistoryEntry entry) {
         File file = new File(HISTORY_FILE);
 
         try (BufferedWriter writer = new BufferedWriter(
                 new OutputStreamWriter(new FileOutputStream(file, true), StandardCharsets.UTF_8))) {
 
-            // if file is new or empty → write header first
+            // Write header if file is new or empty
             if (!file.exists() || file.length() == 0) {
                 writer.write(HISTORY_HEADER);
                 writer.newLine();
@@ -49,18 +51,21 @@ public class SysData {
         }
     }
 
+    // Load all game history entries from storage
     public static List<GameHistoryEntry> loadHistory() {
         List<GameHistoryEntry> list = new ArrayList<>();
         File file = new File(HISTORY_FILE);
 
+        // No history available
         if (!file.exists() || file.length() == 0) {
-            return list; // no history yet
+            return list;
         }
 
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
 
-            String line = reader.readLine(); // skip header
+            // Skip header
+            String line = reader.readLine();
 
             while ((line = reader.readLine()) != null) {
                 if (line.trim().isEmpty()) continue;
@@ -93,15 +98,95 @@ public class SysData {
     //                      QUESTIONS API
     // ============================================================
 
-    /**
-     * Load all questions from the QuestionsCSV.csv file.
-     */
+    // Determine the current validity and state of the questions CSV file
+    public static QuestionsFileStatus getQuestionsFileStatus() {
+        File file = new File(QUESTIONS_FILE);
+
+        // File does not exist
+        if (!file.exists()) {
+            return QuestionsFileStatus.NOT_EXISTS;
+        }
+
+        // File exists but is empty
+        if (file.length() == 0) {
+            return QuestionsFileStatus.EMPTY;
+        }
+
+        try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
+
+            // Validate header
+            String header = br.readLine();
+            if (header == null || !header.equals(QUESTIONS_HEADER)) {
+                return QuestionsFileStatus.MALFORMED;
+            }
+
+            String line;
+            boolean hasData = false;
+
+            // Validate all data rows
+            while ((line = br.readLine()) != null) {
+
+                if (line.trim().isEmpty()) {
+                    continue;
+                }
+
+                hasData = true;
+
+                String[] cols = line.split(",", -1);
+
+                // Must contain exactly 8 columns
+                if (cols.length != 8) {
+                    return QuestionsFileStatus.MALFORMED;
+                }
+
+                // Validate ID
+                String idStr = cols[0].trim();
+                if (idStr.isEmpty()) {
+                    return QuestionsFileStatus.MALFORMED;
+                }
+                Integer.parseInt(idStr);
+
+                // Validate question text
+                if (cols[1].trim().isEmpty()) {
+                    return QuestionsFileStatus.MALFORMED;
+                }
+
+                // Validate difficulty
+                if (QuestionDifficulty.fromString(cols[2].trim()) == null) {
+                    return QuestionsFileStatus.MALFORMED;
+                }
+
+                // Validate answer options A–D
+                for (int i = 3; i <= 6; i++) {
+                    if (cols[i].trim().isEmpty()) {
+                        return QuestionsFileStatus.MALFORMED;
+                    }
+                }
+
+                // Validate correct answer
+                if (letterToIndex(cols[7].trim()) == -1) {
+                    return QuestionsFileStatus.MALFORMED;
+                }
+            }
+
+            return hasData
+                    ? QuestionsFileStatus.HAS_DATA
+                    : QuestionsFileStatus.EMPTY;
+
+        } catch (Exception e) {
+            return QuestionsFileStatus.MALFORMED;
+        }
+    }
+
+    // Load all valid questions from the CSV file
     public static List<Question> loadQuestions() {
         List<Question> list = new ArrayList<>();
         File file = new File(QUESTIONS_FILE);
 
+        // No questions available
         if (!file.exists() || file.length() == 0) {
-            return list; // no questions yet
+            return list;
         }
 
         try (BufferedReader br = new BufferedReader(
@@ -122,27 +207,23 @@ public class SysData {
 
                 String[] cols = line.split(",", -1);
                 if (cols.length < 8) {
-                    // malformed line, skip
-                    continue;
+                    continue; // skip malformed rows
                 }
 
-                // Remove BOM from first column if present
+                // Remove BOM if present
                 cols[0] = cols[0].replace("\uFEFF", "");
 
                 int id = Integer.parseInt(cols[0].trim());
                 String text = cols[1];
                 String difficultyStr = cols[2];
 
-                String[] options = new String[4];
-                options[0] = cols[3]; // A
-                options[1] = cols[4]; // B
-                options[2] = cols[5]; // C
-                options[3] = cols[6]; // D
+                String[] options = {
+                        cols[3], cols[4], cols[5], cols[6]
+                };
 
-                String correctLetter = cols[7].trim();
-                int correctIndex = letterToIndex(correctLetter);
-
-                QuestionDifficulty diff = QuestionDifficulty.fromString(difficultyStr);
+                int correctIndex = letterToIndex(cols[7].trim());
+                QuestionDifficulty diff =
+                        QuestionDifficulty.fromString(difficultyStr);
 
                 Question q = new Question(id, text, options, correctIndex, diff);
                 list.add(q);
@@ -155,33 +236,21 @@ public class SysData {
         return list;
     }
 
-    /**
-     * Add a new question to storage.
-     * Simple implementation:
-     *  - Load all questions
-     *  - Add new one
-     *  - Rewrite file
-     */
+    // Add a new question and persist it
     public static boolean addQuestion(Question q) {
         List<Question> all = loadQuestions();
 
-        // Assign next ID based on list size (temporary)
+        // Assign temporary ID
         q.setId(all.size() + 1);
-
         all.add(q);
 
-        // Reassign IDs to guarantee consistency
+        // Ensure sequential IDs
         reassignQuestionIds(all);
 
         return saveQuestions(all);
     }
 
-
-
-    /**
-     * Update an existing question in storage.
-     * This assumes equality by ID.
-     */
+    // Update an existing question by ID
     public static boolean updateQuestion(Question updated) {
         List<Question> all = loadQuestions();
 
@@ -192,35 +261,26 @@ public class SysData {
             }
         }
 
-        // Ensure IDs are still aligned
         reassignQuestionIds(all);
-
         return saveQuestions(all);
     }
 
-    
-    
-
-    /**
-     * Delete a question from storage.
-     */
+    // Delete a question by ID
     public static boolean deleteQuestion(Question toDelete) {
         List<Question> all = loadQuestions();
 
-        boolean removed = all.removeIf(q -> q.getId() == toDelete.getId());
+        boolean removed =
+                all.removeIf(q -> q.getId() == toDelete.getId());
+
         if (!removed) {
-            return false; // nothing to delete
+            return false;
         }
 
         reassignQuestionIds(all);
         return saveQuestions(all);
     }
 
-
-
-    /**
-     * Helper: write full list of questions back to CSV.
-     */
+    // Write the full questions list back to the CSV file
     private static boolean saveQuestions(List<Question> questions) {
         File file = new File(QUESTIONS_FILE);
 
@@ -235,13 +295,11 @@ public class SysData {
 
                 sb.append(q.getId()).append(",");
                 sb.append(escape(q.getText())).append(",");
-                sb.append(q.getDifficulty().toString()).append(",");
+                sb.append(q.getDifficulty()).append(",");
 
-                String[] options = q.getOptions();
-                sb.append(escape(options[0])).append(",");
-                sb.append(escape(options[1])).append(",");
-                sb.append(escape(options[2])).append(",");
-                sb.append(escape(options[3])).append(",");
+                for (String option : q.getOptions()) {
+                    sb.append(escape(option)).append(",");
+                }
 
                 sb.append(indexToLetter(q.getCorrectIndex()));
 
@@ -252,16 +310,27 @@ public class SysData {
             return true;
 
         } catch (IOException e) {
-            // bayan added here - silent failure, controller handles user notification
             return false;
         }
-
     }
 
+    // Recreate a clean questions file with header only
+    public static boolean recreateQuestionsFile() {
+        File file = new File(QUESTIONS_FILE);
 
+        try (BufferedWriter writer = new BufferedWriter(
+                new OutputStreamWriter(new FileOutputStream(file, false), StandardCharsets.UTF_8))) {
 
-    // ====== Helpers ======
+            writer.write(QUESTIONS_HEADER);
+            writer.newLine();
+            return true;
 
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    // Convert answer letter to index
     private static int letterToIndex(String letter) {
         if (letter == null) return -1;
         switch (letter.toUpperCase()) {
@@ -273,6 +342,7 @@ public class SysData {
         }
     }
 
+    // Convert index to answer letter
     private static String indexToLetter(int idx) {
         switch (idx) {
             case 0: return "A";
@@ -283,13 +353,13 @@ public class SysData {
         }
     }
 
-    // Very simple escaping – if you want to support commas inside text, improve this.
+    // Basic escaping to avoid line breaks in CSV
     private static String escape(String s) {
         if (s == null) return "";
         return s.replace("\n", " ").replace("\r", " ");
     }
-    
- // 🔒 MODEL-ONLY helper (not visible to controllers)
+
+    // Reassign sequential IDs starting from 1
     private static void reassignQuestionIds(List<Question> questions) {
         for (int i = 0; i < questions.size(); i++) {
             questions.get(i).setId(i + 1);

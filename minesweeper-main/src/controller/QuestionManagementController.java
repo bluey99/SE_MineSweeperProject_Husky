@@ -5,6 +5,7 @@ import javafx.collections.ObservableList;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import model.Question;
+import model.QuestionsFileStatus;
 import model.SysData;
 import view.DeleteQuestionConfirmDialog;
 import view.QuestionFormDialog;
@@ -14,154 +15,178 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Controller for the Question Management screen.
- * Handles user interactions and mediates between the view and the model.
+ * Controller for the Question Management screen. Manages user interactions and
+ * coordinates between the view and the model.
  */
+
 public class QuestionManagementController {
 
-    private final Stage primaryStage;
+	private final Stage primaryStage;
 
-    // View managed by this controller
-    public final QuestionManagementView view;
+	// View managed by this controller
+	public final QuestionManagementView view;
 
-    // Backing list for the table view
-    private final ObservableList<Question> questionList;
+	// Backing list for the table view
+	private final ObservableList<Question> questionList;
 
-    public QuestionManagementController(Stage primaryStage) {
-        this.primaryStage = primaryStage;
-        this.view = new QuestionManagementView();
+	// Initializes the Question Management screen and validates file state
+	public QuestionManagementController(Stage primaryStage) {
+		this.primaryStage = primaryStage;
+		this.view = new QuestionManagementView();
 
-        // Initial load of questions from the model
-        List<Question> loaded = SysData.loadQuestions();
-        this.questionList = FXCollections.observableArrayList(loaded);
-        view.table.setItems(questionList);
+		// Determine questions file state
+		QuestionsFileStatus status = SysData.getQuestionsFileStatus();
 
-        setupHandlers();
-    }
+		// Load questions only if file is not malformed
+		List<Question> loaded = (status == QuestionsFileStatus.MALFORMED) ? List.of() : SysData.loadQuestions();
 
-    private void setupHandlers() {
+		this.questionList = FXCollections.observableArrayList(loaded);
+		view.table.setItems(questionList);
 
-        // Navigate back to the main menu
-        view.backBtn.setOnAction(e -> {
-            Main.showMainMenu(primaryStage);
-        });
+		// Disable edit/delete until selection
+		view.editBtn.setDisable(true);
+		view.deleteBtn.setDisable(true);
 
-        // Enable Edit/Delete only when a table row is selected
-        view.table.getSelectionModel()
-            .selectedItemProperty()
-            .addListener((obs, oldSelection, newSelection) -> {
+		switch (status) {
 
-                boolean hasSelection = (newSelection != null);
-                view.editBtn.setDisable(!hasSelection);
-                view.deleteBtn.setDisable(!hasSelection);
-            });
+		case NOT_EXISTS -> showInfo("Questions File Missing", "No questions file was found.\n\n"
+				+ "The file will be created automatically when you add the first question.");
 
-        // Add a new question
-        view.addBtn.setOnAction(e -> {
-            QuestionFormDialog dialog =
-                    new QuestionFormDialog("Add New Question", null);
+		case MALFORMED -> {
+			showError("Invalid Questions File", "The questions file exists but is not formatted correctly.\n\n"
+					+ "Please fix or replace the file before managing questions.");
 
-            Optional<Question> result = dialog.showAndWait();
+			// Lock all modification actions
+			view.addBtn.setDisable(true);
+			view.editBtn.setDisable(true);
+			view.deleteBtn.setDisable(true);
+		}
 
-            result.ifPresent(q -> {
-                boolean success = SysData.addQuestion(q);
+		case EMPTY, HAS_DATA -> {
+			// No popup needed; state is reflected in the table UI
+		}
+		}
 
-                if (success) {
-                    showInfo("Question Added",
-                             "The question was added successfully.");
-                    refreshQuestions();
-                } else {
-                    showError("Add Failed",
-                              "Unable to save the question.\n\n" +
-                              "The questions file may be open in another program.\n" +
-                              "Please close it and try again.");
-                }
-            });
-        });
+		setupHandlers();
+	}
 
-        // Edit the selected question
-        view.editBtn.setOnAction(e -> {
-            Question selected =
-                    view.table.getSelectionModel().getSelectedItem();
-            if (selected == null) return;
+	private void setupHandlers() {
 
-            QuestionFormDialog dialog =
-                    new QuestionFormDialog("Edit Question", selected);
+		// Navigate back to the main menu
+		view.backBtn.setOnAction(e -> {
+			Main.showMainMenu(primaryStage);
+		});
 
-            Optional<Question> result = dialog.showAndWait();
+		// Enable Edit/Delete only when a table row is selected
+		view.table.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
 
-            result.ifPresent(q -> {
-                boolean success = SysData.updateQuestion(q);
+			boolean hasSelection = (newSelection != null);
+			view.editBtn.setDisable(!hasSelection);
+			view.deleteBtn.setDisable(!hasSelection);
+		});
 
-                if (success) {
-                    showInfo("Question Updated",
-                             "The question was updated successfully.");
-                    refreshQuestions();
-                } else {
-                    showError("Update Failed",
-                              "Unable to update the question.\n\n" +
-                              "The questions file may be open in another program.\n" +
-                              "Please close it and try again.");
-                }
-            });
-        });
+		// Add a new question
+		view.addBtn.setOnAction(e -> {
+			QuestionFormDialog dialog = new QuestionFormDialog("Add New Question", null);
 
-        // Delete the selected question (with confirmation)
-        view.deleteBtn.setOnAction(e -> {
-            Question selected =
-                    view.table.getSelectionModel().getSelectedItem();
-            if (selected == null) return;
+			Optional<Question> result = dialog.showAndWait();
 
-            DeleteQuestionConfirmDialog dialog =
-                    new DeleteQuestionConfirmDialog(selected);
+			result.ifPresent(q -> {
+				boolean success = SysData.addQuestion(q);
 
-            Optional<Boolean> result = dialog.showAndWait();
-            if (result.isEmpty() || !result.get()) return;
+				if (success) {
+					showInfo("Question Added", "The question was added successfully.");
+					refreshQuestions();
+				} else {
+					showError("Add Failed",
+							"Unable to save the question.\n\n" + "The questions file may be open in another program.\n"
+									+ "Please close it and try again.");
+				}
+			});
+		});
 
-            boolean success = SysData.deleteQuestion(selected);
+		// Edit the selected question
+		view.editBtn.setOnAction(e -> {
+			Question selected = view.table.getSelectionModel().getSelectedItem();
+			if (selected == null)
+				return;
 
-            if (success) {
-                showInfo("Question Deleted",
-                         "The question was deleted successfully.");
-                refreshQuestions();
-            } else {
-                showError("Delete Failed",
-                          "Unable to delete the question.\n\n" +
-                          "The questions file may be open in another program.\n" +
-                          "Please close it and try again.");
-            }
-        });
-    }
+			QuestionFormDialog dialog = new QuestionFormDialog("Edit Question", selected);
 
-    // Reloads questions after add/edit/delete operations
-    private void refreshQuestions() {
-        questionList.setAll(SysData.loadQuestions());
-    }
+			Optional<Question> result = dialog.showAndWait();
 
-    // Creates the scene for this screen
-    public Scene createScene() {
-        return new Scene(view, 900, 600);
-    }
+			result.ifPresent(q -> {
+				boolean success = SysData.updateQuestion(q);
 
-    // Shows a simple information dialog
-    private void showInfo(String title, String message) {
-        javafx.scene.control.Alert alert =
-                new javafx.scene.control.Alert(
-                        javafx.scene.control.Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
+				if (success) {
+					showInfo("Question Updated", "The question was updated successfully.");
+					refreshQuestions();
+				} else {
+					showError("Update Failed",
+							"Unable to update the question.\n\n"
+									+ "The questions file may be open in another program.\n"
+									+ "Please close it and try again.");
+				}
+			});
+		});
 
-    // Shows a simple error dialog
-    private void showError(String title, String message) {
-        javafx.scene.control.Alert alert =
-                new javafx.scene.control.Alert(
-                        javafx.scene.control.Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
+		// Delete the selected question (with confirmation)
+		view.deleteBtn.setOnAction(e -> {
+			Question selected = view.table.getSelectionModel().getSelectedItem();
+			if (selected == null)
+				return;
+
+			DeleteQuestionConfirmDialog dialog = new DeleteQuestionConfirmDialog(selected);
+
+			Optional<Boolean> result = dialog.showAndWait();
+			if (result.isEmpty() || !result.get())
+				return;
+
+			boolean success = SysData.deleteQuestion(selected);
+
+			if (success) {
+				showInfo("Question Deleted", "The question was deleted successfully.");
+				refreshQuestions();
+			} else {
+				showError("Delete Failed", "Unable to delete the question.\n\n"
+						+ "The questions file may be open in another program.\n" + "Please close it and try again.");
+			}
+		});
+	}
+
+	// Reloads questions after add/edit/delete operations
+	private void refreshQuestions() {
+		questionList.setAll(SysData.loadQuestions());
+	}
+
+	// Shows a simple information dialog
+	private void showInfo(String title, String message) {
+		javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+				javafx.scene.control.Alert.AlertType.INFORMATION);
+
+		alert.setTitle(title);
+		alert.setHeaderText(null);
+		alert.setContentText(message);
+
+		// allow text wrapping + auto height
+		alert.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+		alert.getDialogPane().setMinWidth(500);
+
+		alert.showAndWait();
+	}
+
+	// Shows a simple error dialog
+	private void showError(String title, String message) {
+		javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+
+		alert.setTitle(title);
+		alert.setHeaderText(null);
+		alert.setContentText(message);
+
+		alert.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+		alert.getDialogPane().setMinWidth(500);
+
+		alert.showAndWait();
+	}
+
 }
