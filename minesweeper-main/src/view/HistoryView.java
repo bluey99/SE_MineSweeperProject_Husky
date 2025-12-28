@@ -1,6 +1,5 @@
 package view;
 
-import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -10,142 +9,165 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import model.GameHistoryEntry;
-import model.SysData;
 
 public class HistoryView extends BorderPane {
 
     public final Button backBtn = new Button("Menu");
+
+    // Actions
+    public final Button clearHistoryBtn = new Button("Clear History");
+    public final TextField keepRecentField = new TextField();
+    public final Button keepRecentBtn = new Button("Keep Recent");
+    public final Button deleteSelectedBtn = new Button("Delete Selected");
+
+    // NEW: user hint + status + empty label
+    public final Label keepHintLabel = new Label("Keep K = number of most recent games to keep (older entries will be removed).");
+    public final Label statusLabel = new Label("");
+    public final Label emptyLabel = new Label("No history yet.");
+
     public final TableView<GameHistoryEntry> table = new TableView<>();
 
     public HistoryView() {
+        buildUI();
+    }
 
-        // ==== ROOT STYLE (same as QuestionManagementView) ====
-        setStyle("-fx-background-color: #0f172a;");
+    private void buildUI() {
+        setStyle("-fx-background-color: #0B1220;");
 
-        // ==== TOP BAR ====
-        HBox topBar = new HBox(20);
-        topBar.setPadding(new Insets(20, 30, 10, 30));
-        topBar.setAlignment(Pos.CENTER_LEFT);
-
-        // ==== MENU BUTTON (text-only) ====
-        backBtn.setFont(Font.font("Arial", FontWeight.BOLD, 14));
-
-        String normalStyle = """
-            -fx-background-color: #1e293b;
-            -fx-text-fill: #e5e7eb;
-            -fx-background-radius: 999;
-            -fx-padding: 7 18 7 18;
-            -fx-cursor: hand;
-        """;
-
-        String hoverStyle = """
-            -fx-background-color: #334155;
-            -fx-text-fill: #ffffff;
-            -fx-background-radius: 999;
-            -fx-padding: 7 18 7 18;
-            -fx-cursor: hand;
-        """;
-
-        backBtn.setStyle(normalStyle);
-        backBtn.setOnMouseEntered(e -> backBtn.setStyle(hoverStyle));
-        backBtn.setOnMouseExited(e -> backBtn.setStyle(normalStyle));
-
-        // Title icon (scroll icon for history)
-        Label icon = new Label();
-        icon.setTextFill(Color.web("#FBBF24"));
-        icon.setFont(Font.font("Arial", FontWeight.BOLD, 28));
-
-        VBox titleBox = new VBox(5);
+        // ---------- Header ----------
         Label title = new Label("Game History");
         title.setTextFill(Color.WHITE);
-        title.setFont(Font.font("Arial", FontWeight.BOLD, 26));
+        title.setFont(Font.font("Arial", FontWeight.EXTRA_BOLD, 44));
 
         Label subtitle = new Label("Review previous cooperative games");
         subtitle.setTextFill(Color.web("#9CA3AF"));
-        subtitle.setFont(Font.font("Arial", 14));
+        subtitle.setFont(Font.font("Arial", FontWeight.NORMAL, 16));
 
-        titleBox.getChildren().addAll(title, subtitle);
+        VBox titleBox = new VBox(6, title, subtitle);
+        titleBox.setAlignment(Pos.CENTER_LEFT);
+
+        backBtn.setStyle("""
+            -fx-background-color: rgba(255,255,255,0.08);
+            -fx-text-fill: white;
+            -fx-font-weight: bold;
+            -fx-padding: 10 22;
+            -fx-background-radius: 18;
+        """);
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        topBar.getChildren().addAll(backBtn, icon, titleBox, spacer);
-        setTop(topBar);
+        HBox header = new HBox(18, backBtn, spacer, titleBox);
+        header.setAlignment(Pos.CENTER_LEFT);
+        header.setPadding(new Insets(26, 26, 8, 26));
 
-        // ==== TABLE ====
+        // ---------- Action bar ----------
+        keepRecentField.setPromptText("K (e.g. 5)");
+        keepRecentField.setPrefWidth(90);
+
+        // NEW: tooltip explains Keep K
+        keepRecentField.setTooltip(new Tooltip(
+                "Keep only the last K games.\nOlder history entries will be removed."
+        ));
+
+        clearHistoryBtn.setStyle("""
+            -fx-background-color: rgba(255,255,255,0.10);
+            -fx-text-fill: white;
+            -fx-font-weight: bold;
+            -fx-padding: 8 14;
+            -fx-background-radius: 14;
+        """);
+
+        keepRecentBtn.setStyle("""
+            -fx-background-color: rgba(255,255,255,0.10);
+            -fx-text-fill: white;
+            -fx-font-weight: bold;
+            -fx-padding: 8 14;
+            -fx-background-radius: 14;
+        """);
+
+        deleteSelectedBtn.setStyle("""
+            -fx-background-color: rgba(239,68,68,0.85);
+            -fx-text-fill: white;
+            -fx-font-weight: bold;
+            -fx-padding: 8 14;
+            -fx-background-radius: 14;
+        """);
+
+        Label keepLbl = new Label("Keep:");
+        keepLbl.setTextFill(Color.web("#D1D5DB"));
+
+        HBox actions = new HBox(10, clearHistoryBtn, keepLbl, keepRecentField, keepRecentBtn, deleteSelectedBtn);
+        actions.setAlignment(Pos.CENTER_LEFT);
+        actions.setPadding(new Insets(0, 26, 10, 26));
+
+        // NEW: hint label style
+        keepHintLabel.setTextFill(Color.web("#9CA3AF"));
+        keepHintLabel.setStyle("-fx-font-size: 12px;");
+        keepHintLabel.setPadding(new Insets(0, 26, 6, 26));
+
+        statusLabel.setTextFill(Color.web("#93C5FD"));
+        statusLabel.setPadding(new Insets(0, 26, 8, 26));
+
+        // ---------- Table ----------
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        table.setFocusTraversable(false);
-        table.setPlaceholder(new Label("No history records yet."));
+        table.setPrefHeight(560);
 
-        TableColumn<GameHistoryEntry, String> dateCol = new TableColumn<>("Date & Time");
-        dateCol.setCellValueFactory(new PropertyValueFactory<>("dateTime"));
+        TableColumn<GameHistoryEntry, String> cDate = new TableColumn<>("Date & Time");
+        cDate.setCellValueFactory(new PropertyValueFactory<>("dateTime"));
 
-        TableColumn<GameHistoryEntry, String> diffCol = new TableColumn<>("Difficulty");
-        diffCol.setCellValueFactory(new PropertyValueFactory<>("difficulty"));
+        TableColumn<GameHistoryEntry, String> cDiff = new TableColumn<>("Difficulty");
+        cDiff.setCellValueFactory(new PropertyValueFactory<>("difficulty"));
 
-        TableColumn<GameHistoryEntry, String> p1Col = new TableColumn<>("Player 1");
-        p1Col.setCellValueFactory(new PropertyValueFactory<>("player1Name"));
+        TableColumn<GameHistoryEntry, String> cP1 = new TableColumn<>("Player 1");
+        cP1.setCellValueFactory(new PropertyValueFactory<>("player1Name"));
 
-        TableColumn<GameHistoryEntry, String> p2Col = new TableColumn<>("Player 2");
-        p2Col.setCellValueFactory(new PropertyValueFactory<>("player2Name"));
+        TableColumn<GameHistoryEntry, String> cP2 = new TableColumn<>("Player 2");
+        cP2.setCellValueFactory(new PropertyValueFactory<>("player2Name"));
 
-        TableColumn<GameHistoryEntry, String> resultCol = new TableColumn<>("Result");
-        resultCol.setCellValueFactory(new PropertyValueFactory<>("result"));
-        resultCol.setCellFactory(col -> new TableCell<>() {
-            private final Label tag = new Label();
+        TableColumn<GameHistoryEntry, String> cRes = new TableColumn<>("Result");
+        cRes.setCellValueFactory(new PropertyValueFactory<>("result"));
 
-            {
-                tag.setPadding(new Insets(2, 10, 2, 10));
-                tag.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-                tag.setTextFill(Color.WHITE);
-                tag.setStyle("-fx-background-radius: 999;");
-            }
-
+        cRes.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                    setGraphic(null);
-                } else {
-                    if (item.equalsIgnoreCase("WIN"))
-                        tag.setStyle("-fx-background-color: #16a34a; -fx-background-radius: 999;");
-                    else
-                        tag.setStyle("-fx-background-color: #dc2626; -fx-background-radius: 999;");
+                if (empty || item == null) { setGraphic(null); setText(null); return; }
 
-                    tag.setText(item);
-                    setGraphic(tag);
-                    setAlignment(Pos.CENTER);
-                }
+                Label pill = new Label(item);
+                pill.setStyle("""
+                    -fx-text-fill: white;
+                    -fx-font-weight: bold;
+                    -fx-padding: 4 14;
+                    -fx-background-radius: 16;
+                """);
+                if ("WIN".equalsIgnoreCase(item)) pill.setStyle(pill.getStyle() + "-fx-background-color: #16A34A;");
+                else pill.setStyle(pill.getStyle() + "-fx-background-color: #DC2626;");
+
+                setGraphic(pill);
+                setText(null);
+                setAlignment(Pos.CENTER);
             }
         });
 
-        TableColumn<GameHistoryEntry, Number> scoreCol = new TableColumn<>("Final Score");
-        scoreCol.setCellValueFactory(new PropertyValueFactory<>("finalScore"));
+        TableColumn<GameHistoryEntry, Integer> cScore = new TableColumn<>("Final Score");
+        cScore.setCellValueFactory(new PropertyValueFactory<>("finalScore"));
 
-        TableColumn<GameHistoryEntry, Number> lengthCol = new TableColumn<>("Game Length (sec)");
-        lengthCol.setCellValueFactory(new PropertyValueFactory<>("gameLengthSeconds"));
+        TableColumn<GameHistoryEntry, Integer> cTime = new TableColumn<>("Game Length (sec)");
+        cTime.setCellValueFactory(new PropertyValueFactory<>("gameLengthSeconds"));
 
-        table.getColumns().addAll(dateCol, diffCol, p1Col, p2Col, resultCol, scoreCol, lengthCol);
+        table.getColumns().addAll(cDate, cDiff, cP1, cP2, cRes, cScore, cTime);
 
-        VBox centerBox = new VBox(10, table);
-        centerBox.setPadding(new Insets(10, 30, 10, 30));
-        setCenter(centerBox);
+        emptyLabel.setTextFill(Color.web("#9CA3AF"));
+        emptyLabel.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+        emptyLabel.setVisible(false);
+        emptyLabel.setManaged(false);
+        VBox.setMargin(emptyLabel, new Insets(8, 0, 0, 0));
 
-        // === Load history from CSV via SysData ===
-        loadHistoryData(dateCol);
-    }
+        VBox center = new VBox(0, actions, keepHintLabel, statusLabel, table, emptyLabel);
+        center.setPadding(new Insets(0, 0, 26, 0));
 
-    private void loadHistoryData(TableColumn<GameHistoryEntry, String> dateCol) {
-        var historyList = SysData.loadHistory();
-
-        if (historyList != null && !historyList.isEmpty()) {
-            table.setItems(FXCollections.observableArrayList(historyList));
-
-            table.getSortOrder().clear();
-            dateCol.setSortType(TableColumn.SortType.DESCENDING);
-            table.getSortOrder().add(dateCol);
-            table.sort();
-        }
+        setTop(header);
+        setCenter(center);
     }
 }
