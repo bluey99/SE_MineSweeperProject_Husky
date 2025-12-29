@@ -7,33 +7,70 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import model.Question;
 
+/**
+ * View component for managing trivia questions.
+ * 
+ * Responsibilities:
+ * - Define and style UI components
+ * - Present question data in a table
+ * - Reflect UI state (enabled/disabled buttons)
+ *
+ * Note:
+ * - No business logic is handled here.
+ * - All behavior (event handling, state changes) is managed by the Controller.
+ */
 public class QuestionManagementView extends BorderPane {
 
+    // Top-level navigation and action buttons (public for controller access)
     public final Button backBtn = new Button("Menu");
     public final Button addBtn = new Button("+ Add Question");
     public final Button editBtn = new Button("Edit Selected");
     public final Button deleteBtn = new Button("Delete Selected");
 
+    /**
+     * Styles for secondary action buttons.
+     * 
+     * Enabled / disabled styles are separated so that the visual state
+     * clearly reflects whether an action is currently available.
+     */
+    private static final String SECONDARY_ENABLED_STYLE =
+            "-fx-background-color: #1F2937;" +
+            "-fx-text-fill: #E5E7EB;" +
+            "-fx-background-radius: 8;" +
+            "-fx-padding: 0 14 0 14;" +
+            "-fx-cursor: hand;";
+
+    private static final String SECONDARY_DISABLED_STYLE =
+            "-fx-background-color: #111827;" +
+            "-fx-text-fill: #6B7280;" +
+            "-fx-background-radius: 8;" +
+            "-fx-padding: 0 14 0 14;" +
+            "-fx-cursor: default;" +
+            "-fx-opacity: 0.6;";
+
+    // Table displaying all questions (data injected by the controller)
     public final TableView<Question> table = new TableView<>();
 
     public QuestionManagementView() {
 
+        // Global background color for the screen
         setStyle("-fx-background-color: #0f172a;");
 
         // ---------------------------------------------------------------------
-        // Top bar
+        // Top bar (navigation + title)
         // ---------------------------------------------------------------------
         HBox topBar = new HBox(20);
         topBar.setPadding(new Insets(20, 30, 10, 30));
         topBar.setAlignment(Pos.CENTER_LEFT);
 
-        // ==== MENU BUTTON (same as HistoryView) ====
+        // Back button styling (consistent with other views)
         backBtn.setFont(Font.font("Arial", FontWeight.BOLD, 14));
 
         String normalStyle = """
@@ -56,7 +93,16 @@ public class QuestionManagementView extends BorderPane {
         backBtn.setOnMouseEntered(e -> backBtn.setStyle(hoverStyle));
         backBtn.setOnMouseExited(e -> backBtn.setStyle(normalStyle));
 
-        // Title icon
+        /**
+         * Initial UI state:
+         * Edit and Delete are disabled until a table row is selected.
+         * 
+         * The controller is responsible for enabling them when appropriate.
+         */
+        editBtn.setDisable(true);
+        deleteBtn.setDisable(true);
+
+        // Title and subtitle
         Label iconLabel = new Label("📚");
         iconLabel.setTextFill(Color.web("#8B5CF6"));
         iconLabel.setFont(Font.font("Arial", FontWeight.BOLD, 28));
@@ -81,15 +127,17 @@ public class QuestionManagementView extends BorderPane {
         setTop(topBar);
 
         // ---------------------------------------------------------------------
-        // Center table
+        // Center table (question list)
         // ---------------------------------------------------------------------
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
+        // Placeholder shown when no questions exist
         Label placeholder = new Label("No questions yet. Click \"Add Question\" to create one.");
         placeholder.setTextFill(Color.web("#9CA3AF"));
         placeholder.setFont(Font.font("Arial", 14));
         table.setPlaceholder(placeholder);
 
+        // Table visual styling
         table.setStyle(
             "-fx-background-color: #020617;" +
             "-fx-control-inner-background: #020617;" +
@@ -106,7 +154,7 @@ public class QuestionManagementView extends BorderPane {
         );
 
         // ---------------------------------------------------------------------
-        // Columns
+        // Table columns
         // ---------------------------------------------------------------------
         TableColumn<Question, String> qCol = new TableColumn<>("Question");
         qCol.setCellValueFactory(data ->
@@ -120,6 +168,11 @@ public class QuestionManagementView extends BorderPane {
             )
         );
 
+        /**
+         * Custom cell rendering for difficulty:
+         * Displays difficulty as a colored pill-style label
+         * to improve visual scanning and readability.
+         */
         diffCol.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -160,25 +213,42 @@ public class QuestionManagementView extends BorderPane {
         setCenter(centerBox);
 
         // ---------------------------------------------------------------------
-        // Bottom actions
+        // Bottom action buttons
         // ---------------------------------------------------------------------
         HBox bottom = new HBox(10);
         bottom.setPadding(new Insets(10, 30, 20, 30));
         bottom.setAlignment(Pos.CENTER_RIGHT);
 
-     // same style for all 3 buttons
+        // Apply consistent styling to action buttons
         styleSecondary(addBtn);
         styleSecondary(editBtn);
         styleSecondary(deleteBtn);
-     // optional: make them same width for clean alignment
+
+        // Fixed width for visual alignment
         addBtn.setPrefWidth(140);
         editBtn.setPrefWidth(140);
         deleteBtn.setPrefWidth(140);
 
-        bottom.getChildren().addAll(addBtn, editBtn, deleteBtn);
+        /**
+         * Wrappers are used to enable tooltips on disabled buttons.
+         * JavaFX does not show tooltips on disabled nodes directly.
+         */
+        HBox editWrapper = new HBox(editBtn);
+        HBox deleteWrapper = new HBox(deleteBtn);
+
+        Tooltip editTip = new Tooltip("Select a question from the table to edit");
+        Tooltip deleteTip = new Tooltip("Select a question from the table to delete");
+
+        Tooltip.install(editWrapper, editTip);
+        Tooltip.install(deleteWrapper, deleteTip);
+
+        bottom.getChildren().addAll(addBtn, editWrapper, deleteWrapper);
         setBottom(bottom);
     }
 
+    /**
+     * Styles the primary action button (Add Question).
+     */
     private void stylePrimary(Button btn) {
         btn.setPrefHeight(36);
         btn.setFont(Font.font("Arial", FontWeight.BOLD, 14));
@@ -191,15 +261,24 @@ public class QuestionManagementView extends BorderPane {
         );
     }
 
+    /**
+     * Styles secondary buttons and automatically updates their
+     * appearance when their disabled state changes.
+     */
     private void styleSecondary(Button btn) {
         btn.setPrefHeight(32);
         btn.setFont(Font.font("Arial", 13));
-        btn.setStyle(
-            "-fx-background-color: #1F2937;" +
-            "-fx-text-fill: #E5E7EB;" +
-            "-fx-background-radius: 8;" +
-            "-fx-padding: 0 14 0 14;" +
-            "-fx-cursor: hand;"
-        );
+
+        // Apply correct initial style
+        btn.setStyle(btn.isDisabled()
+                ? SECONDARY_DISABLED_STYLE
+                : SECONDARY_ENABLED_STYLE);
+
+        // React to enabled / disabled state changes
+        btn.disabledProperty().addListener((obs, wasDisabled, isNowDisabled) -> {
+            btn.setStyle(isNowDisabled
+                    ? SECONDARY_DISABLED_STYLE
+                    : SECONDARY_ENABLED_STYLE);
+        });
     }
 }
