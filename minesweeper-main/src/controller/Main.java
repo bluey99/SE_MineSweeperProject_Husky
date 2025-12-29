@@ -104,22 +104,19 @@ public class Main extends Application {
 			stage.centerOnScreen();
 		});
 
+
 		// History button -> open HistoryView
 		menu.historyBtn.setOnAction(e -> {
-			HistoryView historyView = new HistoryView();
-			Scene historyScene = new Scene(historyView, width, height);
-			stage.setScene(historyScene);
-			stage.sizeToScene();
-
-			// keep the History window at menu size
-			stage.setMinWidth(width);
-			stage.setMaxWidth(width);
-			stage.setMinHeight(height);
-			stage.setMaxHeight(height);
-			stage.centerOnScreen();
-
-			// Back button inside HistoryView -> return to menu
-			historyView.backBtn.setOnAction(ev -> Main.showMainMenu(stage));
+		    HistoryController hc = new HistoryController(stage);
+		    Scene historyScene = hc.createScene(width, height);
+		    stage.setScene(historyScene);
+		    stage.sizeToScene();
+		
+		    stage.setMinWidth(width);
+		    stage.setMaxWidth(width);
+		    stage.setMinHeight(height);
+		    stage.setMaxHeight(height);
+		    stage.centerOnScreen();
 		});
 
 		// Question Management

@@ -7,9 +7,10 @@ import java.util.List;
 
 /**
  * Central data access class.
+ *
  * Handles:
- *  - Game history (game_history.csv)
- *  - Trivia questions (QuestionsCSV.csv)
+ * - Game history (game_history.csv)
+ * - Trivia questions (QuestionsCSV.csv)
  *
  * Controllers and views MUST NOT access files directly.
  */
@@ -30,7 +31,7 @@ public class SysData {
     //                      GAME HISTORY API
     // ============================================================
 
-    // Append a game history entry to the CSV file
+    /** Append a game history entry */
     public static void saveGame(GameHistoryEntry entry) {
         File file = new File(HISTORY_FILE);
 
@@ -51,12 +52,11 @@ public class SysData {
         }
     }
 
-    // Load all game history entries from storage
+    /** Load all history entries */
     public static List<GameHistoryEntry> loadHistory() {
         List<GameHistoryEntry> list = new ArrayList<>();
         File file = new File(HISTORY_FILE);
-
-        // No history available
+        System.out.println("khara 3lek khorkghe");
         if (!file.exists() || file.length() == 0) {
             return list;
         }
@@ -64,8 +64,8 @@ public class SysData {
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
 
-            // Skip header
-            String line = reader.readLine();
+            reader.readLine(); // skip header
+            String line;
 
             while ((line = reader.readLine()) != null) {
                 if (line.trim().isEmpty()) continue;
@@ -73,17 +73,16 @@ public class SysData {
                 String[] parts = line.split(",", -1);
                 if (parts.length < 7) continue;
 
-                String dateTime   = parts[0];
-                String difficulty = parts[1];
-                String p1         = parts[2];
-                String p2         = parts[3];
-                String result     = parts[4];
-                int finalScore    = Integer.parseInt(parts[5]);
-                int gameLength    = Integer.parseInt(parts[6]);
-
                 GameHistoryEntry entry = new GameHistoryEntry(
-                        dateTime, difficulty, p1, p2, result, finalScore, gameLength
+                        parts[0],
+                        parts[1],
+                        parts[2],
+                        parts[3],
+                        parts[4],
+                        Integer.parseInt(parts[5]),
+                        Integer.parseInt(parts[6])
                 );
+
                 list.add(entry);
             }
 
@@ -95,27 +94,100 @@ public class SysData {
     }
 
     // ============================================================
+    //                  HISTORY ADMIN OPERATIONS
+    // ============================================================
+
+    /** Remove all history entries (keep header) */
+    public static int clearHistory() {
+        List<GameHistoryEntry> all = loadHistory();
+        rewriteHistory(new ArrayList<>());
+        return all.size();
+    }
+
+    /** Keep only the last N history entries */
+    public static int trimHistory(int keepN) {
+        List<GameHistoryEntry> all = loadHistory();
+
+        if (keepN >= all.size()) return 0;
+
+        if (keepN <= 0) {
+            int removed = all.size();
+            rewriteHistory(new ArrayList<>());
+            return removed;
+        }
+
+        int fromIndex = Math.max(0, all.size() - keepN);
+        List<GameHistoryEntry> kept = new ArrayList<>(all.subList(fromIndex, all.size()));
+
+        int removed = all.size() - kept.size();
+        rewriteHistory(kept);
+        return removed;
+    }
+
+    /** Safely delete a specific history entry */
+    public static boolean deleteHistoryEntry(GameHistoryEntry target) {
+        List<GameHistoryEntry> all = loadHistory();
+
+        boolean removed = all.removeIf(e -> sameEntry(e, target));
+        if (!removed) return false;
+
+        rewriteHistory(all);
+        return true;
+    }
+
+    /** Rewrite history CSV from scratch */
+    private static void rewriteHistory(List<GameHistoryEntry> entries) {
+        File file = new File(HISTORY_FILE);
+
+        try (BufferedWriter writer = new BufferedWriter(
+                new OutputStreamWriter(new FileOutputStream(file, false), StandardCharsets.UTF_8))) {
+
+            writer.write(HISTORY_HEADER);
+            writer.newLine();
+
+            for (GameHistoryEntry e : entries) {
+                writer.write(e.toCsvRow());
+                writer.newLine();
+            }
+
+        } catch (IOException e) {
+            System.err.println("Failed to rewrite history: " + e.getMessage());
+        }
+    }
+
+    /** Strict comparison for safe deletion */
+    private static boolean sameEntry(GameHistoryEntry a, GameHistoryEntry b) {
+        if (a == null || b == null) return false;
+
+        return safeEq(a.getDateTime(), b.getDateTime())
+                && safeEq(a.getDifficulty(), b.getDifficulty())
+                && safeEq(a.getPlayer1Name(), b.getPlayer1Name())
+                && safeEq(a.getPlayer2Name(), b.getPlayer2Name())
+                && safeEq(a.getResult(), b.getResult())
+                && a.getFinalScore() == b.getFinalScore()
+                && a.getGameLengthSeconds() == b.getGameLengthSeconds();
+    }
+
+    private static boolean safeEq(String x, String y) {
+        if (x == null && y == null) return true;
+        if (x == null || y == null) return false;
+        return x.equals(y);
+    }
+
+    // ============================================================
     //                      QUESTIONS API
     // ============================================================
 
-    // Determine the current validity and state of the questions CSV file
+    /** Validate questions CSV state */
     public static QuestionsFileStatus getQuestionsFileStatus() {
         File file = new File(QUESTIONS_FILE);
 
-        // File does not exist
-        if (!file.exists()) {
-            return QuestionsFileStatus.NOT_EXISTS;
-        }
-
-        // File exists but is empty
-        if (file.length() == 0) {
-            return QuestionsFileStatus.EMPTY;
-        }
+        if (!file.exists()) return QuestionsFileStatus.NOT_EXISTS;
+        if (file.length() == 0) return QuestionsFileStatus.EMPTY;
 
         try (BufferedReader br = new BufferedReader(
                 new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
 
-            // Validate header
             String header = br.readLine();
             if (header == null || !header.equals(QUESTIONS_HEADER)) {
                 return QuestionsFileStatus.MALFORMED;
@@ -124,70 +196,49 @@ public class SysData {
             String line;
             boolean hasData = false;
 
-            // Validate all data rows
             while ((line = br.readLine()) != null) {
-
-                if (line.trim().isEmpty()) {
-                    continue;
-                }
+                if (line.trim().isEmpty()) continue;
 
                 hasData = true;
-
                 String[] cols = line.split(",", -1);
-
-                // Must contain exactly 8 columns
-                if (cols.length != 8) {
-                    return QuestionsFileStatus.MALFORMED;
-                }
+                if (cols.length != 8) return QuestionsFileStatus.MALFORMED;
 
                 // Validate ID
                 String idStr = cols[0].trim();
-                if (idStr.isEmpty()) {
-                    return QuestionsFileStatus.MALFORMED;
-                }
+                if (idStr.isEmpty()) return QuestionsFileStatus.MALFORMED;
                 Integer.parseInt(idStr);
 
                 // Validate question text
-                if (cols[1].trim().isEmpty()) {
-                    return QuestionsFileStatus.MALFORMED;
-                }
+                if (cols[1].trim().isEmpty()) return QuestionsFileStatus.MALFORMED;
 
                 // Validate difficulty
-                if (QuestionDifficulty.fromString(cols[2].trim()) == null) {
+                if (QuestionDifficulty.fromString(cols[2].trim()) == null)
                     return QuestionsFileStatus.MALFORMED;
-                }
 
                 // Validate answer options A–D
                 for (int i = 3; i <= 6; i++) {
-                    if (cols[i].trim().isEmpty()) {
+                    if (cols[i].trim().isEmpty())
                         return QuestionsFileStatus.MALFORMED;
-                    }
                 }
 
                 // Validate correct answer
-                if (letterToIndex(cols[7].trim()) == -1) {
+                if (letterToIndex(cols[7].trim()) == -1)
                     return QuestionsFileStatus.MALFORMED;
-                }
             }
 
-            return hasData
-                    ? QuestionsFileStatus.HAS_DATA
-                    : QuestionsFileStatus.EMPTY;
+            return hasData ? QuestionsFileStatus.HAS_DATA : QuestionsFileStatus.EMPTY;
 
         } catch (Exception e) {
             return QuestionsFileStatus.MALFORMED;
         }
     }
 
-    // Load all valid questions from the CSV file
+    /** Load all questions */
     public static List<Question> loadQuestions() {
         List<Question> list = new ArrayList<>();
         File file = new File(QUESTIONS_FILE);
 
-        // No questions available
-        if (!file.exists() || file.length() == 0) {
-            return list;
-        }
+        if (!file.exists() || file.length() == 0) return list;
 
         try (BufferedReader br = new BufferedReader(
                 new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
@@ -196,8 +247,6 @@ public class SysData {
             boolean firstLine = true;
 
             while ((line = br.readLine()) != null) {
-
-                // Skip header
                 if (firstLine) {
                     firstLine = false;
                     continue;
@@ -206,26 +255,19 @@ public class SysData {
                 if (line.trim().isEmpty()) continue;
 
                 String[] cols = line.split(",", -1);
-                if (cols.length < 8) {
-                    continue; // skip malformed rows
-                }
+                if (cols.length < 8) continue;
 
                 // Remove BOM if present
                 cols[0] = cols[0].replace("\uFEFF", "");
 
-                int id = Integer.parseInt(cols[0].trim());
-                String text = cols[1];
-                String difficultyStr = cols[2];
+                Question q = new Question(
+                        Integer.parseInt(cols[0].trim()),
+                        cols[1],
+                        new String[]{cols[3], cols[4], cols[5], cols[6]},
+                        letterToIndex(cols[7].trim()),
+                        QuestionDifficulty.fromString(cols[2])
+                );
 
-                String[] options = {
-                        cols[3], cols[4], cols[5], cols[6]
-                };
-
-                int correctIndex = letterToIndex(cols[7].trim());
-                QuestionDifficulty diff =
-                        QuestionDifficulty.fromString(difficultyStr);
-
-                Question q = new Question(id, text, options, correctIndex, diff);
                 list.add(q);
             }
 
@@ -236,21 +278,14 @@ public class SysData {
         return list;
     }
 
-    // Add a new question and persist it
     public static boolean addQuestion(Question q) {
         List<Question> all = loadQuestions();
-
-        // Assign temporary ID
         q.setId(all.size() + 1);
         all.add(q);
-
-        // Ensure sequential IDs
         reassignQuestionIds(all);
-
         return saveQuestions(all);
     }
 
-    // Update an existing question by ID
     public static boolean updateQuestion(Question updated) {
         List<Question> all = loadQuestions();
 
@@ -265,22 +300,17 @@ public class SysData {
         return saveQuestions(all);
     }
 
-    // Delete a question by ID
     public static boolean deleteQuestion(Question toDelete) {
         List<Question> all = loadQuestions();
 
-        boolean removed =
-                all.removeIf(q -> q.getId() == toDelete.getId());
-
-        if (!removed) {
-            return false;
-        }
+        boolean removed = all.removeIf(q -> q.getId() == toDelete.getId());
+        if (!removed) return false;
 
         reassignQuestionIds(all);
         return saveQuestions(all);
     }
 
-    // Write the full questions list back to the CSV file
+    /** Write full list of questions back to CSV */
     private static boolean saveQuestions(List<Question> questions) {
         File file = new File(QUESTIONS_FILE);
 
@@ -291,19 +321,16 @@ public class SysData {
             writer.newLine();
 
             for (Question q : questions) {
-                StringBuilder sb = new StringBuilder();
-
-                sb.append(q.getId()).append(",");
-                sb.append(escape(q.getText())).append(",");
-                sb.append(q.getDifficulty()).append(",");
-
-                for (String option : q.getOptions()) {
-                    sb.append(escape(option)).append(",");
-                }
-
-                sb.append(indexToLetter(q.getCorrectIndex()));
-
-                writer.write(sb.toString());
+                writer.write(
+                        q.getId() + "," +
+                                escape(q.getText()) + "," +
+                                q.getDifficulty() + "," +
+                                escape(q.getOptions()[0]) + "," +
+                                escape(q.getOptions()[1]) + "," +
+                                escape(q.getOptions()[2]) + "," +
+                                escape(q.getOptions()[3]) + "," +
+                                indexToLetter(q.getCorrectIndex())
+                );
                 writer.newLine();
             }
 
@@ -314,7 +341,7 @@ public class SysData {
         }
     }
 
-    // Recreate a clean questions file with header only
+    /** Recreate a clean questions file with header only */
     public static boolean recreateQuestionsFile() {
         File file = new File(QUESTIONS_FILE);
 
@@ -330,7 +357,10 @@ public class SysData {
         }
     }
 
-    // Convert answer letter to index
+    // ============================================================
+    //                      HELPERS
+    // ============================================================
+
     private static int letterToIndex(String letter) {
         if (letter == null) return -1;
         switch (letter.toUpperCase()) {
@@ -338,11 +368,10 @@ public class SysData {
             case "B": return 1;
             case "C": return 2;
             case "D": return 3;
-            default:  return -1;
+            default: return -1;
         }
     }
 
-    // Convert index to answer letter
     private static String indexToLetter(int idx) {
         switch (idx) {
             case 0: return "A";
@@ -353,13 +382,11 @@ public class SysData {
         }
     }
 
-    // Basic escaping to avoid line breaks in CSV
     private static String escape(String s) {
         if (s == null) return "";
         return s.replace("\n", " ").replace("\r", " ");
     }
 
-    // Reassign sequential IDs starting from 1
     private static void reassignQuestionIds(List<Question> questions) {
         for (int i = 0; i < questions.size(); i++) {
             questions.get(i).setId(i + 1);
