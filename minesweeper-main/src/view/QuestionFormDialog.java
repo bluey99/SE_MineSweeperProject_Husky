@@ -5,6 +5,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
@@ -32,6 +33,18 @@ public class QuestionFormDialog {
     private final boolean isEditMode;
     private final Question original;
 
+    // ---------------- Theme ----------------
+    private static final String BG = "#0f172a";
+    private static final String CARD_BG = "rgba(255,255,255,0.04)";
+    private static final String BORDER = "#1E293B";
+    private static final String INPUT_BG = "#020617";
+    private static final String TEXT = "#E5E7EB";
+    private static final String SUBTEXT = "#9CA3AF";
+    private static final String PLACEHOLDER = "#6B7280";
+    private static final String PRIMARY = "#2563EB";
+    private static final String SECONDARY = "#1F2937";
+    private static final String SECONDARY_HOVER = "#334155";
+
     public QuestionFormDialog(String title, Question existing) {
         this.isEditMode = (existing != null);
         this.original = existing;
@@ -45,7 +58,9 @@ public class QuestionFormDialog {
                 ButtonBar.ButtonData.OK_DONE
         );
         ButtonType cancelType = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-        dialog.getDialogPane().getButtonTypes().addAll(okType, cancelType);
+
+        // Cancel first, OK last => OK button appears on the right
+        dialog.getDialogPane().getButtonTypes().addAll(cancelType, okType);
 
         // Size relative to Question Management window
         dialog.setOnShown(e -> {
@@ -59,55 +74,42 @@ public class QuestionFormDialog {
                 dialog.getDialogPane().setPrefWidth(640);
                 dialog.getDialogPane().setPrefHeight(560);
             }
+
+            // ✅ Remove the “dots” (TextArea scrollbar corner artifacts)
+            questionArea.lookupAll(".scroll-bar").forEach(n -> n.setVisible(false));
+            questionArea.lookupAll(".corner").forEach(n -> n.setVisible(false));
         });
 
         VBox root = new VBox(14);
         root.setPadding(new Insets(18));
-        root.setStyle("-fx-background-color: #0f172a;");
+        root.setStyle("-fx-background-color: " + BG + ";");
 
         Label titleLabel = new Label(title);
-        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
-        titleLabel.setStyle("-fx-text-fill: white;");
+        titleLabel.setFont(Font.font("Arial", FontWeight.EXTRA_BOLD, 26));
+        titleLabel.setTextFill(Color.WHITE);
 
         Label subtitle = new Label(isEditMode
                 ? "Update the question details"
                 : "Create a new trivia question");
-        subtitle.setStyle("-fx-text-fill: #9CA3AF; -fx-font-size: 13px;");
+        subtitle.setStyle("-fx-text-fill: " + SUBTEXT + "; -fx-font-size: 13px;");
 
-        // ---------------- Question (NO sectionBox) ----------------
+        // ---------------- Question ----------------
         Label qLabel = sectionLabel("Question");
 
         questionArea.setPromptText("Enter your question...");
         questionArea.setWrapText(true);
-        questionArea.setPrefRowCount(2);
-        questionArea.setPrefHeight(80);
+        questionArea.setPrefRowCount(3);
 
-        // ✅ Make TextArea itself transparent (removes the “inner/bottom box” effect)
-        // Keep the black text like you wanted
-        questionArea.setStyle(
-                "-fx-background-color: transparent;" +
-                "-fx-control-inner-background: transparent;" +
-                "-fx-text-fill: #000000;" +
-                "-fx-prompt-text-fill: #6B7280;" +
-                "-fx-caret-color: #000000;" +
-                "-fx-background-insets: 0;" +
-                "-fx-border-color: transparent;" +
-                "-fx-faint-focus-color: transparent;" +
-                "-fx-focus-color: transparent;"
-        );
+        // fixed height so it looks stable (no resizing artifacts)
+        questionArea.setMinHeight(100);
+        questionArea.setPrefHeight(100);
+        questionArea.setMaxHeight(100);
 
-        // ✅ One single visible white box (this replaces any “extra box” look)
-        StackPane questionInputBox = new StackPane(questionArea);
-        questionInputBox.setPadding(new Insets(10, 12, 10, 12));
-        questionInputBox.setStyle(
-                "-fx-background-color: #FFFFFF;" +
-                "-fx-background-radius: 10;" +
-                "-fx-border-radius: 10;" +
-                "-fx-border-color: rgba(0,0,0,0.10);"
-        );
+        // hide scrollbars (still created internally, but we hide them onShown too)
+        questionArea.setStyle(""); // clear first
+        styleTextArea(questionArea);
 
-        VBox questionBox = new VBox(8, qLabel, questionInputBox);
-        questionBox.setPadding(new Insets(0));
+        VBox questionBox = sectionBox(qLabel, questionArea);
 
         // ---------------- Answers ----------------
         Label aLabel = sectionLabel("Answer Options");
@@ -116,15 +118,18 @@ public class QuestionFormDialog {
         answersGrid.setHgap(12);
         answersGrid.setVgap(10);
 
-        answersGrid.getColumnConstraints().addAll(
-                new ColumnConstraints(50, 50, Double.MAX_VALUE, Priority.ALWAYS, null, true),
-                new ColumnConstraints(50, 50, Double.MAX_VALUE, Priority.ALWAYS, null, true)
-        );
+        ColumnConstraints c1 = new ColumnConstraints();
+        c1.setHgrow(Priority.ALWAYS);
+        ColumnConstraints c2 = new ColumnConstraints();
+        c2.setHgrow(Priority.ALWAYS);
+        answersGrid.getColumnConstraints().addAll(c1, c2);
 
         addAnswerField(answersGrid, 0, 0, "A", optionFields[0]);
         addAnswerField(answersGrid, 1, 0, "B", optionFields[1]);
         addAnswerField(answersGrid, 0, 1, "C", optionFields[2]);
         addAnswerField(answersGrid, 1, 1, "D", optionFields[3]);
+
+        VBox answersBox = sectionBox(aLabel, answersGrid);
 
         // ---------------- Correct answer ----------------
         Label correctLabel = sectionLabel("Correct Answer");
@@ -133,12 +138,9 @@ public class QuestionFormDialog {
         correctAnswerBox.getSelectionModel().selectFirst();
         correctAnswerBox.setPrefHeight(36);
         correctAnswerBox.setMaxWidth(Double.MAX_VALUE);
-        correctAnswerBox.setStyle(
-                "-fx-background-color: #FFFFFF;" +
-                "-fx-text-fill: #000000;" +
-                "-fx-prompt-text-fill: #6B7280;" +
-                "-fx-background-radius: 10;"
-        );
+        styleComboBox(correctAnswerBox);
+
+        VBox correctBox = sectionBox(correctLabel, correctAnswerBox);
 
         // ---------------- Difficulty ----------------
         Label dLabel = sectionLabel("Difficulty");
@@ -148,9 +150,11 @@ public class QuestionFormDialog {
         ToggleButton hardBtn = makeDiffButton("Hard");
         ToggleButton expertBtn = makeDiffButton("Expert");
 
-        HBox diffBox = new HBox(8, easyBtn, medBtn, hardBtn, expertBtn);
+        HBox diffBox = new HBox(10, easyBtn, medBtn, hardBtn, expertBtn);
         diffBox.setAlignment(Pos.CENTER_LEFT);
         easyBtn.setSelected(true);
+
+        VBox difficultyBox = sectionBox(dLabel, diffBox);
 
         // Load edit data
         if (isEditMode && original != null) {
@@ -177,18 +181,23 @@ public class QuestionFormDialog {
         root.getChildren().addAll(
                 titleLabel,
                 subtitle,
-                questionBox, // ✅ fixed
-                sectionBox(aLabel, answersGrid),
-                sectionBox(correctLabel, correctAnswerBox),
-                sectionBox(dLabel, diffBox)
+                questionBox,
+                answersBox,
+                correctBox,
+                difficultyBox
         );
 
         dialog.getDialogPane().setContent(root);
-        dialog.getDialogPane().setStyle("-fx-background-color: #0f172a;");
+        dialog.getDialogPane().setStyle("-fx-background-color: " + BG + ";");
+
+        // ---------------- Buttons (match the rest of the system) ----------------
+        Button okButton = (Button) dialog.getDialogPane().lookupButton(okType);
+        Button cancelButton = (Button) dialog.getDialogPane().lookupButton(cancelType);
+
+        stylePrimary(okButton);
+        styleSecondary(cancelButton);
 
         // ---------------- Validation ----------------
-        Button okButton = (Button) dialog.getDialogPane().lookupButton(okType);
-
         okButton.addEventFilter(ActionEvent.ACTION, evt -> {
             String qText = questionArea.getText().trim();
 
@@ -212,19 +221,14 @@ public class QuestionFormDialog {
                 }
             }
 
-         // ✅ Prevent duplicate answers (case-insensitive)
+            // Prevent duplicate answers (case-insensitive)
             Set<String> uniqueAnswers = new HashSet<>();
-
             for (TextField tf : optionFields) {
-                String answer = tf.getText().trim().toLowerCase();
-                uniqueAnswers.add(answer);
+                uniqueAnswers.add(tf.getText().trim().toLowerCase());
             }
 
             if (uniqueAnswers.size() < optionFields.length) {
-                showError(
-                    "Invalid Answers",
-                    "All answer options must be different."
-                );
+                showError("Invalid Answers", "All answer options must be different.");
                 evt.consume();
                 return;
             }
@@ -259,7 +263,7 @@ public class QuestionFormDialog {
     // ---------------- UI helpers ----------------
     private Label sectionLabel(String text) {
         Label l = new Label(text);
-        l.setStyle("-fx-text-fill: #E5E7EB; -fx-font-size: 13px; -fx-font-weight: bold;");
+        l.setStyle("-fx-text-fill: " + TEXT + "; -fx-font-size: 13px; -fx-font-weight: bold;");
         return l;
     }
 
@@ -267,34 +271,97 @@ public class QuestionFormDialog {
         VBox box = new VBox(8, nodes);
         box.setPadding(new Insets(12));
         box.setStyle(
-                "-fx-background-color: rgba(255,255,255,0.04);" +
-                "-fx-background-radius: 14;"
+                "-fx-background-color: " + CARD_BG + ";" +
+                "-fx-background-radius: 14;" +
+                "-fx-border-color: rgba(30,41,59,0.65);" +
+                "-fx-border-radius: 14;"
         );
         return box;
     }
 
-    private void addAnswerField(GridPane grid, int col, int row, String letter, TextField tf) {
-        Label chip = new Label(letter);
-        chip.setMinWidth(26);
-        chip.setAlignment(Pos.CENTER);
-        chip.setStyle(
-                "-fx-background-color: rgba(37,99,235,0.20);" +
-                "-fx-text-fill: #1E40AF;" +
-                "-fx-font-weight: bold;" +
-                "-fx-background-radius: 8;"
-        );
-
+    private void styleTextField(TextField tf) {
         tf.setPrefHeight(36);
         tf.setMaxWidth(Double.MAX_VALUE);
         tf.setStyle(
-                "-fx-background-color: #FFFFFF;" +
-                "-fx-text-fill: #000000;" +
-                "-fx-prompt-text-fill: #6B7280;" +
+                "-fx-background-color: " + INPUT_BG + ";" +
+                "-fx-text-fill: " + TEXT + ";" +
+                "-fx-prompt-text-fill: " + PLACEHOLDER + ";" +
                 "-fx-background-radius: 10;" +
-                "-fx-caret-color: #000000;"
+                "-fx-border-radius: 10;" +
+                "-fx-border-color: " + BORDER + ";" +
+                "-fx-caret-color: " + TEXT + ";" +
+                "-fx-padding: 0 10 0 10;" +
+                "-fx-focus-color: transparent;" +
+                "-fx-faint-focus-color: transparent;"
+        );
+    }
+
+    private void styleTextArea(TextArea ta) {
+        ta.setStyle(
+                "-fx-background-color: " + INPUT_BG + ";" +
+                "-fx-control-inner-background: " + INPUT_BG + ";" +
+                "-fx-text-fill: " + TEXT + ";" +
+                "-fx-prompt-text-fill: " + PLACEHOLDER + ";" +
+                "-fx-background-radius: 10;" +
+                "-fx-border-radius: 10;" +
+                "-fx-border-color: " + BORDER + ";" +
+                "-fx-caret-color: " + TEXT + ";" +
+                "-fx-padding: 10;" +
+                "-fx-focus-color: transparent;" +
+                "-fx-faint-focus-color: transparent;" +
+                "-fx-highlight-fill: rgba(37,99,235,0.35);" +
+
+                // ✅ hide internal corner + scrollbar backgrounds
+                "-fx-background-insets: 0;" +
+                "-fx-control-inner-background-insets: 0;"
+        );
+    }
+
+    private void styleComboBox(ComboBox<String> cb) {
+        cb.setStyle(
+                "-fx-background-color: " + INPUT_BG + ";" +
+                "-fx-border-color: " + BORDER + ";" +
+                "-fx-border-radius: 10;" +
+                "-fx-background-radius: 10;" +
+                "-fx-padding: 2 6 2 6;"
         );
 
-        HBox wrap = new HBox(8, chip, tf);
+        cb.setButtonCell(makeDarkListCell());
+        cb.setCellFactory(list -> makeDarkListCell());
+    }
+
+    private ListCell<String> makeDarkListCell() {
+        return new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item);
+                    setTextFill(Color.web(TEXT));
+                    setStyle("-fx-background-color: " + INPUT_BG + ";");
+                }
+            }
+        };
+    }
+
+    private void addAnswerField(GridPane grid, int col, int row, String letter, TextField tf) {
+        Label chip = new Label(letter);
+        chip.setMinWidth(28);
+        chip.setMinHeight(28);
+        chip.setAlignment(Pos.CENTER);
+        chip.setStyle(
+                "-fx-background-color: rgba(37,99,235,0.20);" +
+                "-fx-text-fill: #93C5FD;" +
+                "-fx-font-weight: bold;" +
+                "-fx-background-radius: 999;"
+        );
+
+        styleTextField(tf);
+
+        HBox wrap = new HBox(10, chip, tf);
         wrap.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(tf, Priority.ALWAYS);
 
@@ -304,31 +371,57 @@ public class QuestionFormDialog {
     private ToggleButton makeDiffButton(String text) {
         ToggleButton btn = new ToggleButton(text);
         btn.setToggleGroup(difficultyGroup);
-        btn.setPrefHeight(32);
-        btn.setMinWidth(100);
-        btn.setStyle(
-                "-fx-background-color: #111827;" +
-                "-fx-text-fill: #E5E7EB;" +
-                "-fx-background-radius: 10;"
-        );
+        btn.setPrefHeight(34);
+        btn.setMinWidth(110);
 
-        btn.selectedProperty().addListener((obs, o, sel) -> {
-            if (sel) {
-                btn.setStyle(
-                        "-fx-background-color: #2563EB;" +
-                        "-fx-text-fill: white;" +
-                        "-fx-font-weight: bold;" +
-                        "-fx-background-radius: 10;"
-                );
-            } else {
-                btn.setStyle(
-                        "-fx-background-color: #111827;" +
-                        "-fx-text-fill: #E5E7EB;" +
-                        "-fx-background-radius: 10;"
-                );
-            }
-        });
+        String off = "-fx-background-color: #111827;" +
+                "-fx-text-fill: " + TEXT + ";" +
+                "-fx-background-radius: 10;" +
+                "-fx-border-color: rgba(30,41,59,0.7);" +
+                "-fx-border-radius: 10;";
+
+        String on = "-fx-background-color: " + PRIMARY + ";" +
+                "-fx-text-fill: white;" +
+                "-fx-font-weight: bold;" +
+                "-fx-background-radius: 10;" +
+                "-fx-border-color: transparent;";
+
+        btn.setStyle(off);
+        btn.selectedProperty().addListener((obs, o, sel) -> btn.setStyle(sel ? on : off));
         return btn;
+    }
+
+    private void stylePrimary(Button btn) {
+        btn.setPrefHeight(34);
+        btn.setFont(Font.font("Arial", FontWeight.BOLD, 13));
+        btn.setStyle(
+                "-fx-background-color: " + PRIMARY + ";" +
+                "-fx-text-fill: white;" +
+                "-fx-background-radius: 10;" +
+                "-fx-padding: 0 16 0 16;" +
+                "-fx-cursor: hand;"
+        );
+    }
+
+    private void styleSecondary(Button btn) {
+        btn.setPrefHeight(34);
+        btn.setFont(Font.font("Arial", 13));
+
+        String normal = "-fx-background-color: " + SECONDARY + ";" +
+                "-fx-text-fill: " + TEXT + ";" +
+                "-fx-background-radius: 10;" +
+                "-fx-padding: 0 16 0 16;" +
+                "-fx-cursor: hand;";
+
+        String hover = "-fx-background-color: " + SECONDARY_HOVER + ";" +
+                "-fx-text-fill: white;" +
+                "-fx-background-radius: 10;" +
+                "-fx-padding: 0 16 0 16;" +
+                "-fx-cursor: hand;";
+
+        btn.setStyle(normal);
+        btn.setOnMouseEntered(e -> btn.setStyle(hover));
+        btn.setOnMouseExited(e -> btn.setStyle(normal));
     }
 
     private void showError(String title, String msg) {
