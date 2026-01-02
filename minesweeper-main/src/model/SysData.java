@@ -35,11 +35,13 @@ public class SysData {
     public static void saveGame(GameHistoryEntry entry) {
         File file = new File(HISTORY_FILE);
 
+        // ✅ IMPORTANT: decide header BEFORE opening stream (opening can create the file)
+        boolean writeHeader = (!file.exists() || file.length() == 0);
+
         try (BufferedWriter writer = new BufferedWriter(
                 new OutputStreamWriter(new FileOutputStream(file, true), StandardCharsets.UTF_8))) {
 
-            // Write header if file is new or empty
-            if (!file.exists() || file.length() == 0) {
+            if (writeHeader) {
                 writer.write(HISTORY_HEADER);
                 writer.newLine();
             }
@@ -56,7 +58,7 @@ public class SysData {
     public static List<GameHistoryEntry> loadHistory() {
         List<GameHistoryEntry> list = new ArrayList<>();
         File file = new File(HISTORY_FILE);
-        System.out.println("khara 3lek khorkghe");
+
         if (!file.exists() || file.length() == 0) {
             return list;
         }
@@ -189,7 +191,12 @@ public class SysData {
                 new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
 
             String header = br.readLine();
-            if (header == null || !header.equals(QUESTIONS_HEADER)) {
+            if (header == null) return QuestionsFileStatus.MALFORMED;
+
+            // ✅ Remove BOM if present + trim
+            header = header.replace("\uFEFF", "").trim();
+
+            if (!header.equals(QUESTIONS_HEADER)) {
                 return QuestionsFileStatus.MALFORMED;
             }
 
@@ -200,11 +207,13 @@ public class SysData {
                 if (line.trim().isEmpty()) continue;
 
                 hasData = true;
+
+                // NOTE: this simple split assumes no quoted commas in fields.
                 String[] cols = line.split(",", -1);
                 if (cols.length != 8) return QuestionsFileStatus.MALFORMED;
 
                 // Validate ID
-                String idStr = cols[0].trim();
+                String idStr = cols[0].trim().replace("\uFEFF", "");
                 if (idStr.isEmpty()) return QuestionsFileStatus.MALFORMED;
                 Integer.parseInt(idStr);
 
@@ -249,7 +258,7 @@ public class SysData {
             while ((line = br.readLine()) != null) {
                 if (firstLine) {
                     firstLine = false;
-                    continue;
+                    continue; // skip header
                 }
 
                 if (line.trim().isEmpty()) continue;
@@ -265,7 +274,7 @@ public class SysData {
                         cols[1],
                         new String[]{cols[3], cols[4], cols[5], cols[6]},
                         letterToIndex(cols[7].trim()),
-                        QuestionDifficulty.fromString(cols[2])
+                        QuestionDifficulty.fromString(cols[2].trim())
                 );
 
                 list.add(q);
@@ -323,12 +332,12 @@ public class SysData {
             for (Question q : questions) {
                 writer.write(
                         q.getId() + "," +
-                                escape(q.getText()) + "," +
+                                escapeCsv(q.getText()) + "," +
                                 q.getDifficulty() + "," +
-                                escape(q.getOptions()[0]) + "," +
-                                escape(q.getOptions()[1]) + "," +
-                                escape(q.getOptions()[2]) + "," +
-                                escape(q.getOptions()[3]) + "," +
+                                escapeCsv(q.getOptions()[0]) + "," +
+                                escapeCsv(q.getOptions()[1]) + "," +
+                                escapeCsv(q.getOptions()[2]) + "," +
+                                escapeCsv(q.getOptions()[3]) + "," +
                                 indexToLetter(q.getCorrectIndex())
                 );
                 writer.newLine();
@@ -337,6 +346,7 @@ public class SysData {
             return true;
 
         } catch (IOException e) {
+            e.printStackTrace();
             return false;
         }
     }
@@ -382,9 +392,18 @@ public class SysData {
         }
     }
 
-    private static String escape(String s) {
+    /**
+     * ✅ Proper CSV escaping:
+     * - replaces newlines
+     * - wraps in quotes if contains comma or quote
+     * - doubles internal quotes
+     */
+    private static String escapeCsv(String s) {
         if (s == null) return "";
-        return s.replace("\n", " ").replace("\r", " ");
+        String cleaned = s.replace("\r", " ").replace("\n", " ");
+        boolean mustQuote = cleaned.contains(",") || cleaned.contains("\"");
+        cleaned = cleaned.replace("\"", "\"\"");
+        return mustQuote ? "\"" + cleaned + "\"" : cleaned;
     }
 
     private static void reassignQuestionIds(List<Question> questions) {
