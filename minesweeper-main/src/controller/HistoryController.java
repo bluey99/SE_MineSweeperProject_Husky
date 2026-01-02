@@ -50,26 +50,17 @@ public class HistoryController {
             refreshEmptyState();
         });
 
-        // UPDATED: Keep Recent with full exceptions/validation
-        view.keepRecentBtn.setOnAction(e -> {
+        // ✅ NEW: Trim History popup (replaces keepRecentBtn + keepRecentField)
+        view.trimHistoryBtn.setOnAction(e -> {
 
             if (historyList.isEmpty()) {
                 error("No history available.");
                 return;
             }
 
-            String txt = view.keepRecentField.getText().trim();
-            int keepK;
-
-            try {
-                keepK = Integer.parseInt(txt);
-            } catch (NumberFormatException ex) {
-                error("Please enter a valid number for K (e.g. 5).");
-                return;
-            }
-
-            if (keepK < 0) {
-                error("K must be 0 or greater.");
+            int keepK = view.showTrimHistoryDialog(); // -1 if cancelled
+            if (keepK <= 0) {
+                // cancelled or invalid -> do nothing, no error pop
                 return;
             }
 
@@ -81,7 +72,7 @@ public class HistoryController {
             }
 
             if (!confirm(
-                    "Keep Recent Games",
+                    "Trim History",
                     "Keep only the most recent " + keepK + " games?\n" +
                             (currentSize - keepK) + " older entries will be removed."
             )) return;
@@ -126,8 +117,8 @@ public class HistoryController {
         view.emptyLabel.setManaged(empty);
 
         view.clearHistoryBtn.setDisable(empty);
-        view.keepRecentBtn.setDisable(empty);
-        view.deleteSelectedBtn.setDisable(empty);
+        view.trimHistoryBtn.setDisable(empty);     // ✅ updated
+        view.deleteSelectedBtn.setDisable(empty);  // selection listener in view will re-enable when selected
     }
 
     private boolean confirm(String title, String msg) {
