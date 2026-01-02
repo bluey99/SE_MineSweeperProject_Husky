@@ -1,22 +1,11 @@
 ID,Question,Difficulty,A,B,C,D,Correct Answer
-1,What is the capital of France?,Easy,London,Paris,Berlin,Madrid,B
-2,Which planet is known as the Red Planet?,Easy,Earth,Mars,Jupiter,Venus,B
-3,What is the largest ocean on Earth?,Medium,Atlantic,Indian,Pacific,Arctic,C
-4,Who wrote the play 'Romeo and Juliet'?,Medium,William Shakespeare,Charles Dickens,Mark Twain,Leo Tolstoy,A
-5,What is the square root of 81?,Easy,7,8,9,10,C
-6,In which year did World War II end?,Hard,1942,1943,1945,1950,C
-7,Which gas do plants absorb for photosynthesis?,Easy,Oxygen,Nitrogen,Carbon dioxide,Hydrogen,C
-8,What is the chemical symbol for Gold?,Medium,Ag,Au,Gd,Go,B
-9,Which continent has the most countries?,Hard,Asia,Africa,Europe,South America,B
-10,What is the speed of light in vacuum (km/s)?,Expert,150000,300000,299792,1000000,C
-11,What is the largest desert in the world?,Hard,Sahara,Gobi,Antarctic Desert,Arabian Desert,C
-12,Which animal is known as the King of the Jungle?,Easy,Tiger,Lion,Panther,Elephant,B
-13,What is H2O commonly known as?,Easy,Salt,Oxygen,Water,Hydrogen,C
-14,Which country invented pizza?,Medium,France,Greece,Italy,Germany,C
-15,What is the freezing point of water?,Easy,0Â°C,10Â°C,20Â°C,100Â°C,A
-16,Who painted the Mona Lisa?,Easy,Van Gogh,Leonardo da Vinci,Picasso,Michelangelo,B
-17,What is the smallest prime number?,Easy,1,2,3,5,B
-18,Which element has the atomic number 1?,Easy,Oxygen,Hydrogen,Carbon,Helium,B
-19,What is the longest river in the world?,Hard,Amazon,Nile,Yangtze,Mississippi,B
-20,What is the powerhouse of the cell?,Medium,Nucleus,Mitochondria,Ribosome,Golgi apparatus,B
-21,Who is your master?,Expert,Mona,Jawad,Salim,Bayan,D
+1,What is the main purpose of system modeling in software engineering?,Easy,To write executable code automatically,To replace system testing,To create abstract representations that help understand and communicate the system,To define hardware requirements only,C
+2,What does a context model primarily show?,Medium,The internal algorithms of the system,The system boundaries and the external systems it interacts with,The sequence of method calls inside classes,The database schema of the system,B
+3,Which UML diagram is best suited to show the order of interactions between actors and system components during a use case?,Medium,Class diagram,Activity diagram,State diagram,Sequence diagram,D
+4,What is the main benefit of using generalization (inheritance) in class diagrams?,Hard,It improves system runtime performance,It removes the need for interfaces,It reduces complexity by allowing common attributes and operations to be shared,It guarantees that the system will be reusable,C
+5,Which statement correctly describes architectural drift and architectural erosion?,Expert,Drift violates the prescriptive architecture,erosion does not,Both drift and erosion are planned architectural changes,Drift introduces changes not planned but not violating the architecture,C
+6,What is the main goal of software reviews?,Easy,To estimate the project budget,To replace software testing,To detect errors and improve software quality,To measure developer productivity,C
+7,Which of the following best describes a formal review?,Medium,An informal discussion between developers,A scheduled review conducted by senior participants to approve a product,A test executed after implementation,A customer acceptance meeting,B
+8,What is the key difference between a walkthrough and an inspection?,Easy,Walkthroughs are performed after testing,inspections before testing,Walkthroughs focus on management issues,inspections on cost,C
+9,Why are reviews considered more cost-effective when performed early in the software life cycle?,Expert,Early reviews eliminate the need for maintenance,Reviews replace unit and integration testing,The cost of defect removal increases significantly in later phases,Reviews prevent all defects from occurring,C
+10,What is not considered a purpose of software reviews?,Easy,Detecting errors,Improving software quality,Approving a product to move to the next phase,Evaluating the project budget and schedule,D

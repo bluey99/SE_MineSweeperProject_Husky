@@ -3,6 +3,7 @@ package view;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -167,6 +168,7 @@ public class QuestionFormDialog {
                 }
             }
 
+            // original.getCorrectIndex() should be 0..3
             correctAnswerBox.getSelectionModel().select(original.getCorrectIndex());
 
             QuestionDifficulty diff = original.getDifficulty();
@@ -208,7 +210,7 @@ public class QuestionFormDialog {
             }
 
             if (!qText.matches(".*[A-Za-z].*")) {
-                showError("Invalid Question", "Please Enter a valid question.");
+                showError("Invalid Question", "Please enter a valid question.");
                 evt.consume();
                 return;
             }
@@ -221,7 +223,7 @@ public class QuestionFormDialog {
                 }
             }
 
-            // Prevent duplicate answers (case-insensitive)
+            // Prevent duplicate answers (case-insensitive, after trimming)
             Set<String> uniqueAnswers = new HashSet<>();
             for (TextField tf : optionFields) {
                 uniqueAnswers.add(tf.getText().trim().toLowerCase());
@@ -236,28 +238,67 @@ public class QuestionFormDialog {
             if (difficultyGroup.getSelectedToggle() == null) {
                 showError("Missing Difficulty", "Please choose a difficulty level.");
                 evt.consume();
+                return;
+            }
+
+            // ✅ CSV safety: block characters that break CSV parsing in your system
+            // (commas/newlines shift columns and can make Correct Answer empty)
+            if (containsCsvBreakingChars(qText)) {
+                showError("Invalid Characters",
+                        "Please remove commas (,) and new lines from the question.\n" +
+                        "Your system saves questions to CSV, and commas/new lines break the file format.");
+                evt.consume();
+                return;
+            }
+
+            for (TextField tf : optionFields) {
+                if (containsCsvBreakingChars(tf.getText())) {
+                    showError("Invalid Characters",
+                            "Please remove commas (,) and new lines from the answers.\n" +
+                            "CSV format will break otherwise.");
+                    evt.consume();
+                    return;
+                }
             }
         });
 
         dialog.setResultConverter(buttonType -> {
             if (buttonType.getButtonData() != ButtonBar.ButtonData.OK_DONE) return null;
 
+            // ✅ sanitize anyway (extra protection)
+            String q = sanitizeForCsv(questionArea.getText());
+
             String[] opts = new String[4];
             for (int i = 0; i < 4; i++) {
-                opts[i] = optionFields[i].getText().trim();
+                opts[i] = sanitizeForCsv(optionFields[i].getText());
             }
 
-            int correctIdx = correctAnswerBox.getSelectionModel().getSelectedIndex();
+            int correctIdx = correctAnswerBox.getSelectionModel().getSelectedIndex(); // 0..3
             QuestionDifficulty diff = QuestionDifficulty.fromString(
                     ((ToggleButton) difficultyGroup.getSelectedToggle()).getText()
             );
 
             if (isEditMode && original != null) {
-                return new Question(original.getId(), questionArea.getText().trim(), opts, correctIdx, diff);
+                return new Question(original.getId(), q, opts, correctIdx, diff);
             } else {
-                return new Question(questionArea.getText().trim(), opts, correctIdx, diff);
+                return new Question(q, opts, correctIdx, diff);
             }
         });
+    }
+
+    // ---------------- CSV safety helpers ----------------
+    private boolean containsCsvBreakingChars(String s) {
+        if (s == null) return false;
+        return s.contains(",") || s.contains("\n") || s.contains("\r");
+    }
+
+    // Extra protection: normalize spaces + remove line breaks + replace commas
+    private String sanitizeForCsv(String s) {
+        if (s == null) return "";
+        s = s.replace("\r", " ").replace("\n", " ").trim();
+        s = s.replaceAll("\\s+", " ");
+        s = s.replace(",", ";");
+        return s;
     }
 
     // ---------------- UI helpers ----------------
@@ -267,14 +308,14 @@ public class QuestionFormDialog {
         return l;
     }
 
-    private VBox sectionBox(javafx.scene.Node... nodes) {
+    private VBox sectionBox(Node... nodes) {
         VBox box = new VBox(8, nodes);
         box.setPadding(new Insets(12));
         box.setStyle(
                 "-fx-background-color: " + CARD_BG + ";" +
-                "-fx-background-radius: 14;" +
-                "-fx-border-color: rgba(30,41,59,0.65);" +
-                "-fx-border-radius: 14;"
+                        "-fx-background-radius: 14;" +
+                        "-fx-border-color: rgba(30,41,59,0.65);" +
+                        "-fx-border-radius: 14;"
         );
         return box;
     }
@@ -284,46 +325,46 @@ public class QuestionFormDialog {
         tf.setMaxWidth(Double.MAX_VALUE);
         tf.setStyle(
                 "-fx-background-color: " + INPUT_BG + ";" +
-                "-fx-text-fill: " + TEXT + ";" +
-                "-fx-prompt-text-fill: " + PLACEHOLDER + ";" +
-                "-fx-background-radius: 10;" +
-                "-fx-border-radius: 10;" +
-                "-fx-border-color: " + BORDER + ";" +
-                "-fx-caret-color: " + TEXT + ";" +
-                "-fx-padding: 0 10 0 10;" +
-                "-fx-focus-color: transparent;" +
-                "-fx-faint-focus-color: transparent;"
+                        "-fx-text-fill: " + TEXT + ";" +
+                        "-fx-prompt-text-fill: " + PLACEHOLDER + ";" +
+                        "-fx-background-radius: 10;" +
+                        "-fx-border-radius: 10;" +
+                        "-fx-border-color: " + BORDER + ";" +
+                        "-fx-caret-color: " + TEXT + ";" +
+                        "-fx-padding: 0 10 0 10;" +
+                        "-fx-focus-color: transparent;" +
+                        "-fx-faint-focus-color: transparent;"
         );
     }
 
     private void styleTextArea(TextArea ta) {
         ta.setStyle(
                 "-fx-background-color: " + INPUT_BG + ";" +
-                "-fx-control-inner-background: " + INPUT_BG + ";" +
-                "-fx-text-fill: " + TEXT + ";" +
-                "-fx-prompt-text-fill: " + PLACEHOLDER + ";" +
-                "-fx-background-radius: 10;" +
-                "-fx-border-radius: 10;" +
-                "-fx-border-color: " + BORDER + ";" +
-                "-fx-caret-color: " + TEXT + ";" +
-                "-fx-padding: 10;" +
-                "-fx-focus-color: transparent;" +
-                "-fx-faint-focus-color: transparent;" +
-                "-fx-highlight-fill: rgba(37,99,235,0.35);" +
+                        "-fx-control-inner-background: " + INPUT_BG + ";" +
+                        "-fx-text-fill: " + TEXT + ";" +
+                        "-fx-prompt-text-fill: " + PLACEHOLDER + ";" +
+                        "-fx-background-radius: 10;" +
+                        "-fx-border-radius: 10;" +
+                        "-fx-border-color: " + BORDER + ";" +
+                        "-fx-caret-color: " + TEXT + ";" +
+                        "-fx-padding: 10;" +
+                        "-fx-focus-color: transparent;" +
+                        "-fx-faint-focus-color: transparent;" +
+                        "-fx-highlight-fill: rgba(37,99,235,0.35);" +
 
-                // ✅ hide internal corner + scrollbar backgrounds
-                "-fx-background-insets: 0;" +
-                "-fx-control-inner-background-insets: 0;"
+                        // ✅ hide internal corner + scrollbar backgrounds
+                        "-fx-background-insets: 0;" +
+                        "-fx-control-inner-background-insets: 0;"
         );
     }
 
     private void styleComboBox(ComboBox<String> cb) {
         cb.setStyle(
                 "-fx-background-color: " + INPUT_BG + ";" +
-                "-fx-border-color: " + BORDER + ";" +
-                "-fx-border-radius: 10;" +
-                "-fx-background-radius: 10;" +
-                "-fx-padding: 2 6 2 6;"
+                        "-fx-border-color: " + BORDER + ";" +
+                        "-fx-border-radius: 10;" +
+                        "-fx-background-radius: 10;" +
+                        "-fx-padding: 2 6 2 6;"
         );
 
         cb.setButtonCell(makeDarkListCell());
@@ -354,9 +395,9 @@ public class QuestionFormDialog {
         chip.setAlignment(Pos.CENTER);
         chip.setStyle(
                 "-fx-background-color: rgba(37,99,235,0.20);" +
-                "-fx-text-fill: #93C5FD;" +
-                "-fx-font-weight: bold;" +
-                "-fx-background-radius: 999;"
+                        "-fx-text-fill: #93C5FD;" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-background-radius: 999;"
         );
 
         styleTextField(tf);
@@ -396,10 +437,10 @@ public class QuestionFormDialog {
         btn.setFont(Font.font("Arial", FontWeight.BOLD, 13));
         btn.setStyle(
                 "-fx-background-color: " + PRIMARY + ";" +
-                "-fx-text-fill: white;" +
-                "-fx-background-radius: 10;" +
-                "-fx-padding: 0 16 0 16;" +
-                "-fx-cursor: hand;"
+                        "-fx-text-fill: white;" +
+                        "-fx-background-radius: 10;" +
+                        "-fx-padding: 0 16 0 16;" +
+                        "-fx-cursor: hand;"
         );
     }
 
