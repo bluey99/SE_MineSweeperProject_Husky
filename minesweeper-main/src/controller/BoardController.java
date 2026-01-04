@@ -8,6 +8,77 @@ import service.RevealService;
 
 public class BoardController {
 
+    // ------------------ "Singleton per player" instances ------------------
+    private static BoardController instanceP1;
+    private static BoardController instanceP2;
+
+    /**
+     * Lazy getter: creates the controller once (per player) and then returns the same instance.
+     *
+     * IMPORTANT: You must call this the first time with the correct parameters (right after you build the board).
+     * Later calls can just reuse the same method (with same params) or you can keep a reference.
+     */
+    public static BoardController getInstance(int playerNum,
+                                             GameController gameController,
+                                             GameModel gameModel,
+                                             Board logicalBoard,
+                                             CellController[][] uiBoard,
+                                             RevealService revealService) {
+
+        if (playerNum != 1 && playerNum != 2) {
+            throw new IllegalArgumentException("playerNum must be 1 or 2");
+        }
+
+        BoardController current = (playerNum == 1) ? instanceP1 : instanceP2;
+
+        if (current == null) {
+            // First time creation for this player
+            current = new BoardController(playerNum, gameController, gameModel, logicalBoard, uiBoard, revealService);
+            if (playerNum == 1) instanceP1 = current;
+            else instanceP2 = current;
+
+            return current;
+        }
+
+        // Already exists → safety checks to ensure you're not accidentally rebuilding with different objects
+        if (current.gameController != gameController ||
+            current.gameModel != gameModel ||
+            current.logicalBoard != logicalBoard ||
+            current.uiBoard != uiBoard ||
+            current.revealService != revealService) {
+            throw new IllegalStateException(
+                "BoardController instance for player " + playerNum +
+                " already exists with different constructor parameters. " +
+                "Don't create it twice; reuse the existing instance."
+            );
+        }
+
+        return current;
+    }
+
+    /** Optional: convenient getter after it was created (no params). */
+    public static BoardController getInstance(int playerNum) {
+        if (playerNum != 1 && playerNum != 2) {
+            throw new IllegalArgumentException("playerNum must be 1 or 2");
+        }
+        BoardController current = (playerNum == 1) ? instanceP1 : instanceP2;
+        if (current == null) {
+            throw new IllegalStateException(
+                "BoardController for player " + playerNum + " not created yet. " +
+                "Call getInstance(...params...) first."
+            );
+        }
+        return current;
+    }
+
+    /** Optional: call when starting a NEW game in the same app run (if you ever support that). */
+    public static void resetInstances() {
+        instanceP1 = null;
+        instanceP2 = null;
+    }
+
+    // ------------------ Existing fields ------------------
+
     private final int playerNum;
     private final GameController gameController;
     private final GameModel gameModel;
@@ -25,12 +96,13 @@ public class BoardController {
     // ✅ counts mines that got opened by clicking a mine (so you can't flag them later)
     private int openedMineCount = 0;
 
-    public BoardController(int playerNum,
-                           GameController gameController,
-                           GameModel gameModel,
-                           Board logicalBoard,
-                           CellController[][] uiBoard,
-                           RevealService revealService) {
+    // ✅ Constructor is now PRIVATE (enforces using getInstance)
+    private BoardController(int playerNum,
+                            GameController gameController,
+                            GameModel gameModel,
+                            Board logicalBoard,
+                            CellController[][] uiBoard,
+                            RevealService revealService) {
         this.playerNum = playerNum;
         this.gameController = gameController;
         this.gameModel = gameModel;
@@ -91,7 +163,7 @@ public class BoardController {
 
         CellController cellCtrl = uiBoard[row][col];
         Cell cell = cellCtrl.getCell();
-        
+
         // NOTE: activating special cells does NOT end the turn
 
         if (cell.isSurprise() && cell.isDiscovered() && !cell.isActivated()) {
@@ -103,7 +175,6 @@ public class BoardController {
             gameController.activateQuestionCell(cellCtrl);
             return; // ✅ stay on same player
         }
-
 
         if (cell.isOpen() || cell.isFlag()) return;
 

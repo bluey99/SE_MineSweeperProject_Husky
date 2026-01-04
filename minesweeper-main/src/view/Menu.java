@@ -1,5 +1,6 @@
 package view;
 
+import controller.Main;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -59,7 +60,7 @@ public class Menu extends StackPane {
         content.setAlignment(Pos.CENTER);
         content.setPadding(new Insets(80, 0, 100, 0));
 
-        // -------- TITLE (MineMates + custom font + color) --------
+        // -------- TITLE --------
         Label title = new Label("MineMates");
 
         Font arcade = Font.loadFont(
@@ -67,31 +68,34 @@ public class Menu extends StackPane {
                 78
         );
 
-        // Fallback in case the font fails to load for any reason
         if (arcade != null) {
             title.setFont(arcade);
         } else {
             title.setFont(Font.font("Arial", FontWeight.EXTRA_BOLD, 52));
         }
 
-        // Title color + glow (green/teal vibe)
-        title.setTextFill(Color.web("#EAFBF4")); // soft white-green
+        title.setTextFill(Color.web("#EAFBF4"));
 
         DropShadow glow = new DropShadow();
         glow.setRadius(18);
         glow.setSpread(0.25);
-        glow.setColor(Color.web("#22C55E")); // green glow
+        glow.setColor(Color.web("#22C55E"));
         title.setEffect(glow);
 
         // -------- SUBTITLE --------
         Label subtitle = new Label("Two players • One goal • Shared victory");
         subtitle.setFont(Font.font("Arial", 16));
-        subtitle.setTextFill(Color.web("#C7D2FE")); // slightly blue/purple tint
+        subtitle.setTextFill(Color.web("#C7D2FE"));
 
         // Buttons styling
         stylePrimaryButton(startBtn);
         styleSecondaryButton(historyBtn);
         styleSecondaryButton(questionManagementBtn);
+
+        // ✅ Updated: Use Main navigation helpers
+        startBtn.setOnAction(e -> Main.showSetup(Main.getPrimaryStage()));
+        historyBtn.setOnAction(e -> Main.showHistory(Main.getPrimaryStage()));
+        questionManagementBtn.setOnAction(e -> Main.showQuestionManagement(Main.getPrimaryStage()));
 
         VBox btnContainer = new VBox(15);
         btnContainer.setAlignment(Pos.CENTER);
@@ -107,7 +111,7 @@ public class Menu extends StackPane {
         this.getChildren().add(overlay);
     }
 
- // Neon green main button (matches title)
+    // Neon green main button
     private void stylePrimaryButton(Button btn) {
         btn.setPrefSize(240, 48);
         btn.setFont(Font.font("Arial", FontWeight.BOLD, 16));
@@ -140,7 +144,6 @@ public class Menu extends StackPane {
         );
     }
 
-
     // Dark glass secondary buttons + green hover
     private void styleSecondaryButton(Button btn) {
         btn.setPrefSize(240, 48);
@@ -154,7 +157,7 @@ public class Menu extends StackPane {
 
         btn.setOnMouseEntered(e ->
                 btn.setStyle(
-                        "-fx-background-color: rgba(34,197,94,0.35);" + // green tint
+                        "-fx-background-color: rgba(34,197,94,0.35);" +
                         "-fx-border-color: rgba(34,197,94,0.65);" +
                         "-fx-border-radius: 14;" +
                         "-fx-border-width: 1.2;" +

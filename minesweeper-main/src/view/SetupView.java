@@ -1,5 +1,6 @@
 package view;
 
+import controller.GameController;
 import controller.Main;
 import controller.SetupController;
 import javafx.beans.binding.Bindings;
@@ -26,7 +27,6 @@ public class SetupView extends BorderPane {
     private VBox diffInfoBox;
     private HBox diffBox;
 
-    // SAME Menu button (unchanged)
     public final Button backBtn = new Button("Menu");
 
     public SetupView(Main mainApp) {
@@ -37,7 +37,6 @@ public class SetupView extends BorderPane {
 
     private void buildUI() {
 
-        // ===== Background (space / game-style) =====
         RadialGradient bg = new RadialGradient(
                 0, 0,
                 0.5, 0.2,
@@ -56,7 +55,12 @@ public class SetupView extends BorderPane {
         topBar.setAlignment(Pos.CENTER_LEFT);
 
         styleMenuButton(backBtn);
-        backBtn.setOnAction(e -> Main.showMainMenu(Main.getPrimaryStage()));
+
+        // ✅ Singleton clean behavior: leaving setup → kill any running game controller instance
+        backBtn.setOnAction(e -> {
+            GameController.resetInstance();
+            Main.showMainMenu(Main.getPrimaryStage());
+        });
 
         topBar.getChildren().add(backBtn);
         setTop(topBar);
@@ -66,32 +70,27 @@ public class SetupView extends BorderPane {
         root.setAlignment(Pos.TOP_CENTER);
         root.setPadding(new Insets(10, 30, 20, 30));
 
-        // ===== SMALL LOGO TITLE (same font as menu) =====
         Font logoFont = Font.loadFont(
                 getClass().getResourceAsStream("/fonts/ka1.ttf"),
-                28 // much smaller than menu title
+                28
         );
 
         Label title = new Label("MineMates");
-        if (logoFont != null) {
-            title.setFont(logoFont);
-        } else {
-            title.setFont(Font.font("Arial", FontWeight.BOLD, 26));
-        }
+        if (logoFont != null) title.setFont(logoFont);
+        else title.setFont(Font.font("Arial", FontWeight.BOLD, 26));
 
-        title.setTextFill(Color.web("#ECFDF5")); // soft green-white
+        title.setTextFill(Color.web("#ECFDF5"));
 
         DropShadow logoGlow = new DropShadow();
         logoGlow.setRadius(8);
         logoGlow.setSpread(0.15);
-        logoGlow.setColor(Color.web("#22C55E")); // subtle green glow
+        logoGlow.setColor(Color.web("#22C55E"));
         title.setEffect(logoGlow);
 
         Label subtitle = new Label("Two players • One goal • Shared victory");
         subtitle.setFont(Font.font("Arial", 15));
         subtitle.setTextFill(Color.web("#9CA3AF"));
 
-        // Accent line (blue -> green)
         Region accent = new Region();
         accent.setPrefHeight(4);
         accent.setMaxWidth(260);
@@ -107,13 +106,11 @@ public class SetupView extends BorderPane {
         VBox heading = new VBox(4, title, subtitle, accent);
         heading.setAlignment(Pos.CENTER);
 
-        // ===== FORM CARD =====
         VBox form = new VBox(12);
         form.setAlignment(Pos.CENTER);
         form.setPadding(new Insets(20));
         form.setMaxWidth(620);
 
-        // Responsive width (no scrolling)
         form.prefWidthProperty().bind(
                 Bindings.min(620,
                         Bindings.max(420, widthProperty().multiply(0.6)))
@@ -166,17 +163,14 @@ public class SetupView extends BorderPane {
                 Insets.EMPTY
         )));
 
-        // Initial info + green accent
         updateDifficultyInfo("Easy");
 
-        // Update on click
         easyBtn.setOnAction(e -> updateDifficultyInfo("Easy"));
         mediumBtn.setOnAction(e -> updateDifficultyInfo("Medium"));
         hardBtn.setOnAction(e -> updateDifficultyInfo("Hard"));
 
         form.getChildren().addAll(p1Wrap, p2Wrap, diffLabel, diffBox, diffInfoBox);
 
-        // ===== START BUTTON =====
         Button startBtn = new Button("Start Game");
         startBtn.setPrefHeight(50);
         startBtn.setFont(Font.font("Arial", FontWeight.EXTRA_BOLD, 17));
@@ -210,7 +204,6 @@ public class SetupView extends BorderPane {
         setCenter(root);
     }
 
-    // ===== Difficulty Info (adds green/blue/red border) =====
     private void updateDifficultyInfo(String difficulty) {
         diffInfoBox.getChildren().clear();
 
@@ -247,7 +240,6 @@ public class SetupView extends BorderPane {
         }
     }
 
-    // ===== Helpers =====
     private VBox createLabeledInput(String label, String placeholder) {
         Label lbl = new Label(label);
         lbl.setFont(Font.font("Arial", FontWeight.BOLD, 12));
@@ -284,7 +276,6 @@ public class SetupView extends BorderPane {
         return rb;
     }
 
-    // Menu button style (unchanged)
     private void styleMenuButton(Button btn) {
         btn.setFont(Font.font("Arial", FontWeight.BOLD, 14));
 
@@ -309,7 +300,6 @@ public class SetupView extends BorderPane {
         btn.setOnMouseExited(e -> btn.setStyle(normalStyle));
     }
 
-    // Start logic (keep Player1 / Player2 defaults)
     private void onStartPressed() {
         String p1 = player1Field.getText() == null ? "" : player1Field.getText().trim();
         String p2 = player2Field.getText() == null ? "" : player2Field.getText().trim();

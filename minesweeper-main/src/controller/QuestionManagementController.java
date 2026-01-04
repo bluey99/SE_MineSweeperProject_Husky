@@ -2,7 +2,6 @@ package controller;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.scene.Scene;
 import javafx.stage.Stage;
 import model.Question;
 import model.QuestionsFileStatus;
@@ -74,6 +73,7 @@ public class QuestionManagementController {
 
 		// Navigate back to the main menu
 		view.backBtn.setOnAction(e -> {
+			GameController.resetInstance();
 			Main.showMainMenu(primaryStage);
 		});
 

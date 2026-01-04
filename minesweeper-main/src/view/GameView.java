@@ -21,8 +21,6 @@ import javafx.scene.text.FontWeight;
  */
 public class GameView extends BorderPane {
 
-    private final GameController controller;
-
     private static final double PANEL_WIDTH = 620;
 
     private final VBox topSection = new VBox();
@@ -51,8 +49,8 @@ public class GameView extends BorderPane {
     public final Button backToMenuBtn = new Button("Return to Menu");
 
     public GameView(GameController controller) {
-        this.controller = controller;
 
+        // Use controller only to read initial names (no need to store it)
         player1Label = new Label(controller.player1Name + "'s Board");
         player2Label = new Label(controller.player2Name + "'s Board");
 
