@@ -269,7 +269,7 @@ public class SysData {
                 // Remove BOM if present
                 cols[0] = cols[0].replace("\uFEFF", "");
 
-                Question q = new Question(
+                Question q = QuestionFactory.createQuestion(
                         Integer.parseInt(cols[0].trim()),
                         cols[1],
                         new String[]{cols[3], cols[4], cols[5], cols[6]},
