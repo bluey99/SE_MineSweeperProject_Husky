@@ -1,10 +1,4 @@
 dateTime,difficulty,player1Name,player2Name,result,finalScore,gameLengthSeconds
-2025-12-15T22:13:00.3051969,Easy,Charlie Kirk,Salim,WIN,57,438
-2025-12-17T18:25:35.7007619,Easy,Player 1,Player 2,WIN,79,756
-2025-12-17T18:51:17.5633962,Easy,Player 1,Player 2,WIN,37,1432
-2025-12-17T19:13:00.8782998,Easy,Player 1,Player 2,WIN,18,368
-2025-12-20T14:05:23.6350666,Easy,Salim,JD Vance,WIN,100,500
-2025-12-20T14:34:21.7675838,Medium,Player 1,Player 2,LOSE,15,64
 2025-12-20T14:35:04.634127,Medium,Player 1,Player 2,WIN,15,64
 2025-12-20T18:45:15.322677,Easy,test 1,test 2,WIN,64,257
 2025-12-20T19:15:30.7400186,Hard,test2,test3,LOSE,1,44

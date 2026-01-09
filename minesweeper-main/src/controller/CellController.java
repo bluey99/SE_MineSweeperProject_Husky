@@ -6,7 +6,8 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import model.Cell;
 import view.CellView;
-
+import javafx.geometry.Insets;
+import javafx.scene.layout.StackPane;
 /**
  * Cell controller - connects one logical Cell (model) to its CellView (UI).
  * Renders cells with JavaFX styles in a modern Minesweeper style.
@@ -78,8 +79,25 @@ public class CellController {
         cellView.setStyle(baseStyle);
 
         if (cell.isFlag()) {
-            Label flag = makeLabel("🚩", Color.web("#F97373"));
-            cellView.getChildren().add(flag);
+            Label flag = new Label("⚑"); // nicer than emoji 🚩
+            flag.setFont(Font.font("Arial", FontWeight.EXTRA_BOLD, CELL_SIDE * 0.65));
+            flag.setTextFill(Color.web("#38BDF8")); // cyan
+
+            // shadow so it pops everywhere
+            flag.setStyle("-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.95), 3, 0.7, 0, 0);");
+
+            // badge behind the flag
+            StackPane badge = new StackPane(flag);
+            badge.setStyle(
+                    "-fx-background-color: rgba(2,6,23,0.75);" +   // dark badge
+                    "-fx-background-radius: 999;" +
+                    "-fx-border-color: rgba(56,189,248,0.55);" +  // cyan border
+                    "-fx-border-width: 1.2;" +
+                    "-fx-border-radius: 999;"
+            );
+            badge.setPadding(new Insets(1.5, 4.5, 1.5, 4.5));
+
+            cellView.getChildren().add(badge);
         }
     }
 
