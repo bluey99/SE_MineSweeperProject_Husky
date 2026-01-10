@@ -17,6 +17,9 @@ import model.QuestionDifficulty;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import view.dialogs.ErrorDialog;
+
+
 
 public class QuestionFormDialog {
 
@@ -466,11 +469,7 @@ public class QuestionFormDialog {
     }
 
     private void showError(String title, String msg) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(msg);
-        alert.showAndWait();
+        new ErrorDialog(title, msg).show();
     }
 
     public Optional<Question> showAndWait() {

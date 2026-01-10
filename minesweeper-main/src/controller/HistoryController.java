@@ -3,16 +3,17 @@ package controller;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Tooltip;
 import javafx.stage.Stage;
 import model.GameHistoryEntry;
 import model.SysData;
 import view.HistoryView;
+import view.dialogs.ConfirmDialog;
+import view.dialogs.ErrorDialog;
+import view.dialogs.InfoDialog;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * HistoryController
@@ -49,21 +50,35 @@ public class HistoryController {
      */
     private void setupHandlers() {
 
-        view.backBtn.setOnAction(e -> Main.showMainMenu(primaryStage));
+        // Back to main menu
+        view.backBtn.setOnAction(e ->
+                Main.showMainMenu(primaryStage)
+        );
 
+        // -------------------- CLEAR HISTORY --------------------
         view.clearHistoryBtn.setOnAction(e -> {
-            if (!confirm("Clear History", "Delete all history records?")) return;
+
+            ConfirmDialog dialog = new ConfirmDialog(
+                    "Clear History",
+                    "Delete all history records?"
+            );
+
+            if (dialog.show() != ButtonType.OK) return;
+
             SysData.clearHistory();
             historyList.clear();
             refreshState();
             success("History cleared.");
         });
 
-        // -------------------- TRIM HISTORY (RESTORED) --------------------
+        // -------------------- TRIM HISTORY --------------------
         view.trimHistoryBtn.setOnAction(e -> {
 
             if (historyList.isEmpty()) {
-                error("No history available.");
+                new ErrorDialog(
+                        "Invalid Action",
+                        "No history available."
+                ).show();
                 return;
             }
 
@@ -73,25 +88,31 @@ public class HistoryController {
             int currentSize = historyList.size();
 
             if (keepK >= currentSize) {
-                error("You already have only " + currentSize + " games.\nNothing to remove.");
+                new ErrorDialog(
+                        "Invalid Action",
+                        "You already have only " + currentSize + " games.\nNothing to remove."
+                ).show();
                 return;
             }
 
-            if (!confirm(
+            ConfirmDialog confirm = new ConfirmDialog(
                     "Trim History",
                     "Keep only the most recent " + keepK + " games?\n" +
-                            (currentSize - keepK) + " older entries will be removed."
-            )) return;
+                    (currentSize - keepK) + " older entries will be removed."
+            );
+
+            if (confirm.show() != ButtonType.OK) return;
 
             int removed = SysData.trimHistory(keepK);
             reloadHistory();
-            success("Kept last " + keepK + " games. Removed " + removed + " older entries.");
             refreshState();
-        });
-        // ---------------------------------------------------------------
 
-        view.table.getSelectionModel().selectedItemProperty().addListener((obs, o, selected) -> {
-            boolean hasSelection = selected != null;
+            success("Kept last " + keepK + " games. Removed " + removed + " older entries.");
+        });
+
+        // -------------------- TABLE SELECTION --------------------
+        view.table.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
+            boolean hasSelection = newSel != null;
             view.deleteSelectedBtn.setDisable(!hasSelection);
 
             if (!hasSelection) {
@@ -101,11 +122,20 @@ public class HistoryController {
             }
         });
 
+        // -------------------- DELETE SELECTED --------------------
         view.deleteSelectedBtn.setOnAction(e -> {
-            GameHistoryEntry selected = view.table.getSelectionModel().getSelectedItem();
+
+            GameHistoryEntry selected =
+                    view.table.getSelectionModel().getSelectedItem();
+
             if (selected == null) return;
 
-            if (!confirm("Delete Selected", "Delete the selected history entry?")) return;
+            ConfirmDialog confirm = new ConfirmDialog(
+                    "Delete Selected",
+                    "Delete the selected history entry?"
+            );
+
+            if (confirm.show() != ButtonType.OK) return;
 
             SysData.deleteHistoryEntry(selected);
             historyList.remove(selected);
@@ -137,24 +167,15 @@ public class HistoryController {
         Tooltip.install(view.deleteBtnWrapper, deleteDisabledTooltip);
     }
 
-    private boolean confirm(String title, String msg) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, msg, ButtonType.OK, ButtonType.CANCEL);
-        alert.setTitle(title);
-        Optional<ButtonType> res = alert.showAndWait();
-        return res.isPresent() && res.get() == ButtonType.OK;
-    }
-
+    /**
+     * Displays a success message in the status label.
+     */
     private void success(String msg) {
         view.statusLabel.setText(msg);
         view.statusLabel.setStyle("-fx-text-fill: #22C55E;");
     }
 
-    private void error(String msg) {
-        view.statusLabel.setText(msg);
-        view.statusLabel.setStyle("-fx-text-fill: #F87171;");
-    }
-
-    public Scene createScene(double w, double h) {
-        return new Scene(view, w, h);
+    public Scene createScene(double width, double height) {
+        return new Scene(view, width, height);
     }
 }
