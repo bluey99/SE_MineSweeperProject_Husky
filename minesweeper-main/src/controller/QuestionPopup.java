@@ -27,7 +27,7 @@ public class QuestionPopup {
         VBox root = new VBox(16);
         root.setPadding(new Insets(22));
         root.setAlignment(Pos.CENTER);
-        root.setPrefWidth(460);
+        root.setPrefWidth(480);
 
         root.setStyle("""
             -fx-background-color: #020617;
@@ -53,7 +53,6 @@ public class QuestionPopup {
 
         header.getChildren().addAll(title, spacer);
 
-
         // Difficulty tag
         Label diffLabel = new Label(qDiffLabel + " Question");
         diffLabel.setPadding(new Insets(4, 12, 4, 12));
@@ -68,7 +67,7 @@ public class QuestionPopup {
         // Question text
         Label questionLbl = new Label(q.getText());
         questionLbl.setWrapText(true);
-        questionLbl.setMaxWidth(410);
+        questionLbl.setMaxWidth(440);
         questionLbl.setAlignment(Pos.CENTER);
         questionLbl.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
         questionLbl.setStyle("""
@@ -76,8 +75,7 @@ public class QuestionPopup {
             -fx-font-size: 16px;
         """);
 
-
-        VBox answersBox = new VBox(10);
+        VBox answersBox = new VBox(12);
         answersBox.setAlignment(Pos.CENTER);
 
         String[] options = q.getOptions();
@@ -90,15 +88,18 @@ public class QuestionPopup {
         for (int i = 0; i < 4; i++) {
             final int idx = i;
 
-            Button btn = new Button((char)('A' + i) + ") " + options[i]);
-            btn.setPrefWidth(360);
-            btn.setPrefHeight(44);
+            Button btn = new Button((char) ('A' + i) + ") " + options[i]);
+            btn.setPrefWidth(420);
+            btn.setPrefHeight(72);
+            btn.setWrapText(true);
+            btn.setAlignment(Pos.CENTER_LEFT);
+            btn.setPadding(new Insets(10, 16, 10, 16));
 
             btn.setStyle("""
                 -fx-background-color: #020617;
                 -fx-border-color: #2563EB;
-                -fx-border-radius: 12;
-                -fx-background-radius: 12;
+                -fx-border-radius: 14;
+                -fx-background-radius: 14;
                 -fx-text-fill: white;
                 -fx-font-size: 14px;
                 -fx-cursor: hand;
@@ -107,6 +108,7 @@ public class QuestionPopup {
             btn.setOnMouseEntered(e ->
                     btn.setStyle(btn.getStyle() + "-fx-background-color: #1E3A8A;")
             );
+
             btn.setOnMouseExited(e ->
                     btn.setStyle(btn.getStyle() + "-fx-background-color: #020617;")
             );

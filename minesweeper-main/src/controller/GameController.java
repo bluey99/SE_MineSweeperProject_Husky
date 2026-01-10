@@ -154,7 +154,7 @@ public class GameController implements GameModelObserver {
         CellController.setCellSide(cellSize);
 
         gameModel = new GameModel(this, mineCount, sharedLives);
-        gameModel.addObserver(this); // ✅ observe model changes
+        gameModel.addObserver(this); // observe model changes
 
         gameView = new GameView(this);
 
