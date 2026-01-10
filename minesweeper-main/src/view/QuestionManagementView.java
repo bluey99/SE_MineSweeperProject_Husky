@@ -1,17 +1,16 @@
 package view;
 
+import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.Tooltip;
+import javafx.scene.Node;
+import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
 import model.Question;
 
 /**
@@ -31,6 +30,7 @@ public class QuestionManagementView extends BorderPane {
     // Top-level navigation and action buttons (public for controller access)
     public final Button backBtn = new Button("Menu");
     public final Button addBtn = new Button("+ Add Question");
+    public final Button importJsonBtn = new Button("Import JSON");
     public final Button editBtn = new Button("Edit Selected");
     public final Button deleteBtn = new Button("Delete Selected");
 
@@ -144,6 +144,8 @@ public class QuestionManagementView extends BorderPane {
         // ---------------------------------------------------------------------
         // Center table (question list)
         // ---------------------------------------------------------------------
+
+        // ✅ Keep table fitting width -> no horizontal scrolling needed
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
         // Placeholder shown when no questions exist
@@ -152,20 +154,20 @@ public class QuestionManagementView extends BorderPane {
         placeholder.setFont(Font.font("Arial", 14));
         table.setPlaceholder(placeholder);
 
-        // Table visual styling
+        // ✅ Restore your original dark table styling (NO CSS selectors here!)
         table.setStyle(
-            "-fx-background-color: #020617;" +
-            "-fx-control-inner-background: #020617;" +
-            "-fx-border-color: #1E293B;" +
-            "-fx-border-radius: 10;" +
-            "-fx-background-radius: 10;" +
-            "-fx-accent: #2563EB;" +
-            "-fx-selection-bar: #2563EB;" +
-            "-fx-selection-bar-non-focused: #2563EB;" +
-            "-fx-selection-bar-text: white;" +
-            "-fx-cell-hover-color: #1E293B;" +
-            "-fx-table-cell-border-color: transparent;" +
-            "-fx-table-header-border-color: #1E293B;"
+                "-fx-background-color: #020617;" +
+                        "-fx-control-inner-background: #020617;" +
+                        "-fx-border-color: #1E293B;" +
+                        "-fx-border-radius: 10;" +
+                        "-fx-background-radius: 10;" +
+                        "-fx-accent: #2563EB;" +
+                        "-fx-selection-bar: #2563EB;" +
+                        "-fx-selection-bar-non-focused: #2563EB;" +
+                        "-fx-selection-bar-text: white;" +
+                        "-fx-cell-hover-color: #1E293B;" +
+                        "-fx-table-cell-border-color: transparent;" +
+                        "-fx-table-header-border-color: #1E293B;"
         );
 
         // ---------------------------------------------------------------------
@@ -173,15 +175,31 @@ public class QuestionManagementView extends BorderPane {
         // ---------------------------------------------------------------------
         TableColumn<Question, String> qCol = new TableColumn<>("Question");
         qCol.setCellValueFactory(data ->
-            new javafx.beans.property.SimpleStringProperty(data.getValue().getText())
+                new javafx.beans.property.SimpleStringProperty(data.getValue().getText())
         );
 
         TableColumn<Question, String> diffCol = new TableColumn<>("Difficulty");
         diffCol.setCellValueFactory(data ->
-            new javafx.beans.property.SimpleStringProperty(
-                data.getValue().getDifficulty().toString()
-            )
+                new javafx.beans.property.SimpleStringProperty(
+                        data.getValue().getDifficulty().toString()
+                )
         );
+
+        TableColumn<Question, String> correctCol = new TableColumn<>("Correct Answer");
+        correctCol.setCellValueFactory(data ->
+                new javafx.beans.property.SimpleStringProperty(
+                        data.getValue().getCorrectAnswerText()
+                )
+        );
+
+        // ✅ Make Difficulty column compact (no huge space)
+        diffCol.setMinWidth(110);
+        diffCol.setPrefWidth(120);
+        diffCol.setMaxWidth(140);
+
+        // ✅ Wrap text in Question + Correct Answer columns (unlimited lines)
+        qCol.setCellFactory(col -> new WrappingTextCell());
+        correctCol.setCellFactory(col -> new WrappingTextCell());
 
         /**
          * Custom cell rendering for difficulty:
@@ -210,22 +228,19 @@ public class QuestionManagementView extends BorderPane {
                     }
                     tag.setStyle("-fx-background-radius: 999; -fx-background-color: " + color + ";");
                     setGraphic(tag);
+                    setAlignment(Pos.CENTER);
                 }
             }
         });
-
-        TableColumn<Question, String> correctCol = new TableColumn<>("Correct Answer");
-        correctCol.setCellValueFactory(data ->
-            new javafx.beans.property.SimpleStringProperty(
-                data.getValue().getCorrectAnswerText()
-            )
-        );
 
         table.getColumns().addAll(qCol, diffCol, correctCol);
 
         VBox centerBox = new VBox(10, table);
         centerBox.setPadding(new Insets(10, 30, 10, 30));
         setCenter(centerBox);
+
+        // ✅ Remove ONLY the bottom (horizontal) scrollbar, keep vertical up/down
+        hideHorizontalScrollBarOnly();
 
         // ---------------------------------------------------------------------
         // Bottom action buttons
@@ -235,12 +250,14 @@ public class QuestionManagementView extends BorderPane {
         bottom.setAlignment(Pos.CENTER_RIGHT);
 
         // Apply consistent styling to action buttons
+        styleSecondary(importJsonBtn);
         styleSecondary(addBtn);
         styleSecondary(editBtn);
         styleDanger(deleteBtn);
 
 
         // Fixed width for visual alignment
+        importJsonBtn.setPrefWidth(140);
         addBtn.setPrefWidth(140);
         editBtn.setPrefWidth(140);
         deleteBtn.setPrefWidth(140);
@@ -258,8 +275,90 @@ public class QuestionManagementView extends BorderPane {
         Tooltip.install(editWrapper, editTip);
         Tooltip.install(deleteWrapper, deleteTip);
 
-        bottom.getChildren().addAll(addBtn, editWrapper, deleteWrapper);
+        bottom.getChildren().addAll(importJsonBtn, addBtn, editWrapper, deleteWrapper);
         setBottom(bottom);
+    }
+
+    /**
+     * ✅ Remove ONLY the horizontal scrollbar (bottom), keep the vertical (up/down).
+     * Strong: hide all horizontal scrollbars inside table + inside virtual-flow.
+     * Runs twice because TableView skin may rebuild.
+     */
+    private void hideHorizontalScrollBarOnly() {
+        Runnable hide = () -> {
+            // direct lookup (rarely enough, but keep it)
+            for (Node n : table.lookupAll(".scroll-bar:horizontal")) {
+                n.setVisible(false);
+                n.setManaged(false);
+                n.setOpacity(0);
+            }
+
+            // virtual flow lookup (usually the real one)
+            Node vf = table.lookup(".virtual-flow");
+            if (vf != null) {
+                for (Node n : vf.lookupAll(".scroll-bar:horizontal")) {
+                    n.setVisible(false);
+                    n.setManaged(false);
+                    n.setOpacity(0);
+                }
+
+                // keep vertical
+                for (Node n : vf.lookupAll(".scroll-bar:vertical")) {
+                    n.setVisible(true);
+                    n.setManaged(true);
+                    n.setOpacity(1);
+                    n.setDisable(false);
+                }
+            }
+        };
+
+        Platform.runLater(hide);
+        Platform.runLater(() -> Platform.runLater(hide));
+    }
+
+    /**
+     * ✅ TableCell that wraps text correctly WITHOUT breaking TableView virtualization.
+     * Uses Text node and binds wrapping width to column width.
+     */
+    private static class WrappingTextCell extends TableCell<Question, String> {
+        private final Text text = new Text();
+
+        WrappingTextCell() {
+            text.setFill(Color.web("#E5E7EB"));
+            text.setFont(Font.font("Arial", 13));
+            text.setLineSpacing(2);
+
+            text.wrappingWidthProperty().bind(Bindings.createDoubleBinding(
+                    () -> {
+                        if (getTableColumn() == null) return 200.0;
+                        double w = getTableColumn().getWidth() - 22;
+                        return Math.max(w, 80);
+                    },
+                    tableColumnProperty()
+            ));
+
+            setGraphic(text);
+            setText(null);
+            setPadding(new Insets(6, 8, 6, 8));
+        }
+
+        @Override
+        protected void updateItem(String item, boolean empty) {
+            super.updateItem(item, empty);
+
+            if (empty || item == null) {
+                text.setText("");
+                setTooltip(null);
+                return;
+            }
+
+            text.setText(item);
+
+            Tooltip tip = new Tooltip(item);
+            tip.setWrapText(true);
+            tip.setMaxWidth(650);
+            setTooltip(tip);
+        }
     }
 
     /**
@@ -269,11 +368,11 @@ public class QuestionManagementView extends BorderPane {
         btn.setPrefHeight(36);
         btn.setFont(Font.font("Arial", FontWeight.BOLD, 14));
         btn.setStyle(
-            "-fx-background-color: #2563EB;" +
-            "-fx-text-fill: white;" +
-            "-fx-background-radius: 18;" +
-            "-fx-padding: 0 18 0 18;" +
-            "-fx-cursor: hand;"
+                "-fx-background-color: #2563EB;" +
+                        "-fx-text-fill: white;" +
+                        "-fx-background-radius: 18;" +
+                        "-fx-padding: 0 18 0 18;" +
+                        "-fx-cursor: hand;"
         );
     }
 

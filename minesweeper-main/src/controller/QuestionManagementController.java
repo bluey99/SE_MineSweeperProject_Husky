@@ -3,23 +3,33 @@ package controller;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.ButtonType;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+
+import model.ImportReport;
 import model.Question;
 import model.QuestionsFileStatus;
 import model.SysData;
-import view.dialogs.ConfirmDialog;
-import view.dialogs.InfoDialog;
-import view.dialogs.ErrorDialog;
 
 import view.QuestionFormDialog;
 import view.QuestionManagementView;
 
+import view.dialogs.ConfirmDialog;
+import view.dialogs.InfoDialog;
+import view.dialogs.ErrorDialog;
+
+import java.io.File;
 import java.util.List;
 import java.util.Optional;
 
 /**
  * Controller for the Question Management screen.
  * Manages user interactions and coordinates between the view and the model.
+ *
+ * Merged version:
+ * - Uses the new Template Method dialog system (InfoDialog / ErrorDialog / ConfirmDialog)
+ * - Keeps the Import JSON button behavior (FileChooser + SysData.importQuestionsFromJson)
+ * - Preserves safety rules (disable actions when CSV is malformed, including Import)
  */
 public class QuestionManagementController {
 
@@ -56,26 +66,27 @@ public class QuestionManagementController {
 
         switch (status) {
 
-        case NOT_EXISTS -> 
-        new InfoDialog(
-                "Questions File Missing",
-                "No questions file was found.\n\n"
-                + "The file will be created automatically when you add the first question."
-        ).show();
-
+            case NOT_EXISTS ->
+                    new InfoDialog(
+                            "Questions File Missing",
+                            "No questions file was found.\n\n"
+                                    + "The file will be created automatically when you add the first question."
+                    ).show();
 
             case MALFORMED -> {
-            	new ErrorDialog(
-            	        "Invalid Questions File",
-            	        "The questions file exists but is not formatted correctly.\n\n"
-            	        + "Please fix or replace the file before managing questions."
-            	).show();
-
+                new ErrorDialog(
+                        "Invalid Questions File",
+                        "The questions file exists but is not formatted correctly.\n\n"
+                                + "Please fix or replace the file before managing questions."
+                ).show();
 
                 // Lock all modification actions
                 view.addBtn.setDisable(true);
                 view.editBtn.setDisable(true);
                 view.deleteBtn.setDisable(true);
+
+                // ✅ also lock import when file is malformed
+                view.importJsonBtn.setDisable(true);
             }
 
             case EMPTY, HAS_DATA -> {
@@ -107,6 +118,32 @@ public class QuestionManagementController {
                     view.deleteBtn.setDisable(!hasSelection);
                 });
 
+        // -------------------- IMPORT JSON --------------------
+        view.importJsonBtn.setOnAction(e -> {
+            FileChooser chooser = new FileChooser();
+            chooser.setTitle("Import Questions from JSON");
+            chooser.getExtensionFilters().add(
+                    new FileChooser.ExtensionFilter("JSON Files", "*.json")
+            );
+
+            File jsonFile = chooser.showOpenDialog(primaryStage);
+            if (jsonFile == null) return;
+
+            ImportReport report = SysData.importQuestionsFromJson(jsonFile);
+
+            if (report == null || !report.success) {
+                String msg = (report == null)
+                        ? "Import failed (unknown error)."
+                        : report.message;
+
+                new ErrorDialog("Import Failed", msg).show();
+                return;
+            }
+
+            new InfoDialog("Import Completed", report.message).show();
+            refreshQuestions();
+        });
+
         // -------------------- ADD QUESTION --------------------
         view.addBtn.setOnAction(e -> {
             QuestionFormDialog dialog =
@@ -118,20 +155,19 @@ public class QuestionManagementController {
                 boolean success = SysData.addQuestion(q);
 
                 if (success) {
-                	new InfoDialog(
-                	        "Question Added",
-                	        "The question was added successfully."
-                	).show();
+                    new InfoDialog(
+                            "Question Added",
+                            "The question was added successfully."
+                    ).show();
 
                     refreshQuestions();
                 } else {
-                	new ErrorDialog(
-                	        "Add Failed",
-                	        "Unable to save the question.\n\n"
-                	        + "The questions file may be open in another program.\n"
-                	        + "Please close it and try again."
-                	).show();
-
+                    new ErrorDialog(
+                            "Add Failed",
+                            "Unable to save the question.\n\n"
+                                    + "The questions file may be open in another program.\n"
+                                    + "Please close it and try again."
+                    ).show();
                 }
             });
         });
@@ -152,20 +188,19 @@ public class QuestionManagementController {
                 boolean success = SysData.updateQuestion(q);
 
                 if (success) {
-                	new InfoDialog(
-                	        "Question Updated",
-                	        "The question was updated successfully."
-                	).show();
+                    new InfoDialog(
+                            "Question Updated",
+                            "The question was updated successfully."
+                    ).show();
 
                     refreshQuestions();
                 } else {
-                	new ErrorDialog(
-                	        "Update Failed",
-                	        "Unable to update the question.\n\n"
-                	        + "The questions file may be open in another program.\n"
-                	        + "Please close it and try again."
-                	).show();
-
+                    new ErrorDialog(
+                            "Update Failed",
+                            "Unable to update the question.\n\n"
+                                    + "The questions file may be open in another program.\n"
+                                    + "Please close it and try again."
+                    ).show();
                 }
             });
         });
@@ -177,29 +212,28 @@ public class QuestionManagementController {
 
             if (selected == null) return;
 
+            // confirm delete
             if (new ConfirmDialog(
                     "Delete Question",
                     "Are you sure you want to delete the selected question?"
             ).show() != ButtonType.OK) return;
 
-
             boolean success = SysData.deleteQuestion(selected);
 
             if (success) {
-            	new InfoDialog(
-            	        "Question Deleted",
-            	        "The question was deleted successfully."
-            	).show();
+                new InfoDialog(
+                        "Question Deleted",
+                        "The question was deleted successfully."
+                ).show();
 
                 refreshQuestions();
             } else {
-            	new ErrorDialog(
-            	        "Delete Failed",
-            	        "Unable to delete the question.\n\n"
-            	        + "The questions file may be open in another program.\n"
-            	        + "Please close it and try again."
-            	).show();
-
+                new ErrorDialog(
+                        "Delete Failed",
+                        "Unable to delete the question.\n\n"
+                                + "The questions file may be open in another program.\n"
+                                + "Please close it and try again."
+                ).show();
             }
         });
     }
