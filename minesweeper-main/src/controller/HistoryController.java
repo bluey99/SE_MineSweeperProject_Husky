@@ -5,6 +5,7 @@ import javafx.collections.ObservableList;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.Tooltip;
 import javafx.stage.Stage;
 import model.GameHistoryEntry;
 import model.SysData;
@@ -13,11 +14,21 @@ import view.HistoryView;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * HistoryController
+ *
+ * Controls the behavior of the Game History screen.
+ * Handles user interactions, validation, persistence,
+ * and synchronization between the view and the data layer.
+ */
 public class HistoryController {
 
     private final Stage primaryStage;
     private final HistoryView view;
     private final ObservableList<GameHistoryEntry> historyList;
+
+    private final Tooltip deleteDisabledTooltip =
+            new Tooltip("Select a row to delete");
 
     public HistoryController(Stage primaryStage) {
         this.primaryStage = primaryStage;
@@ -30,27 +41,25 @@ public class HistoryController {
         view.table.setItems(historyList);
 
         setupHandlers();
-        refreshEmptyState();
+        refreshState();
     }
 
+    /**
+     * Registers all UI event handlers.
+     */
     private void setupHandlers() {
+
         view.backBtn.setOnAction(e -> Main.showMainMenu(primaryStage));
 
         view.clearHistoryBtn.setOnAction(e -> {
-            if (historyList.isEmpty()) {
-                error("History is already empty.");
-                return;
-            }
-
-            if (!confirm("Clear History", "Are you sure you want to delete ALL history?")) return;
-
-            int removed = SysData.clearHistory();
+            if (!confirm("Clear History", "Delete all history records?")) return;
+            SysData.clearHistory();
             historyList.clear();
-            success("History cleared (" + removed + " records).");
-            refreshEmptyState();
+            refreshState();
+            success("History cleared.");
         });
 
-        // ✅ NEW: Trim History popup (replaces keepRecentBtn + keepRecentField)
+        // -------------------- TRIM HISTORY (RESTORED) --------------------
         view.trimHistoryBtn.setOnAction(e -> {
 
             if (historyList.isEmpty()) {
@@ -59,10 +68,7 @@ public class HistoryController {
             }
 
             int keepK = view.showTrimHistoryDialog(); // -1 if cancelled
-            if (keepK <= 0) {
-                // cancelled or invalid -> do nothing, no error pop
-                return;
-            }
+            if (keepK <= 0) return;
 
             int currentSize = historyList.size();
 
@@ -80,67 +86,75 @@ public class HistoryController {
             int removed = SysData.trimHistory(keepK);
             reloadHistory();
             success("Kept last " + keepK + " games. Removed " + removed + " older entries.");
-            refreshEmptyState();
+            refreshState();
+        });
+        // ---------------------------------------------------------------
+
+        view.table.getSelectionModel().selectedItemProperty().addListener((obs, o, selected) -> {
+            boolean hasSelection = selected != null;
+            view.deleteSelectedBtn.setDisable(!hasSelection);
+
+            if (!hasSelection) {
+                Tooltip.install(view.deleteBtnWrapper, deleteDisabledTooltip);
+            } else {
+                Tooltip.uninstall(view.deleteBtnWrapper, deleteDisabledTooltip);
+            }
         });
 
         view.deleteSelectedBtn.setOnAction(e -> {
             GameHistoryEntry selected = view.table.getSelectionModel().getSelectedItem();
-            if (selected == null) {
-                error("Please select a row first.");
-                return;
-            }
+            if (selected == null) return;
 
-            if (!confirm("Delete Selected", "Delete the selected history row?")) return;
+            if (!confirm("Delete Selected", "Delete the selected history entry?")) return;
 
-            boolean ok = SysData.deleteHistoryEntry(selected);
-            if (!ok) {
-                error("Failed to delete selected row.");
-                return;
-            }
-
+            SysData.deleteHistoryEntry(selected);
             historyList.remove(selected);
-            success("Selected row deleted.");
-            refreshEmptyState();
+            refreshState();
+            success("Entry deleted.");
         });
     }
 
+    /**
+     * Reloads history data from persistent storage.
+     */
     private void reloadHistory() {
         List<GameHistoryEntry> loaded = SysData.loadHistory();
         loaded.sort((a, b) -> b.getDateTime().compareTo(a.getDateTime()));
         historyList.setAll(loaded);
     }
 
-    private void refreshEmptyState() {
+    /**
+     * Updates UI state based on data availability and selection.
+     */
+    private void refreshState() {
         boolean empty = historyList.isEmpty();
 
         view.emptyLabel.setVisible(empty);
-        view.emptyLabel.setManaged(empty);
-
         view.clearHistoryBtn.setDisable(empty);
-        view.trimHistoryBtn.setDisable(empty);     // ✅ updated
-        view.deleteSelectedBtn.setDisable(empty);  // selection listener in view will re-enable when selected
+        view.trimHistoryBtn.setDisable(empty);
+        view.deleteSelectedBtn.setDisable(true);
+
+        Tooltip.install(view.deleteBtnWrapper, deleteDisabledTooltip);
     }
 
     private boolean confirm(String title, String msg) {
-        Alert a = new Alert(Alert.AlertType.CONFIRMATION);
-        a.setTitle(title);
-        a.setHeaderText(title);
-        a.setContentText(msg);
-        Optional<ButtonType> r = a.showAndWait();
-        return r.isPresent() && r.get() == ButtonType.OK;
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, msg, ButtonType.OK, ButtonType.CANCEL);
+        alert.setTitle(title);
+        Optional<ButtonType> res = alert.showAndWait();
+        return res.isPresent() && res.get() == ButtonType.OK;
     }
 
     private void success(String msg) {
         view.statusLabel.setText(msg);
-        view.statusLabel.setStyle("-fx-text-fill: #22C55E; -fx-font-weight: bold;");
+        view.statusLabel.setStyle("-fx-text-fill: #22C55E;");
     }
 
     private void error(String msg) {
         view.statusLabel.setText(msg);
-        view.statusLabel.setStyle("-fx-text-fill: #F87171; -fx-font-weight: bold;");
+        view.statusLabel.setStyle("-fx-text-fill: #F87171;");
     }
 
-    public Scene createScene(double width, double height) {
-        return new Scene(view, width, height);
+    public Scene createScene(double w, double h) {
+        return new Scene(view, w, h);
     }
 }

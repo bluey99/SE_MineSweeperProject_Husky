@@ -54,6 +54,21 @@ public class QuestionManagementView extends BorderPane {
             "-fx-padding: 0 14 0 14;" +
             "-fx-cursor: default;" +
             "-fx-opacity: 0.6;";
+    private static final String DANGER_ENABLED_STYLE =
+            "-fx-background-color: #DC2626;" +
+            "-fx-text-fill: white;" +
+            "-fx-background-radius: 8;" +
+            "-fx-padding: 0 14 0 14;" +
+            "-fx-cursor: hand;";
+
+    private static final String DANGER_DISABLED_STYLE =
+            "-fx-background-color: #7F1D1D;" +
+            "-fx-text-fill: rgba(255,255,255,0.55);" +
+            "-fx-background-radius: 8;" +
+            "-fx-padding: 0 14 0 14;" +
+            "-fx-cursor: default;" +
+            "-fx-opacity: 0.6;";
+
 
     // Table displaying all questions (data injected by the controller)
     public final TableView<Question> table = new TableView<>();
@@ -222,7 +237,8 @@ public class QuestionManagementView extends BorderPane {
         // Apply consistent styling to action buttons
         styleSecondary(addBtn);
         styleSecondary(editBtn);
-        styleSecondary(deleteBtn);
+        styleDanger(deleteBtn);
+
 
         // Fixed width for visual alignment
         addBtn.setPrefWidth(140);
@@ -281,4 +297,25 @@ public class QuestionManagementView extends BorderPane {
                     : SECONDARY_ENABLED_STYLE);
         });
     }
+    /**
+     * Styles destructive action buttons (e.g., Delete).
+     * Automatically updates appearance when disabled/enabled.
+     */
+    private void styleDanger(Button btn) {
+        btn.setPrefHeight(32);
+        btn.setFont(Font.font("Arial", 13));
+
+        // Apply initial style
+        btn.setStyle(btn.isDisabled()
+                ? DANGER_DISABLED_STYLE
+                : DANGER_ENABLED_STYLE);
+
+        // React to disabled state changes
+        btn.disabledProperty().addListener((obs, wasDisabled, isNowDisabled) -> {
+            btn.setStyle(isNowDisabled
+                    ? DANGER_DISABLED_STYLE
+                    : DANGER_ENABLED_STYLE);
+        });
+    }
+
 }
