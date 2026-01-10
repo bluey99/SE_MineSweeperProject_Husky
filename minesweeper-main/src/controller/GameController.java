@@ -456,9 +456,12 @@ public class GameController implements GameModelObserver {
         }
 
         if (res.actions.contains(SpecialAction.REVEAL_AREA_3X3)) {
-            revealRandom3x3AreaForCurrentPlayer();
-            extraInfo.append("\nReveal bonus: a 3×3 area has been uncovered.");
+            int revealed = revealBestAvailableBlockForCurrentPlayer();
+            extraInfo.append("\nReveal bonus: ")
+                     .append(revealed)
+                     .append(" cells have been uncovered.");
         }
+
 
         String msg = res.message;
         if (extraInfo.length() > 0) msg += "\n" + extraInfo;
@@ -498,21 +501,71 @@ public class GameController implements GameModelObserver {
         Pos chosen = candidates.get(rng.nextInt(candidates.size()));
         return bc.applyMineGiftFlag(chosen.row, chosen.col);
     }
-
-    private void revealRandom3x3AreaForCurrentPlayer() {
+    
+    private int revealBestAvailableBlockForCurrentPlayer() {
         CellController[][] board = getCurrentBoard();
-        if (board == null) return;
+        if (board == null) return 0;
 
-        int centerRow = rng.nextInt(board.length);
-        int centerCol = rng.nextInt(board[0].length);
+        int rows = board.length;
+        int cols = board[0].length;
 
-        for (int r = centerRow - 1; r <= centerRow + 1; r++) {
-            for (int c = centerCol - 1; c <= centerCol + 1; c++) {
-                revealCellFromGift(board, r, c);
+        // shapes are (height, width) - ordered from best to worst
+        int[][] shapes = {
+                {3,3},               // 9
+                {3,2}, {2,3},        // 6
+                {2,2},               // 4
+                {3,1}, {1,3},        // 3
+                {2,1}, {1,2},        // 2
+                {1,1}                // 1
+        };
+
+
+        List<int[]> bestCells = null;
+
+        for (int[] shape : shapes) {
+            int h = shape[0];
+            int w = shape[1];
+
+            for (int r = 0; r <= rows - h; r++) {
+                for (int c = 0; c <= cols - w; c++) {
+
+                    List<int[]> cells = new ArrayList<>();
+
+                    for (int i = 0; i < h; i++) {
+                        for (int j = 0; j < w; j++) {
+                            Cell cell = board[r + i][c + j].getCell();
+                            if (!cell.isOpen() && !cell.isFlag()) {
+                                cells.add(new int[]{r + i, c + j});
+                            }
+                        }
+                    }
+
+                    // Must reveal at least 1 cell
+                    if (!cells.isEmpty()) {
+                        // Keep the rectangle with the MOST available cells
+                        if (bestCells == null || cells.size() > bestCells.size()) {
+                            bestCells = cells;
+                        }
+                    }
+                }
+            }
+
+            // If we found a candidate for this shape, use it immediately (best-first)
+            if (bestCells != null) {
+                for (int[] pos : bestCells) {
+                    revealCellFromGift(board, pos[0], pos[1]);
+                }
+                checkWinCondition();
+                return bestCells.size();
             }
         }
+
+        return 0;
     }
 
+
+
+    
     private void revealCellFromGift(CellController[][] board, int row, int col) {
         if (row < 0 || row >= board.length || col < 0 || col >= board[0].length) return;
 
@@ -523,6 +576,15 @@ public class GameController implements GameModelObserver {
 
         cell.setOpen(true);
         gameModel.revealedCells++;
+
+        if (cell.isMine()) {
+            BoardController bc =
+                    (currentPlayer == 1) ? board1Controller : board2Controller;
+            if (bc != null) {
+                bc.onMineOpenedByGift();
+            }
+        }
+
 
         if (cell.isSpecial() && !cell.isDiscovered()) {
             cell.setDiscovered(true);

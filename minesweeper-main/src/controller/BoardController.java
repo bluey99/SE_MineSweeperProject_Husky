@@ -238,4 +238,9 @@ public class BoardController {
         }
         return count;
     }
+    // track mines opened via reveal gifts
+    public void onMineOpenedByGift() {
+        openedMineCount++;
+    }
+
 }
