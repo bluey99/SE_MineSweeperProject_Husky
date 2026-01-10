@@ -126,24 +126,27 @@ public class GameModel {
         boolean[][] questionMask = new boolean[rows][cols];
         selectSpecialCells(mines, neighborMines, surpriseMask, questionMask, rows, cols);
 
-        // 4) Build the Board
+        // 4) Build the Board <<<<<FACTORY DESIGN PATTERN>>>>>
         Board board = new Board(rows, cols);
 
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
 
-                Cell cell;
-                if (mines[r][c]) {
-                    cell = new MineCell(r, c);
-                } else if (surpriseMask[r][c]) {
-                    cell = new SurpriseCell(r, c, neighborMines[r][c]);
-                } else if (questionMask[r][c]) {
-                    cell = new QuestionCell(r, c, neighborMines[r][c]);
-                } else {
-                    cell = new NormalCell(r, c, neighborMines[r][c]);
-                }
+            	CellType type;
 
-                board.setCell(r, c, cell);
+            	if (mines[r][c]) {
+            	    type = CellType.MINE;
+            	} else if (surpriseMask[r][c]) {
+            	    type = CellType.SURPRISE;
+            	} else if (questionMask[r][c]) {
+            	    type = CellType.QUESTION;
+            	} else {
+            	    type = CellType.NORMAL;
+            	}
+
+            	Cell cell = CellFactory.createCell(type, r, c, neighborMines[r][c]);
+            	board.setCell(r, c, cell);
+
             }
         }
 
