@@ -6,24 +6,12 @@ import model.GameModel;
 
 public class RevealService {
 
-    /**
-     * Reveals a single cell and performs cascade (flood-fill) if needed.
-     * - No JavaFX / UI logic here.
-     * - Mutates the model (Cell state + GameModel.revealedCells + score rules).
-     */
     public RevealResult revealCell(Board board, GameModel gameModel, int row, int col, boolean isRootClick) {
         RevealResult result = new RevealResult();
         revealCellInternal(board, gameModel, row, col, isRootClick, result);
         return result;
     }
 
-    /**
-     * Force-reveal all cells on a board (used when game ends).
-     *
-     * IMPORTANT:
-     * - Must NOT change revealedCells or score/lives.
-     * - Used only for game-over final display.
-     */
     public RevealResult revealAllForce(Board board) {
         RevealResult result = new RevealResult();
         int rows = board.getRows();
@@ -47,16 +35,10 @@ public class RevealService {
         return result;
     }
 
-    /**
-     * Backward-compatible method (if your code still calls revealAll(board, gameModel)).
-     * Uses safe force-reveal behavior.
-     */
     public RevealResult revealAll(Board board, GameModel gameModel) {
         return revealAllForce(board);
     }
 
-    // ---------------------------------------------------------------------
-    // Internal recursive logic (matches your old openCell behavior)
     // ---------------------------------------------------------------------
     private void revealCellInternal(Board board, GameModel gameModel, int row, int col,
                                     boolean isRootClick, RevealResult result) {
@@ -79,13 +61,12 @@ public class RevealService {
             cell.setDiscovered(true);
         }
 
-     // +1 point for every revealed non-mine cell
+        // ✅ FIX: Observer-safe score update
         if (!isMine) {
-            gameModel.sharedScore += 1;
+            gameModel.addScore(1);
         }
 
-
-        // ✅ REVERTED: special cells SHOULD cascade (as course incharge said)
+        // ✅ special cells SHOULD cascade
         boolean shouldExpand = !isMine && (neighbors == 0 || isSpecial);
 
         if (shouldExpand) {

@@ -12,12 +12,6 @@ public class BoardController {
     private static BoardController instanceP1;
     private static BoardController instanceP2;
 
-    /**
-     * Lazy getter: creates the controller once (per player) and then returns the same instance.
-     *
-     * IMPORTANT: You must call this the first time with the correct parameters (right after you build the board).
-     * Later calls can just reuse the same method (with same params) or you can keep a reference.
-     */
     public static BoardController getInstance(int playerNum,
                                              GameController gameController,
                                              GameModel gameModel,
@@ -32,7 +26,6 @@ public class BoardController {
         BoardController current = (playerNum == 1) ? instanceP1 : instanceP2;
 
         if (current == null) {
-            // First time creation for this player
             current = new BoardController(playerNum, gameController, gameModel, logicalBoard, uiBoard, revealService);
             if (playerNum == 1) instanceP1 = current;
             else instanceP2 = current;
@@ -40,7 +33,6 @@ public class BoardController {
             return current;
         }
 
-        // Already exists → safety checks to ensure you're not accidentally rebuilding with different objects
         if (current.gameController != gameController ||
             current.gameModel != gameModel ||
             current.logicalBoard != logicalBoard ||
@@ -56,7 +48,6 @@ public class BoardController {
         return current;
     }
 
-    /** Optional: convenient getter after it was created (no params). */
     public static BoardController getInstance(int playerNum) {
         if (playerNum != 1 && playerNum != 2) {
             throw new IllegalArgumentException("playerNum must be 1 or 2");
@@ -71,13 +62,12 @@ public class BoardController {
         return current;
     }
 
-    /** Optional: call when starting a NEW game in the same app run (if you ever support that). */
     public static void resetInstances() {
         instanceP1 = null;
         instanceP2 = null;
     }
 
-    // ------------------ Existing fields ------------------
+    // ------------------ Fields ------------------
 
     private final int playerNum;
     private final GameController gameController;
@@ -87,16 +77,11 @@ public class BoardController {
     private final CellController[][] uiBoard;
     private final RevealService revealService;
 
-    // Mines-left tracking
     private final int totalMinesOnBoard;
 
-    // ✅ counts ONLY mines that are flagged correctly
     private int correctFlagCount = 0;
-
-    // ✅ counts mines that got opened by clicking a mine (so you can't flag them later)
     private int openedMineCount = 0;
 
-    // ✅ Constructor is now PRIVATE (enforces using getInstance)
     private BoardController(int playerNum,
                             GameController gameController,
                             GameModel gameModel,
@@ -125,15 +110,11 @@ public class BoardController {
         return logicalBoard;
     }
 
-    /**
-     * ✅ Mines left = total mines - (correctly flagged mines + opened mines)
-     */
     public int getMinesLeft() {
         int left = totalMinesOnBoard - (correctFlagCount + openedMineCount);
         return Math.max(left, 0);
     }
 
-    /** Allow GameController to update mines-left when mine gift flags a mine. */
     public boolean applyMineGiftFlag(int row, int col) {
         if (row < 0 || col < 0 || row >= uiBoard.length || col >= uiBoard[0].length) return false;
 
@@ -149,9 +130,10 @@ public class BoardController {
         correctFlagCount++;
 
         cellCtrl.init();
+
+        // Observer should refresh UI, but leaving these is ok if you want:
         gameController.updateUI();
 
-        // ✅ mine gift can trigger win
         gameController.checkWinCondition();
 
         return true;
@@ -164,16 +146,14 @@ public class BoardController {
         CellController cellCtrl = uiBoard[row][col];
         Cell cell = cellCtrl.getCell();
 
-        // NOTE: activating special cells does NOT end the turn
-
         if (cell.isSurprise() && cell.isDiscovered() && !cell.isActivated()) {
             gameController.activateSurpriseCell(cellCtrl);
-            return; // ✅ stay on same player
+            return;
         }
 
         if (cell.isQuestion() && cell.isDiscovered() && !cell.isActivated()) {
             gameController.activateQuestionCell(cellCtrl);
-            return; // ✅ stay on same player
+            return;
         }
 
         if (cell.isOpen() || cell.isFlag()) return;
@@ -187,22 +167,11 @@ public class BoardController {
         if (!gameController.isGameActive()) return;
 
         if (cell.isMine()) {
-            // ✅ extra safety: count only if it is open now (it should be)
             if (cell.isOpen()) {
                 openedMineCount++;
             }
 
             gameController.handleMineHit();
-            if (gameController.isGameActive()) {
-                gameController.switchPlayer();
-            }
-
-        } else if (cell.isSurprise()) {
-            if (gameController.isGameActive()) {
-                gameController.switchPlayer();
-            }
-
-        } else if (cell.isQuestion()) {
             if (gameController.isGameActive()) {
                 gameController.switchPlayer();
             }
@@ -213,6 +182,7 @@ public class BoardController {
             }
         }
 
+        // Observer should refresh UI, but leaving these is ok:
         gameController.updateUI();
         gameController.checkWinCondition();
     }
@@ -236,16 +206,19 @@ public class BoardController {
             if (cell.isMine()) correctFlagCount--;
         }
 
+        // ✅ FIX: use GameModel methods so observers get notified
         if (!wasFlagged && isFlagged && !cell.isFlagScored()) {
-            if (cell.isMine()) gameModel.sharedScore += 1;
-            else               gameModel.sharedScore -= 3;
+            if (cell.isMine()) gameModel.addScore(+1);
+            else               gameModel.addScore(-3);
+
             cell.setFlagScored(true);
         }
 
         cellCtrl.init();
+
+        // Observer should refresh UI, but leaving this is ok:
         gameController.updateUI();
 
-        // ✅ right click can trigger win
         gameController.checkWinCondition();
     }
 

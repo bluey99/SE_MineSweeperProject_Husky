@@ -10,15 +10,12 @@ import java.util.Random;
 /**
  * Game model for cooperative two-player Minesweeper.
  *
- * This version is purely "logical":
- *  - Each player has a Board (grid of Cell objects).
- *  - Game rules (mines, neighbor counts, special cells) are the same as before.
- *
- * The controller/view layer will later map each Cell to a CellController/CellView.
+ * Observer version:
+ * - GameModel notifies observers when sharedScore/sharedLives change.
  */
 public class GameModel {
 
-    // Optional back-reference to controller (kept for compatibility, not used here yet)
+    // Optional back-reference to controller (kept for compatibility)
     @SuppressWarnings("unused")
     private final GameController controller;
 
@@ -26,11 +23,28 @@ public class GameModel {
     private Board board1;
     private Board board2;
 
-    // Shared game state
+    // ---------------- Observer ----------------
+    private final List<GameModelObserver> observers = new ArrayList<>();
+
+    public void addObserver(GameModelObserver o) {
+        if (o != null && !observers.contains(o)) observers.add(o);
+    }
+
+    public void removeObserver(GameModelObserver o) {
+        observers.remove(o);
+    }
+
+    private void notifyObservers() {
+        for (GameModelObserver o : observers) {
+            o.onGameModelChanged();
+        }
+    }
+
+    // ---------------- Shared game state ----------------
     // 3.2.37 – shared cumulative score, starts from 0
-    public int sharedScore = 0;
-    public int sharedLives;        // 3.2.36 – initialized by difficulty
-    public int revealedCells = 0;
+    private int sharedScore = 0;
+    private int sharedLives;        // 3.2.36 – initialized by difficulty
+    public int revealedCells = 0;   // can stay public for now (optional)
 
     // Game parameters
     private final int mineCount;
@@ -41,12 +55,41 @@ public class GameModel {
     public GameModel(GameController controller, int mineCount, int initialLives) {
         this.controller = controller;
         this.mineCount = mineCount;
-        this.initialLives = initialLives;   // keep for re-initialization
+        this.initialLives = initialLives;
         this.sharedLives = initialLives;
     }
 
-    // ---------------- Public API ----------------
+    // ---------------- Getters (used by GameController.updateUI) ----------------
+    public int getSharedScore() {
+        return sharedScore;
+    }
 
+    public int getSharedLives() {
+        return sharedLives;
+    }
+
+    // ---------------- Mutators that notify ----------------
+    public void setSharedScore(int value) {
+        this.sharedScore = value;
+        notifyObservers();
+    }
+
+    public void addScore(int delta) {
+        this.sharedScore += delta;
+        notifyObservers();
+    }
+
+    public void setSharedLives(int value) {
+        this.sharedLives = value;
+        notifyObservers();
+    }
+
+    public void addLives(int delta) {
+        this.sharedLives += delta;
+        notifyObservers();
+    }
+
+    // ---------------- Public API ----------------
     public Board getBoard1() {
         return board1;
     }
@@ -59,16 +102,15 @@ public class GameModel {
      * Initialize both boards and reset shared state for a new game.
      */
     public void initializeBoards(int rows, int cols) {
-        sharedScore = 0;          // 3.2.37 – score starts from 0
+        setSharedScore(0);              // notify
         revealedCells = 0;
-        sharedLives = initialLives; // 3.2.36 – reset to difficulty-based life count
+        setSharedLives(initialLives);   // notify
 
         board1 = generateBoard(rows, cols);
         board2 = generateBoard(rows, cols);
     }
 
     // ---------------- Board generation ----------------
-
     private Board generateBoard(int rows, int cols) {
         boolean[][] mines = new boolean[rows][cols];
         int[][] neighborMines = new int[rows][cols];
@@ -84,7 +126,7 @@ public class GameModel {
         boolean[][] questionMask = new boolean[rows][cols];
         selectSpecialCells(mines, neighborMines, surpriseMask, questionMask, rows, cols);
 
-        // 4) Build the Board with the appropriate Cell subclass in each position
+        // 4) Build the Board
         Board board = new Board(rows, cols);
 
         for (int r = 0; r < rows; r++) {
@@ -94,10 +136,8 @@ public class GameModel {
                 if (mines[r][c]) {
                     cell = new MineCell(r, c);
                 } else if (surpriseMask[r][c]) {
-                    // By construction neighborMines[r][c] == 0
                     cell = new SurpriseCell(r, c, neighborMines[r][c]);
                 } else if (questionMask[r][c]) {
-                    // By construction neighborMines[r][c] == 0
                     cell = new QuestionCell(r, c, neighborMines[r][c]);
                 } else {
                     cell = new NormalCell(r, c, neighborMines[r][c]);
@@ -132,7 +172,7 @@ public class GameModel {
             for (int c = 0; c < cols; c++) {
 
                 if (mines[r][c]) {
-                    neighborMines[r][c] = -1; // convention for mines
+                    neighborMines[r][c] = -1;
                     continue;
                 }
 
@@ -153,11 +193,6 @@ public class GameModel {
         }
     }
 
-    /**
-     * Selects Surprise and Question cells:
-     *  - Only on cells that are NOT mines and have 0 neighboring mines.
-     *  - surpriseRate and questionRate are the same as the old version.
-     */
     private void selectSpecialCells(boolean[][] mines,
                                     int[][] neighborMines,
                                     boolean[][] surpriseMask,
@@ -166,7 +201,6 @@ public class GameModel {
 
         List<int[]> emptyZero = new ArrayList<>();
 
-        // Gather all empty zero-neighbor cells
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
                 if (!mines[r][c] && neighborMines[r][c] == 0) {
@@ -175,11 +209,8 @@ public class GameModel {
             }
         }
 
-        if (emptyZero.isEmpty()) {
-            return; // no place for special cells
-        }
+        if (emptyZero.isEmpty()) return;
 
-        // Shuffle for random placement
         Collections.shuffle(emptyZero);
 
         int surpriseCount = Math.max(2, (int) (emptyZero.size() * surpriseRate));
@@ -187,13 +218,11 @@ public class GameModel {
 
         int idx = 0;
 
-        // Put surprises
         for (int i = 0; i < surpriseCount && idx < emptyZero.size(); i++, idx++) {
             int[] pos = emptyZero.get(idx);
             surpriseMask[pos[0]][pos[1]] = true;
         }
 
-        // Put questions
         for (int i = 0; i < questionCount && idx < emptyZero.size(); i++, idx++) {
             int[] pos = emptyZero.get(idx);
             questionMask[pos[0]][pos[1]] = true;
