@@ -3,3 +3,4 @@ dateTime,difficulty,player1Name,player2Name,result,finalScore,gameLengthSeconds
 2025-12-20T18:45:15.322677,Easy,test 1,test 2,WIN,64,257
 2025-12-20T19:15:30.7400186,Hard,test2,test3,LOSE,1,44
 2025-12-20T19:16:12.4943172,Hard,test2,test3,LOSE,-94,36
+2026-01-10T23:45:11.6894709,Medium,testFactory,testFactory2,LOSE,169,144
