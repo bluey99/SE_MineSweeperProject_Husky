@@ -515,11 +515,14 @@ public class SysData {
 
     private static String signatureOf(Question q) {
         StringBuilder sb = new StringBuilder();
-        sb.append(norm(q.getText())).append("|")
-                .append(q.getDifficulty()).append("|");
+
+        sb.append(norm(sanitizeForCsv(q.getText()))).append("|")
+          .append(q.getDifficulty()).append("|");
 
         String[] o = q.getOptions();
-        for (int i = 0; i < 4; i++) sb.append(norm(o[i])).append("|");
+        for (int i = 0; i < 4; i++) {
+            sb.append(norm(sanitizeForCsv(o[i]))).append("|");
+        }
 
         sb.append(q.getCorrectIndex());
         return sb.toString();
@@ -531,13 +534,18 @@ public class SysData {
     }
 
     private static Question convertJsonObjectToQuestion(java.util.Map<String, Object> obj) {
+    	
         if (obj == null) return null;
+        
+        
 
         String text = str(obj, "question", "Question", "text", "Text");
         if (text == null || text.trim().isEmpty()) return null;
 
         String diffStr = str(obj, "difficulty", "Difficulty", "level", "Level");
         QuestionDifficulty diff = QuestionDifficulty.fromString(diffStr);
+        if (diff == null) return null;
+
 
         String[] opts = extractOptions(obj);
         if (opts == null || opts.length != 4) return null;
