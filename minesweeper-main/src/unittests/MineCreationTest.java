@@ -2,6 +2,8 @@ package unittests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.Random;
+
 import org.junit.jupiter.api.Test;
 
 import model.Board;
@@ -26,8 +28,9 @@ public class MineCreationTest {
         int N = 9, M = 9;
         int mineCount = 10;
         int sharedLives = 10;
+        Random rnd = new Random();
 
-        GameModel gm = new GameModel(null, mineCount, sharedLives);
+        GameModel gm = new GameModel(null, mineCount, sharedLives, rnd);
         gm.initializeBoards(N, M);
 
         assertEquals(mineCount, countMines(gm.getBoard1()));
@@ -39,8 +42,9 @@ public class MineCreationTest {
         int N = 16, M = 16;
         int mineCount = 44;
         int sharedLives = 6;
+        Random rnd = new Random();
 
-        GameModel gm = new GameModel(null, mineCount, sharedLives);
+        GameModel gm = new GameModel(null, mineCount, sharedLives, rnd);
         gm.initializeBoards(N, M);
 
         assertEquals(mineCount, countMines(gm.getBoard1()));
