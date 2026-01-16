@@ -1,3 +1,4 @@
+// model/GameModel.java
 package model;
 
 import controller.GameController;
@@ -22,6 +23,9 @@ public class GameModel {
     // Two logical boards (one per player)
     private Board board1;
     private Board board2;
+
+    // ✅ Use SAME RNG that comes from GameController (seeded)
+    private final Random rng;
 
     // ---------------- Observer ----------------
     private final List<GameModelObserver> observers = new ArrayList<>();
@@ -52,11 +56,15 @@ public class GameModel {
     private final double questionRate = 0.08; // 8% of empty zero-neighbor cells
     private final int initialLives;
 
-    public GameModel(GameController controller, int mineCount, int initialLives) {
+    // ✅ NEW constructor that accepts rng
+    public GameModel(GameController controller, int mineCount, int initialLives, Random rng) {
         this.controller = controller;
         this.mineCount = mineCount;
         this.initialLives = initialLives;
         this.sharedLives = initialLives;
+
+        // Fallback safety (should not happen in your flow)
+        this.rng = (rng != null) ? rng : new Random();
     }
 
     // ---------------- Getters (used by GameController.updateUI) ----------------
@@ -115,13 +123,13 @@ public class GameModel {
         boolean[][] mines = new boolean[rows][cols];
         int[][] neighborMines = new int[rows][cols];
 
-        // 1) Place mines randomly
+        // 1) Place mines randomly (✅ deterministic via rng)
         placeMinesRandomly(mines, rows, cols);
 
         // 2) Compute neighbor mine counts for all non-mine cells
         computeNeighborCounts(mines, neighborMines, rows, cols);
 
-        // 3) Decide which 0-neighbor cells become Surprise / Question cells
+        // 3) Decide which 0-neighbor cells become Surprise / Question cells (✅ deterministic via rng)
         boolean[][] surpriseMask = new boolean[rows][cols];
         boolean[][] questionMask = new boolean[rows][cols];
         selectSpecialCells(mines, neighborMines, surpriseMask, questionMask, rows, cols);
@@ -132,20 +140,20 @@ public class GameModel {
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
 
-            	CellType type;
+                CellType type;
 
-            	if (mines[r][c]) {
-            	    type = CellType.MINE;
-            	} else if (surpriseMask[r][c]) {
-            	    type = CellType.SURPRISE;
-            	} else if (questionMask[r][c]) {
-            	    type = CellType.QUESTION;
-            	} else {
-            	    type = CellType.NORMAL;
-            	}
+                if (mines[r][c]) {
+                    type = CellType.MINE;
+                } else if (surpriseMask[r][c]) {
+                    type = CellType.SURPRISE;
+                } else if (questionMask[r][c]) {
+                    type = CellType.QUESTION;
+                } else {
+                    type = CellType.NORMAL;
+                }
 
-            	Cell cell = CellFactory.createCell(type, r, c, neighborMines[r][c]);
-            	board.setCell(r, c, cell);
+                Cell cell = CellFactory.createCell(type, r, c, neighborMines[r][c]);
+                board.setCell(r, c, cell);
 
             }
         }
@@ -154,12 +162,11 @@ public class GameModel {
     }
 
     private void placeMinesRandomly(boolean[][] mines, int rows, int cols) {
-        Random rand = new Random();
         int placed = 0;
 
         while (placed < mineCount) {
-            int row = rand.nextInt(rows);
-            int col = rand.nextInt(cols);
+            int row = rng.nextInt(rows);
+            int col = rng.nextInt(cols);
 
             if (!mines[row][col]) {
                 mines[row][col] = true;
@@ -214,7 +221,8 @@ public class GameModel {
 
         if (emptyZero.isEmpty()) return;
 
-        Collections.shuffle(emptyZero);
+        // ✅ deterministic shuffle
+        Collections.shuffle(emptyZero, rng);
 
         int surpriseCount = Math.max(2, (int) (emptyZero.size() * surpriseRate));
         int questionCount = Math.max(3, (int) (emptyZero.size() * questionRate));

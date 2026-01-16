@@ -21,6 +21,7 @@ import javafx.scene.text.FontWeight;
 public class Menu extends StackPane {
 
     public final Button startBtn = new Button("Start Game");
+    public final Button multiplayerBtn = new Button("Multiplayer (LAN)");
     public final Button historyBtn = new Button("History");
     public final Button questionManagementBtn = new Button("Question Management");
 
@@ -89,11 +90,13 @@ public class Menu extends StackPane {
 
         // Buttons styling
         stylePrimaryButton(startBtn);
+        styleSecondaryButton(multiplayerBtn); // ✅ FIX A: style multiplayer button
         styleSecondaryButton(historyBtn);
         styleSecondaryButton(questionManagementBtn);
 
         // ✅ Updated: Use Main navigation helpers
         startBtn.setOnAction(e -> Main.showSetup(Main.getPrimaryStage()));
+        multiplayerBtn.setOnAction(e -> Main.showMultiplayerSetup(Main.getPrimaryStage()));
         historyBtn.setOnAction(e -> Main.showHistory(Main.getPrimaryStage()));
         questionManagementBtn.setOnAction(e -> Main.showQuestionManagement(Main.getPrimaryStage()));
 
@@ -101,6 +104,7 @@ public class Menu extends StackPane {
         btnContainer.setAlignment(Pos.CENTER);
         btnContainer.getChildren().addAll(
                 startBtn,
+                multiplayerBtn, // ✅ FIX B: add multiplayer button to UI
                 historyBtn,
                 questionManagementBtn
         );

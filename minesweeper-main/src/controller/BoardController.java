@@ -163,6 +163,15 @@ public class BoardController {
         for (RevealResult.CellPos p : revealResult.getOpenedCells()) {
             uiBoard[p.row][p.col].init();
         }
+        
+     // ✅ IMPORTANT: mark special cells as "discovered" when they become open
+        for (RevealResult.CellPos p : revealResult.getOpenedCells()) {
+            Cell opened = uiBoard[p.row][p.col].getCell();
+            if (opened.isSpecial() && !opened.isDiscovered()) {
+                opened.setDiscovered(true);
+            }
+        }
+
 
         if (!gameController.isGameActive()) return;
 

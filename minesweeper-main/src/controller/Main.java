@@ -1,3 +1,4 @@
+// controller/Main.java
 package controller;
 
 import javafx.application.Application;
@@ -9,6 +10,7 @@ import javafx.stage.Stage;
 import model.QuestionsFileStatus;
 import model.SysData;
 import view.Menu;
+import view.MultiplayerSetupView;
 import view.SetupView;
 
 public class Main extends Application {
@@ -218,6 +220,85 @@ public class Main extends Application {
         primaryStage.setResizable(false);
     }
 
+    public GameController startGameFromSetupReturnController(String p1, String p2, String difficulty) {
+        GameController.resetInstance();
+        GameController controller = GameController.getInstance(difficulty, p1, p2, primaryStage);
+
+        Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
+        double screenX = bounds.getMinX();
+        double screenY = bounds.getMinY();
+        double screenW = bounds.getWidth();
+        double screenH = bounds.getHeight();
+
+        primaryStage.setMinWidth(0);
+        primaryStage.setMaxWidth(Double.MAX_VALUE);
+        primaryStage.setMinHeight(0);
+        primaryStage.setMaxHeight(Double.MAX_VALUE);
+
+        double gameW = screenW * 0.92;
+        double gameH = screenH;
+
+        double x = screenX + (screenW - gameW) / 2;
+        double y = screenY;
+
+        Scene gameScene = new Scene(controller.gameView, gameW, gameH);
+        primaryStage.setScene(gameScene);
+
+        primaryStage.setX(x);
+        primaryStage.setY(y);
+        primaryStage.setWidth(gameW);
+        primaryStage.setHeight(gameH);
+
+        primaryStage.setMinWidth(gameW);
+        primaryStage.setMaxWidth(gameW);
+        primaryStage.setMinHeight(gameH);
+        primaryStage.setMaxHeight(gameH);
+
+        primaryStage.setResizable(false);
+
+        return controller;
+    }
+
+    // ✅ NEW OVERLOAD: start game with deterministic seed (multiplayer)
+    public GameController startGameFromSetupReturnController(String p1, String p2, String difficulty, long seed) {
+        GameController.resetInstance();
+        GameController controller = GameController.getInstance(difficulty, p1, p2, primaryStage, seed);
+
+        Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
+        double screenX = bounds.getMinX();
+        double screenY = bounds.getMinY();
+        double screenW = bounds.getWidth();
+        double screenH = bounds.getHeight();
+
+        primaryStage.setMinWidth(0);
+        primaryStage.setMaxWidth(Double.MAX_VALUE);
+        primaryStage.setMinHeight(0);
+        primaryStage.setMaxHeight(Double.MAX_VALUE);
+
+        double gameW = screenW * 0.92;
+        double gameH = screenH;
+
+        double x = screenX + (screenW - gameW) / 2;
+        double y = screenY;
+
+        Scene gameScene = new Scene(controller.gameView, gameW, gameH);
+        primaryStage.setScene(gameScene);
+
+        primaryStage.setX(x);
+        primaryStage.setY(y);
+        primaryStage.setWidth(gameW);
+        primaryStage.setHeight(gameH);
+
+        primaryStage.setMinWidth(gameW);
+        primaryStage.setMaxWidth(gameW);
+        primaryStage.setMinHeight(gameH);
+        primaryStage.setMaxHeight(gameH);
+
+        primaryStage.setResizable(false);
+
+        return controller;
+    }
+
     // Displays a blocking dialog when the questions file is malformed
     // Allows the user to either fix the file manually or recreate it automatically
     private void showQuestionsFileError(Stage stage, double width, double height) {
@@ -281,6 +362,25 @@ public class Main extends Application {
         alert.getDialogPane().setMinWidth(500);
 
         alert.showAndWait();
+    }
+
+    public static void showMultiplayerSetup(Stage stage) {
+        if (instance != null) {
+            instance.showMultiplayerSetupInstance(stage);
+        }
+    }
+
+    private void showMultiplayerSetupInstance(Stage stage) {
+        double[] size = getClampedMenuSize();
+        double width = size[0];
+        double height = size[1];
+
+        MultiplayerSetupView mpView = new MultiplayerSetupView(this);
+        Scene scene = new Scene(mpView, width, height);
+
+        stage.setScene(scene);
+        stage.sizeToScene();
+        applyFixedWindowSize(stage, width, height);
     }
 
     public static void main(String[] args) {

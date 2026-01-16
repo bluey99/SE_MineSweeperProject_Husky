@@ -1,3 +1,4 @@
+// controller/GameController.java
 package controller;
 
 import java.time.LocalDateTime;
@@ -37,6 +38,9 @@ import model.GameModelObserver;
 import model.Question;
 import model.QuestionDifficulty;
 import model.SysData;
+import multiplayer.GameAction;
+import multiplayer.MultiplayerDispatcher;
+import multiplayer.MultiplayerSession;
 import view.GameView;
 
 import service.RevealService;
@@ -74,17 +78,31 @@ public class GameController implements GameModelObserver {
 
     private final Stage primaryStage;
 
-    private final Random rng = new Random();
+    // ✅ seeded RNG
+    private final Random rng;
+    private final long seed;
 
     private final RevealService revealService = new RevealService();
-    private final SpecialCellService specialCellService = new SpecialCellService(rng);
+    private final SpecialCellService specialCellService;
 
     private BoardController board1Controller;
     private BoardController board2Controller;
 
+    private MultiplayerDispatcher mpDispatcher; // default null -> offline
+
+    // Step 3.2A — Add Multiplayer hooks to GameController
+    private MultiplayerSession multiplayerSession;
+    private boolean multiplayerEnabled = false;
+
+    // ✅ Keep old signature (single-PC) -> call seeded with random seed
     public static GameController getInstance(String difficulty, String p1Name, String p2Name, Stage stage) {
+        return getInstance(difficulty, p1Name, p2Name, stage, System.nanoTime());
+    }
+
+    // ✅ New overload with seed (multiplayer deterministic)
+    public static GameController getInstance(String difficulty, String p1Name, String p2Name, Stage stage, long seed) {
         if (instance == null) {
-            instance = new GameController(difficulty, p1Name, p2Name, stage);
+            instance = new GameController(difficulty, p1Name, p2Name, stage, seed);
         }
         return instance;
     }
@@ -93,11 +111,16 @@ public class GameController implements GameModelObserver {
         instance = null;
     }
 
-    private GameController(String difficulty, String p1Name, String p2Name, Stage stage) {
+    // ✅ seeded constructor
+    private GameController(String difficulty, String p1Name, String p2Name, Stage stage, long seed) {
         this.primaryStage = stage;
         this.difficulty = difficulty;
         this.player1Name = p1Name;
         this.player2Name = p2Name;
+
+        this.seed = seed;
+        this.rng = new Random(seed);
+        this.specialCellService = new SpecialCellService(this.rng);
 
         Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
         double screenHeight = bounds.getHeight();
@@ -153,10 +176,15 @@ public class GameController implements GameModelObserver {
 
         CellController.setCellSide(cellSize);
 
-        gameModel = new GameModel(this, mineCount, sharedLives);
+        // ✅ pass SAME rng into GameModel
+        gameModel = new GameModel(this, mineCount, sharedLives, rng);
         gameModel.addObserver(this); // observe model changes
 
         gameView = new GameView(this);
+
+        // ✅ Step 7: offline dispatcher default
+        mpDispatcher = new MultiplayerDispatcher(this, MultiplayerDispatcher.Role.OFFLINE, null);
+
 
         init();
         setupEventHandlers();
@@ -167,6 +195,43 @@ public class GameController implements GameModelObserver {
     @Override
     public void onGameModelChanged() {
         Platform.runLater(this::updateUI);
+    }
+
+    // 2️⃣ Setter (called once, from setup)
+    public void attachMultiplayer(MultiplayerSession session) {
+        this.multiplayerSession = session;
+        this.multiplayerEnabled = true;
+
+        session.setOnActionReceived(action -> {
+            // IMPORTANT: switch back to JavaFX thread
+            javafx.application.Platform.runLater(() -> applyRemoteAction(action));
+        });
+    }
+
+    // 3️⃣ Remote action handler (NEW method)
+    private void applyRemoteAction(GameAction action) {
+        if (action.type == GameAction.Type.LEFT_CLICK) {
+            handleLeftClick(action.playerNum, action.row, action.col);
+        } else if (action.type == GameAction.Type.RIGHT_CLICK) {
+            handleRightClick(action.playerNum, action.row, action.col);
+        }
+    }
+
+    /*
+     * ⚠️ These methods must already exist (or equivalent).
+     * They did not exist in your class, so we add them as equivalents that reuse your existing controllers.
+     * (No existing behavior is removed or changed.)
+     */
+    private void handleLeftClick(int playerNum, int row, int col) {
+        BoardController bc = (playerNum == 1) ? board1Controller : board2Controller;
+        if (bc == null) return;
+        bc.handleLeftClick(row, col);
+    }
+
+    private void handleRightClick(int playerNum, int row, int col) {
+        BoardController bc = (playerNum == 1) ? board1Controller : board2Controller;
+        if (bc == null) return;
+        bc.handleRightClick(row, col);
     }
 
     public void init() {
@@ -278,10 +343,38 @@ public class GameController implements GameModelObserver {
                     if (!gameActive || endGameTriggered) return;
                     if (currentPlayer != playerNum) return;
 
+                    // ✅ Step 3.2B — validate move before sending
+                    Cell cell = board[row][col].getCell();
+
                     if (event.getButton() == MouseButton.PRIMARY) {
-                        bc.handleLeftClick(row, col);
+
+                        boolean valid =
+                                // normal reveal click
+                                (!cell.isOpen() && !cell.isFlag())
+                                // allow second click to activate special cell
+                                || (cell.isSpecial() && cell.isOpen() && !cell.isActivated());
+
+                        if (!valid) return;
+
+                        mpDispatcher.onLocalLeftClick(playerNum, row, col);
+
+                        if (multiplayerEnabled && multiplayerSession != null) {
+                            multiplayerSession.send(new GameAction(GameAction.Type.LEFT_CLICK, playerNum, row, col));
+                        }
                     } else if (event.getButton() == MouseButton.SECONDARY) {
-                        bc.handleRightClick(row, col);
+
+                        // Right click is valid only if not open
+                        boolean valid = !cell.isOpen();
+                        if (!valid) return;
+
+                        mpDispatcher.onLocalRightClick(playerNum, row, col);
+
+                        // ✅ send AFTER validation + AFTER local logic starts
+                        if (multiplayerEnabled && multiplayerSession != null) {
+                            multiplayerSession.send(
+                                    new GameAction(GameAction.Type.RIGHT_CLICK, playerNum, row, col)
+                            );
+                        }
                     }
                 });
             }
@@ -462,7 +555,6 @@ public class GameController implements GameModelObserver {
                      .append(" cells have been uncovered.");
         }
 
-
         String msg = res.message;
         if (extraInfo.length() > 0) msg += "\n" + extraInfo;
 
@@ -501,7 +593,7 @@ public class GameController implements GameModelObserver {
         Pos chosen = candidates.get(rng.nextInt(candidates.size()));
         return bc.applyMineGiftFlag(chosen.row, chosen.col);
     }
-    
+
     private int revealBestAvailableBlockForCurrentPlayer() {
         CellController[][] board = getCurrentBoard();
         if (board == null) return 0;
@@ -518,7 +610,6 @@ public class GameController implements GameModelObserver {
                 {2,1}, {1,2},        // 2
                 {1,1}                // 1
         };
-
 
         List<int[]> bestCells = null;
 
@@ -563,9 +654,6 @@ public class GameController implements GameModelObserver {
         return 0;
     }
 
-
-
-    
     private void revealCellFromGift(CellController[][] board, int row, int col) {
         if (row < 0 || row >= board.length || col < 0 || col >= board[0].length) return;
 
@@ -584,7 +672,6 @@ public class GameController implements GameModelObserver {
                 bc.onMineOpenedByGift();
             }
         }
-
 
         if (cell.isSpecial() && !cell.isDiscovered()) {
             cell.setDiscovered(true);
