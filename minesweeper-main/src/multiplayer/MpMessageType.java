@@ -1,10 +1,21 @@
 package multiplayer;
 
 public enum MpMessageType {
-    HELLO_JOIN,       // client -> host (contains joiner name)
-    GAME_SETTINGS,    // host -> client (difficulty, names, etc.)
-    BOARD_SNAPSHOT,   // host -> client (full board state)
-    GAME_ACTION,      // host <-> client (clicks, etc.)
-    CHAT,             // host <-> client (chat strings)
-    DISCONNECT
+    HELLO_JOIN,
+    GAME_SETTINGS,
+    BOARD_SNAPSHOT,
+    GAME_ACTION,
+    CHAT,
+    DISCONNECT,
+
+    // Game Over sync
+    GAME_OVER,
+
+    // Approval (we will use ONLY for NEW_GAME)
+    REQUEST_ACTION,
+    ACTION_RESPONSE,
+    EXECUTE_ACTION,
+
+    // ✅ NEW: notify other side that player left to menu/exit
+    PLAYER_LEFT
 }

@@ -11,7 +11,6 @@ import model.SysData;
 import view.HistoryView;
 import view.dialogs.ConfirmDialog;
 import view.dialogs.ErrorDialog;
-import view.dialogs.InfoDialog;
 
 import java.util.List;
 

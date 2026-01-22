@@ -31,6 +31,22 @@ public class MultiplayerSetupView extends BorderPane {
 
     private final Main mainApp;
 
+    // ✅ FIX Join flash styles
+    private static final String JOIN_ENABLED_STYLE =
+            "-fx-background-color: #2563EB;" +
+            "-fx-text-fill: white;" +
+            "-fx-background-radius: 14;" +
+            "-fx-padding: 0 18 0 18;" +
+            "-fx-cursor: hand;" +
+            "-fx-font-weight: bold;";
+
+    private static final String JOIN_DISABLED_STYLE =
+            "-fx-background-color: #1E293B;" +
+            "-fx-text-fill: rgba(255,255,255,0.55);" +
+            "-fx-background-radius: 14;" +
+            "-fx-padding: 0 18 0 18;" +
+            "-fx-opacity: 0.75;";
+
     // UI
     private final Button backBtn = new Button("Menu");
     private final TextField nameField = new TextField();
@@ -184,7 +200,34 @@ public class MultiplayerSetupView extends BorderPane {
         });
 
         styleSecondary(refreshBtn);
-        stylePrimary(joinBtn, "#2563EB");
+     // ✅ Stable Join styles (no flash)
+        joinBtn.setPrefHeight(40);
+        joinBtn.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+
+        // initial (safe)
+        joinBtn.setStyle(JOIN_DISABLED_STYLE);
+
+        // when disabled/enabled changes
+        joinBtn.disabledProperty().addListener((obs, wasDisabled, isDisabled) -> {
+            joinBtn.setStyle(isDisabled ? JOIN_DISABLED_STYLE : JOIN_ENABLED_STYLE);
+        });
+
+        // when selection changes (extra safety)
+        hostsList.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
+            boolean disabled = joinBtn.isDisabled();
+            joinBtn.setStyle(disabled ? JOIN_DISABLED_STYLE : JOIN_ENABLED_STYLE);
+        });
+
+        // also re-apply on press/release (prevents skin "flash")
+        joinBtn.setOnMousePressed(e -> {
+            boolean disabled = joinBtn.isDisabled();
+            joinBtn.setStyle(disabled ? JOIN_DISABLED_STYLE : JOIN_ENABLED_STYLE);
+        });
+        joinBtn.setOnMouseReleased(e -> {
+            boolean disabled = joinBtn.isDisabled();
+            joinBtn.setStyle(disabled ? JOIN_DISABLED_STYLE : JOIN_ENABLED_STYLE);
+        });
+
 
         refreshBtn.setOnAction(e -> refreshHostList());
 
@@ -196,6 +239,19 @@ public class MultiplayerSetupView extends BorderPane {
                 hostsList.getSelectionModel().selectedItemProperty()
         ));
         joinBtn.setOnAction(e -> joinSelectedHost());
+
+        // ✅ Force stable style (prevents "flash")
+        joinBtn.setStyle(JOIN_DISABLED_STYLE);
+
+        joinBtn.disabledProperty().addListener((obs, wasDisabled, isDisabled) -> {
+            joinBtn.setStyle(isDisabled ? JOIN_DISABLED_STYLE : JOIN_ENABLED_STYLE);
+        });
+
+        // Also re-apply style when selection changes (extra safety)
+        hostsList.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
+            boolean disabled = joinBtn.isDisabled();
+            joinBtn.setStyle(disabled ? JOIN_DISABLED_STYLE : JOIN_ENABLED_STYLE);
+        });
 
         HBox joinButtons = new HBox(10, refreshBtn, joinBtn);
         joinButtons.setAlignment(Pos.CENTER_LEFT);
@@ -292,7 +348,7 @@ public class MultiplayerSetupView extends BorderPane {
                     if (msg.type == MpMessageType.HELLO_JOIN) {
                         String joinName = (String) msg.payload;
 
-                        // ✅ NEW: generate ONE seed on host and send it
+                        // ✅ generate ONE seed on host and send it
                         long seed = System.currentTimeMillis();
                         GameSettings settings = new GameSettings(hostName, joinName, difficulty, seed);
 
@@ -304,19 +360,19 @@ public class MultiplayerSetupView extends BorderPane {
                             cleanupAllNetworking();
                             setState(MpState.IN_GAME);
 
-                            // ✅ Start game and attach multiplayer session (SAME seed)
                             GameController gc = mainApp.startGameFromSetupReturnController(
                                     settings.hostName, settings.joinName, settings.difficulty, settings.seed
                             );
 
                             mpSession = new MultiplayerSession(activeSession);
+                            mpSession.setRole(true); // ✅ HOST
                             gc.attachMultiplayer(mpSession);
                         });
 
                         return;
                     }
 
-                    // ✅ After game starts: forward actions
+                    // ✅ After game starts: forward actions/messages
                     if (mpSession != null) {
                         mpSession.handleIncoming(msg);
                     }
@@ -367,19 +423,19 @@ public class MultiplayerSetupView extends BorderPane {
                             cleanupAllNetworking();
                             setState(MpState.IN_GAME);
 
-                            // ✅ Start game (SAME seed from host)
                             GameController gc = mainApp.startGameFromSetupReturnController(
                                     settings.hostName, settings.joinName, settings.difficulty, settings.seed
                             );
 
                             mpSession = new MultiplayerSession(activeSession);
+                            mpSession.setRole(false); // ✅ CLIENT
                             gc.attachMultiplayer(mpSession);
                         });
 
                         return;
                     }
 
-                    // ✅ After game starts: forward actions
+                    // ✅ After game starts: forward actions/messages
                     if (mpSession != null) {
                         mpSession.handleIncoming(msg);
                     }
