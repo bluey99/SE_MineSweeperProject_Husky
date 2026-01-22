@@ -1,0 +1,23 @@
+/* ===== Base glass panel ===== */
+.player-panel {
+    -fx-background-color: rgba(17, 24, 39, 0.35);
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-border-width: 2;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.55), 18, 0, 0, 8);
+}
+
+/* ===== Player colors ===== */
+.player-panel.p1 {
+    -fx-border-color: rgba(34,197,94,0.95);   /* green */
+}
+
+.player-panel.p2 {
+    -fx-border-color: rgba(244,63,94,0.90);   /* red */
+}
+
+/* ===== Active player highlight ===== */
+.player-panel.active {
+    -fx-border-width: 3;
+    -fx-effect: dropshadow(gaussian, rgba(255,255,255,0.18), 26, 0, 0, 0);
+}

@@ -1,11 +1,15 @@
 package view;
 
 import controller.GameController;
+import javafx.scene.image.PixelWriter;
+import javafx.scene.image.WritableImage;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.effect.DropShadow;
+import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -48,9 +52,12 @@ public class GameView extends BorderPane {
     public final Button exitBtn = new Button("Exit");
     public final Button backToMenuBtn = new Button("Return to Menu");
 
+    // containers so we can theme them too
+    private final StackPane boardContainer1 = new StackPane();
+    private final StackPane boardContainer2 = new StackPane();
+
     public GameView(GameController controller) {
 
-        // Use controller only to read initial names (no need to store it)
         player1Label = new Label(controller.player1Name + "'s Board");
         player2Label = new Label(controller.player2Name + "'s Board");
 
@@ -61,14 +68,35 @@ public class GameView extends BorderPane {
         setupPlayer2Panel();
         setupCenterSection();
         setupBottomSection();
+        player1Panel.getStyleClass().add("player-panel");
+        player2Panel.getStyleClass().add("player-panel");
+
+        player1Panel.getStyleClass().add("p1");
+        player2Panel.getStyleClass().add("p2");
+
+
+        // Theme last
+        applyTheme(pickTheme(controller));
+        applyGlassPanels(); // ✅ force shared-like glass on player panels too
     }
 
     private void setupLayout() {
-        setPadding(new Insets(10));
+        setPadding(Insets.EMPTY);
+
         setTop(topSection);
         setCenter(centerSection);
         setBottom(bottomSection);
 
+        // ✅ make sure the BorderPane really fills the scene
+        setMinSize(0, 0);
+        setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+
+        // ✅ remove any background gaps on sections
+        topSection.setBackground(Background.EMPTY);
+        centerSection.setBackground(Background.EMPTY);
+        bottomSection.setBackground(Background.EMPTY);
+
+        // fallback color if image fails
         setBackground(new Background(new BackgroundFill(
                 Color.web("#0F172A"),
                 CornerRadii.EMPTY,
@@ -76,24 +104,21 @@ public class GameView extends BorderPane {
         )));
     }
 
-    // ===== TOP SECTION (MineMates logo like Setup UI) =====
+
+    // ===== TOP SECTION =====
     private void setupTopSection() {
         topSection.setAlignment(Pos.CENTER);
         topSection.setSpacing(6);
         topSection.setPadding(new Insets(14, 0, 18, 0));
 
-        // Load same logo font
         Font logoFont = Font.loadFont(
                 getClass().getResourceAsStream("/fonts/ka1.ttf"),
                 28
         );
 
         Label titleLabel = new Label("MineMates");
-        if (logoFont != null) {
-            titleLabel.setFont(logoFont);
-        } else {
-            titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 26));
-        }
+        if (logoFont != null) titleLabel.setFont(logoFont);
+        else titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 26));
 
         titleLabel.setTextFill(Color.web("#ECFDF5"));
 
@@ -120,14 +145,6 @@ public class GameView extends BorderPane {
         sharedInfoPanel.setAlignment(Pos.TOP_CENTER);
         sharedInfoPanel.setSpacing(14);
         sharedInfoPanel.setPadding(new Insets(16));
-        sharedInfoPanel.setStyle(
-                "-fx-background-color: #111827;" +
-                "-fx-border-color: #1D4ED8;" +
-                "-fx-border-width: 2;" +
-                "-fx-border-radius: 16;" +
-                "-fx-background-radius: 16;" +
-                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.6), 18, 0, 0, 8);"
-        );
 
         Label header = new Label("═══ SHARED ═══");
         header.setFont(Font.font("Arial", FontWeight.BOLD, 16));
@@ -155,7 +172,8 @@ public class GameView extends BorderPane {
 
         Region div1 = new Region();
         div1.setPrefHeight(1.5);
-        div1.setStyle("-fx-background-color: #1F2937;");
+        div1.setMaxWidth(Double.MAX_VALUE);
+        div1.setStyle("-fx-background-color: rgba(31,41,55,0.9);");
 
         VBox infoBox = new VBox(6);
         infoBox.setAlignment(Pos.CENTER);
@@ -178,9 +196,7 @@ public class GameView extends BorderPane {
 
         infoBox.getChildren().addAll(diffBox, timeBox);
 
-        sharedInfoPanel.getChildren().addAll(
-                header, scoreBox, livesBox, div1, infoBox
-        );
+        sharedInfoPanel.getChildren().addAll(header, scoreBox, livesBox, div1, infoBox);
     }
 
     private void setupPlayer1Panel() {
@@ -188,13 +204,7 @@ public class GameView extends BorderPane {
         player1Panel.setSpacing(10);
         player1Panel.setPadding(new Insets(16));
         player1Panel.setPrefWidth(PANEL_WIDTH);
-        player1Panel.setStyle(
-                "-fx-border-color: #22C55E;" +
-                "-fx-border-width: 2.5;" +
-                "-fx-background-color: #111827;" +
-                "-fx-border-radius: 14;" +
-                "-fx-background-radius: 14;"
-        );
+       
 
         player1Label.setFont(Font.font("Arial", FontWeight.BOLD, 18));
         player1Label.setTextFill(Color.web("#DCFCE7"));
@@ -205,16 +215,24 @@ public class GameView extends BorderPane {
         HBox header = new HBox(12, player1Label, player1MinesLeftLabel);
         header.setAlignment(Pos.CENTER);
 
+        // ✅ divider like SHARED
+        Region div = new Region();
+        div.setPrefHeight(1.5);
+        div.setMaxWidth(Double.MAX_VALUE);
+        div.setStyle("-fx-background-color: rgba(31,41,55,0.9);");
+
         gridPane1.setHgap(3);
         gridPane1.setVgap(3);
         gridPane1.setAlignment(Pos.CENTER);
 
-        StackPane boardContainer1 = new StackPane();
-        boardContainer1.setStyle("-fx-background-color: #020617; -fx-background-radius: 10;");
-        boardContainer1.setPadding(new Insets(2));
+        boardContainer1.getChildren().clear();
+        boardContainer1.setPadding(new Insets(10));
         boardContainer1.getChildren().add(gridPane1);
 
-        player1Panel.getChildren().addAll(header, boardContainer1);
+        Region spacer = new Region();
+        VBox.setVgrow(spacer, Priority.ALWAYS);
+
+        player1Panel.getChildren().setAll(header, div, boardContainer1, spacer);
     }
 
     private void setupPlayer2Panel() {
@@ -222,13 +240,6 @@ public class GameView extends BorderPane {
         player2Panel.setSpacing(10);
         player2Panel.setPadding(new Insets(16));
         player2Panel.setPrefWidth(PANEL_WIDTH);
-        player2Panel.setStyle(
-                "-fx-border-color: #374151;" +
-                "-fx-border-width: 2;" +
-                "-fx-background-color: #111827;" +
-                "-fx-border-radius: 14;" +
-                "-fx-background-radius: 14;"
-        );
 
         player2Label.setFont(Font.font("Arial", FontWeight.BOLD, 18));
         player2Label.setTextFill(Color.web("#FCA5A5"));
@@ -239,16 +250,24 @@ public class GameView extends BorderPane {
         HBox header = new HBox(12, player2Label, player2MinesLeftLabel);
         header.setAlignment(Pos.CENTER);
 
+        // ✅ divider like SHARED
+        Region div = new Region();
+        div.setPrefHeight(1.5);
+        div.setMaxWidth(Double.MAX_VALUE);
+        div.setStyle("-fx-background-color: rgba(31,41,55,0.9);");
+
         gridPane2.setHgap(3);
         gridPane2.setVgap(3);
         gridPane2.setAlignment(Pos.CENTER);
 
-        StackPane boardContainer2 = new StackPane();
-        boardContainer2.setStyle("-fx-background-color: #020617; -fx-background-radius: 10;");
-        boardContainer2.setPadding(new Insets(2));
+        boardContainer2.getChildren().clear();
+        boardContainer2.setPadding(new Insets(10));
         boardContainer2.getChildren().add(gridPane2);
 
-        player2Panel.getChildren().addAll(header, boardContainer2);
+        Region spacer = new Region();
+        VBox.setVgrow(spacer, Priority.ALWAYS);
+
+        player2Panel.getChildren().setAll(header, div, boardContainer2, spacer);
     }
 
     private void setupCenterSection() {
@@ -256,6 +275,15 @@ public class GameView extends BorderPane {
         centerSection.setSpacing(16);
         centerSection.setPadding(new Insets(8, 4, 16, 4));
         centerSection.getChildren().addAll(player1Panel, sharedInfoPanel, player2Panel);
+
+        centerSection.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+
+        player1Panel.setMaxHeight(Double.MAX_VALUE);
+        player2Panel.setMaxHeight(Double.MAX_VALUE);
+        sharedInfoPanel.setMaxHeight(Double.MAX_VALUE);
+
+        HBox.setHgrow(player1Panel, Priority.ALWAYS);
+        HBox.setHgrow(player2Panel, Priority.ALWAYS);
     }
 
     private void setupBottomSection() {
@@ -278,9 +306,105 @@ public class GameView extends BorderPane {
         btn.setFont(Font.font("Arial", FontWeight.BOLD, 14));
         btn.setStyle(
                 "-fx-background-color: " + color + ";" +
-                "-fx-text-fill: white;" +
-                "-fx-background-radius: 999;" +
-                "-fx-cursor: hand;"
+                        "-fx-text-fill: white;" +
+                        "-fx-background-radius: 999;" +
+                        "-fx-cursor: hand;"
         );
     }
+
+    // ===================== THEME =====================
+
+    private Theme pickTheme(GameController controller) {
+        return switch (controller.getDifficulty()) {
+            case "Easy" -> Theme.EASY_SEA;
+            case "Medium" -> Theme.MED_FOREST;
+            case "Hard" -> Theme.HARD_LAVA;
+            default -> Theme.EASY_SEA;
+        };
+    }
+
+
+    private void applyTheme(Theme t) {
+
+        var url = getClass().getResource(t.bgPath);
+
+        if (url == null) {
+            System.out.println("❌ Background not found: " + t.bgPath);
+            setBackground(new Background(new BackgroundFill(
+                    Color.web("#0F172A"),
+                    CornerRadii.EMPTY,
+                    Insets.EMPTY
+            )));
+        } else {
+            Image bg = new Image(url.toExternalForm(), false);
+
+            BackgroundImage bgImg = new BackgroundImage(
+                    bg,
+                    BackgroundRepeat.NO_REPEAT,
+                    BackgroundRepeat.NO_REPEAT,
+                    BackgroundPosition.CENTER,
+                    new BackgroundSize(
+                            100, 100,
+                            true, true,
+                            true, false
+                    )
+            );
+
+            BackgroundFill overlay = new BackgroundFill(
+                    t.overlay,
+                    CornerRadii.EMPTY,
+                    Insets.EMPTY
+            );
+
+            setBackground(new Background(
+                    new BackgroundFill[]{overlay},
+                    new BackgroundImage[]{bgImg}
+            ));
+        }
+
+        // Only text accents here (do not override glass cards)
+        currentPlayerLabel.setTextFill(Color.web(t.accent));
+    }
+
+    /**
+     * ✅ Force all panels to use the same "Shared-like" glass card look
+     * and make board containers lighter so they don't look opaque.
+     */
+    private void applyGlassPanels() {
+
+        String cardBase =
+                "-fx-background-color: rgba(17,24,39,0.42);" +
+                "-fx-border-width: 2;" +
+                "-fx-border-radius: 16;" +
+                "-fx-background-radius: 16;" +
+                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.55), 18, 0, 0, 8);";
+
+        sharedInfoPanel.setStyle(cardBase + "-fx-border-color: rgba(96,165,250,0.95);");
+        player1Panel.setStyle(cardBase + "-fx-border-color: rgba(34,197,94,0.95);");
+        player2Panel.setStyle(cardBase + "-fx-border-color: rgba(244,63,94,0.90);");
+        gridPane1.setStyle("-fx-background-color: transparent;");
+        gridPane2.setStyle("-fx-background-color: transparent;");
+
+
+        // Lighter inner glass (so background shows through more)
+        String innerGlass =
+                "-fx-background-color: transparent;" +
+                "-fx-border-color: rgba(255,255,255,0.08);" +
+                "-fx-border-radius: 14;" +
+                "-fx-background-radius: 14;";
+
+
+        boardContainer1.setStyle(innerGlass);
+        boardContainer2.setStyle(innerGlass);
+    }
+    
+    public void setActivePlayer(int playerNum) {
+        player1Panel.getStyleClass().remove("active");
+        player2Panel.getStyleClass().remove("active");
+
+        if (playerNum == 1) player1Panel.getStyleClass().add("active");
+        else player2Panel.getStyleClass().add("active");
+    }
+    
+  
 }

@@ -398,22 +398,9 @@ public class GameController implements GameModelObserver {
     }
 
     private void highlightCurrentPlayer() {
-        String activeBorder = "-fx-border-color: #22C55E;" + "-fx-border-width: 3;" + "-fx-padding: 18;"
-                + "-fx-background-color: #111827;" + "-fx-border-radius: 14;" + "-fx-background-radius: 14;"
-                + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.6), 12,0,0,6);";
-
-        String inactiveBorder = "-fx-border-color: #374151;" + "-fx-border-width: 2;" + "-fx-padding: 18;"
-                + "-fx-background-color: #111827;" + "-fx-border-radius: 14;" + "-fx-background-radius: 14;"
-                + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 8,0,0,4);";
-
-        if (currentPlayer == 1) {
-            gameView.player1Panel.setStyle(activeBorder);
-            gameView.player2Panel.setStyle(inactiveBorder);
-        } else {
-            gameView.player1Panel.setStyle(inactiveBorder);
-            gameView.player2Panel.setStyle(activeBorder);
-        }
+        gameView.setActivePlayer(currentPlayer);
     }
+
 
     public void updateUI() {
         gameView.sharedScoreLabel.setText("" + gameModel.getSharedScore());
@@ -1014,5 +1001,8 @@ public class GameController implements GameModelObserver {
         dialog.sizeToScene();
         dialog.centerOnScreen();
         dialog.showAndWait();
+    }
+    public String getDifficulty() {
+        return difficulty;
     }
 }

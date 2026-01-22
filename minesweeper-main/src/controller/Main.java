@@ -2,9 +2,12 @@
 package controller;
 
 import javafx.application.Application;
+import view.Theme;
+
 import javafx.application.Platform;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
+import javafx.scene.paint.Color;          // ✅ ADDED
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import model.QuestionsFileStatus;
@@ -100,12 +103,16 @@ public class Main extends Application {
     }
 
     private void showMainMenuInstance(Stage stage) {
-        // Clear any old size constraints from the game screen
+
+        // ✅ RESET stage state from the game
+        stage.setFullScreen(false);
+        stage.setMaximized(false);
+
         stage.setMinWidth(0);
-        stage.setMaxWidth(Double.MAX_VALUE);
         stage.setMinHeight(0);
+        stage.setMaxWidth(Double.MAX_VALUE);
         stage.setMaxHeight(Double.MAX_VALUE);
-        stage.setResizable(false);
+        stage.setResizable(true);   // allow resizing while switching scenes
 
         Menu menu = new Menu();
 
@@ -114,17 +121,18 @@ public class Main extends Application {
         double height = size[1];
 
         Scene menuScene = new Scene(menu, width, height);
+        menuScene.setFill(Color.BLACK);
         stage.setScene(menuScene);
         stage.sizeToScene();
 
-        applyFixedWindowSize(stage, width, height);
+        applyFixedWindowSize(stage, width, height); // this will lock it again
         stage.show();
 
-        // ✅ BUTTON HANDLERS NOW CALL THE NEW STATIC NAVIGATION METHODS
         menu.startBtn.setOnAction(e -> Main.showSetup(stage));
         menu.historyBtn.setOnAction(e -> Main.showHistory(stage));
         menu.questionManagementBtn.setOnAction(e -> Main.showQuestionManagement(stage));
     }
+
 
     private void showSetupInstance(Stage stage) {
         double[] size = getClampedMenuSize();
@@ -133,6 +141,7 @@ public class Main extends Application {
 
         SetupView setup = new SetupView(this);
         Scene setupScene = new Scene(setup, width, height);
+        setupScene.setFill(Color.BLACK);             // ✅ ADDED
         stage.setScene(setupScene);
         stage.sizeToScene();
 
@@ -146,6 +155,7 @@ public class Main extends Application {
 
         HistoryController hc = new HistoryController(stage);
         Scene historyScene = hc.createScene(width, height);
+        historyScene.setFill(Color.BLACK);           // ✅ ADDED
         stage.setScene(historyScene);
         stage.sizeToScene();
 
@@ -166,98 +176,51 @@ public class Main extends Application {
 
         QuestionManagementController qm = new QuestionManagementController(stage);
         Scene qmScene = new Scene(qm.view, width, height);
+        qmScene.setFill(Color.BLACK);                // ✅ ADDED
         stage.setScene(qmScene);
         stage.sizeToScene();
 
         applyFixedWindowSize(stage, width, height);
     }
+    
 
     /**
      * Called from SetupView after validation is done.
      */
+
     public void startGameFromSetup(String p1, String p2, String difficulty) {
 
-        // ✅ start a fresh game controller for this new run from setup
-        GameController.resetInstance();
-        GameController controller = GameController.getInstance(difficulty, p1, p2, primaryStage);
-
-        // Get full usable screen area (excludes taskbar)
-        Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
-        double screenX = bounds.getMinX();
-        double screenY = bounds.getMinY();
-        double screenW = bounds.getWidth();
-        double screenH = bounds.getHeight();
-
-        // Remove menu size limits so we can expand
-        primaryStage.setMinWidth(0);
-        primaryStage.setMaxWidth(Double.MAX_VALUE);
-        primaryStage.setMinHeight(0);
-        primaryStage.setMaxHeight(Double.MAX_VALUE);
-
-        // --- GAME WINDOW SIZE ---
-        // use full screen height, but only 92% of the width
-        double gameW = screenW * 0.92;
-        double gameH = screenH;
-
-        // center horizontally, stick to top vertically
-        double x = screenX + (screenW - gameW) / 2;
-        double y = screenY;
-
-        Scene gameScene = new Scene(controller.gameView, gameW, gameH);
-        primaryStage.setScene(gameScene);
-
-        primaryStage.setX(x);
-        primaryStage.setY(y);
-        primaryStage.setWidth(gameW);
-        primaryStage.setHeight(gameH);
-
-        // Lock size so layout stays stable
-        primaryStage.setMinWidth(gameW);
-        primaryStage.setMaxWidth(gameW);
-        primaryStage.setMinHeight(gameH);
-        primaryStage.setMaxHeight(gameH);
-
-        primaryStage.setResizable(false);
-    }
-
-    public GameController startGameFromSetupReturnController(String p1, String p2, String difficulty) {
-        GameController.resetInstance();
-        GameController controller = GameController.getInstance(difficulty, p1, p2, primaryStage);
-
-        Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
-        double screenX = bounds.getMinX();
-        double screenY = bounds.getMinY();
-        double screenW = bounds.getWidth();
-        double screenH = bounds.getHeight();
+        // ✅ RESET stage state from menu
+        primaryStage.setFullScreen(false);
+        primaryStage.setMaximized(false);
 
         primaryStage.setMinWidth(0);
-        primaryStage.setMaxWidth(Double.MAX_VALUE);
         primaryStage.setMinHeight(0);
+        primaryStage.setMaxWidth(Double.MAX_VALUE);
         primaryStage.setMaxHeight(Double.MAX_VALUE);
+        primaryStage.setResizable(true);
 
-        double gameW = screenW * 0.92;
-        double gameH = screenH;
+        // ✅ create fresh game
+        GameController.resetInstance();
+        GameController controller =
+                GameController.getInstance(difficulty, p1, p2, primaryStage);
 
-        double x = screenX + (screenW - gameW) / 2;
-        double y = screenY;
+        Scene gameScene = new Scene(controller.gameView);
+        gameScene.setFill(Color.BLACK);
 
-        Scene gameScene = new Scene(controller.gameView, gameW, gameH);
+        gameScene.getStylesheets().add(
+                Main.class.getResource("/css/game.css").toExternalForm()
+        );
+
         primaryStage.setScene(gameScene);
 
-        primaryStage.setX(x);
-        primaryStage.setY(y);
-        primaryStage.setWidth(gameW);
-        primaryStage.setHeight(gameH);
-
-        primaryStage.setMinWidth(gameW);
-        primaryStage.setMaxWidth(gameW);
-        primaryStage.setMinHeight(gameH);
-        primaryStage.setMaxHeight(gameH);
-
-        primaryStage.setResizable(false);
-
-        return controller;
+        // ✅ maximize AFTER scene is set (taskbar stays visible)
+        Platform.runLater(() -> {
+            primaryStage.setMaximized(true);
+            primaryStage.centerOnScreen();
+        });
     }
+
 
     // ✅ NEW OVERLOAD: start game with deterministic seed (multiplayer)
     public GameController startGameFromSetupReturnController(String p1, String p2, String difficulty, long seed) {
@@ -282,6 +245,9 @@ public class Main extends Application {
         double y = screenY;
 
         Scene gameScene = new Scene(controller.gameView, gameW, gameH);
+        gameScene.getStylesheets().add(
+                Main.class.getResource("/css/game.css").toExternalForm()
+        );
         primaryStage.setScene(gameScene);
 
         primaryStage.setX(x);
@@ -333,6 +299,7 @@ public class Main extends Application {
                     QuestionManagementController qm = new QuestionManagementController(stage);
 
                     Scene qmScene = new Scene(qm.view, width, height);
+                    qmScene.setFill(Color.BLACK);     // ✅ ADDED
                     stage.setScene(qmScene);
                     stage.sizeToScene();
                     stage.centerOnScreen();
@@ -377,6 +344,7 @@ public class Main extends Application {
 
         MultiplayerSetupView mpView = new MultiplayerSetupView(this);
         Scene scene = new Scene(mpView, width, height);
+        scene.setFill(Color.BLACK);                  // ✅ ADDED
 
         stage.setScene(scene);
         stage.sizeToScene();
