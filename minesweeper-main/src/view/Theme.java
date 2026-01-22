@@ -14,13 +14,21 @@ public enum Theme {
     ),
 
     MED_FOREST(
-        "/backgrounds/bg_med_forest.jpg",
-        Color.web("#0B3D2E"),                 // sceneFill
-        Color.rgb(8, 44, 28, 0.45),
-        "#34D399",
-        "#4ADE80",
-        "#FDE68A"
-    ),
+    	    "/backgrounds/bg_med_forest.jpg",
+
+    	    Color.web("#1B4332"),
+
+    	    Color.rgb(27, 67, 50, 0.38),
+
+    	    "#34D399",
+
+    	    // 🍃 fresh leaf green (Player 1 border)
+    	    "#4ADE80",
+
+    	    // 🌞 warm treasure / sunlight highlight
+    	    "#FACC15"
+    	),
+
 
     HARD_LAVA(
         "/backgrounds/bg_hard_lava.jpg",
