@@ -130,10 +130,16 @@ public class GameView extends BorderPane {
 
         currentPlayerLabel.setFont(Font.font("Arial", FontWeight.BOLD, 18));
         currentPlayerLabel.setTextFill(Color.web("#60A5FA"));
+        
 
         Label subtitle = new Label("Two players • One goal • Shared victory");
         subtitle.setFont(Font.font("Arial", 13));
         subtitle.setTextFill(Color.web("#9CA3AF"));
+        DropShadow subtitleShadow = new DropShadow();
+        subtitleShadow.setRadius(7);
+        subtitleShadow.setOffsetY(2);
+        subtitleShadow.setColor(Color.rgb(0, 0, 0, 0.60)); // stronger contrast on bright bg
+        subtitle.setEffect(subtitleShadow);
 
         topSection.getChildren().addAll(titleLabel, currentPlayerLabel, subtitle);
     }

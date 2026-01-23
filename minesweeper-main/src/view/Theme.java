@@ -8,7 +8,7 @@ public enum Theme {
         "/backgrounds/bg_easy_sea.jpg",
         Color.web("#0FA9E6"),                 // sceneFill
         Color.rgb(6, 48, 88, 0.35),           // overlay
-        "#6EE7F9",                            // accent
+        "#0EA5E9" ,                            // accent
         "#22C55E",
         "#FCA5A5"
     ),
@@ -20,7 +20,7 @@ public enum Theme {
 
     	    Color.rgb(27, 67, 50, 0.38),
 
-    	    "#34D399",
+    	    "#F8FAFC"  ,
 
     	    // 🍃 fresh leaf green (Player 1 border)
     	    "#4ADE80",
