@@ -26,6 +26,7 @@ public class SetupView extends BorderPane {
 
     private VBox diffInfoBox;
     private HBox diffBox;
+    private VBox form;
 
     public final Button backBtn = new Button("Menu");
 
@@ -106,7 +107,7 @@ public class SetupView extends BorderPane {
         VBox heading = new VBox(4, title, subtitle, accent);
         heading.setAlignment(Pos.CENTER);
 
-        VBox form = new VBox(12);
+        form = new VBox(12);
         form.setAlignment(Pos.CENTER);
         form.setPadding(new Insets(20));
         form.setMaxWidth(620);
@@ -207,7 +208,7 @@ public class SetupView extends BorderPane {
     private void updateDifficultyInfo(String difficulty) {
         diffInfoBox.getChildren().clear();
 
-        // Theme colors per difficulty
+        // Theme colors
         String borderColor = switch (difficulty) {
             case "Easy" -> "#38BDF8";   // ocean blue
             case "Medium" -> "#22C55E"; // jungle green
@@ -216,21 +217,42 @@ public class SetupView extends BorderPane {
         };
 
         String titleColor = switch (difficulty) {
-            case "Easy" -> "#BAE6FD";   // light blue
-            case "Medium" -> "#BBF7D0"; // light green
-            case "Hard" -> "#FED7AA";   // light orange
+            case "Easy" -> "#BAE6FD";
+            case "Medium" -> "#BBF7D0";
+            case "Hard" -> "#FED7AA";
             default -> "#BFDBFE";
         };
 
-        // Border + subtle glow feel
+        // ✅ Add some blue/green/orange tint to the SELECT bar too
+        diffBox.setStyle("""
+            -fx-background-color: rgba(2,6,23,0.45);
+            -fx-background-radius: 14;
+            -fx-border-radius: 14;
+            -fx-border-width: 1.6;
+            -fx-border-color: %s;
+        """.formatted(borderColor));
+
+        // ✅ Info box border (theme)
         diffInfoBox.setBorder(new Border(new BorderStroke(
-                Color.web(borderColor, 0.75),
+                Color.web(borderColor, 0.85),
                 BorderStrokeStyle.SOLID,
                 new CornerRadii(14),
-                new BorderWidths(1.7)
+                new BorderWidths(1.8)
         )));
 
-        // Title text with theme name
+        // ✅ Info box background tint (adds “blue sea glow” when Easy)
+        diffInfoBox.setBackground(new Background(new BackgroundFill(
+                Color.web(switch (difficulty) {
+                    case "Easy" -> "rgba(56,189,248,0.10)";   // blue tint
+                    case "Medium" -> "rgba(34,197,94,0.08)";  // green tint
+                    case "Hard" -> "rgba(249,115,22,0.08)";   // orange tint
+                    default -> "rgba(2,6,23,0.60)";
+                }),
+                new CornerRadii(14),
+                Insets.EMPTY
+        )));
+
+        // Title text (with theme name)
         String titleText = switch (difficulty) {
             case "Easy" -> "Easy Mode: Under the Sea";
             case "Medium" -> "Medium Mode: Jungle";
@@ -243,7 +265,6 @@ public class SetupView extends BorderPane {
         title.setTextFill(Color.web(titleColor));
         diffInfoBox.getChildren().add(title);
 
-        // Details
         String[] lines = switch (difficulty) {
             case "Medium" -> new String[]{"13×13 grid", "26 mines", "8 shared lives"};
             case "Hard" -> new String[]{"16×16 grid", "44 mines", "6 shared lives"};
@@ -256,8 +277,32 @@ public class SetupView extends BorderPane {
             line.setTextFill(Color.web("#94A3B8"));
             diffInfoBox.getChildren().add(line);
         }
-    }
+        
+     // ✅ Big panel (form) gets themed border + soft glow
+        String formBorder = switch (difficulty) {
+            case "Easy" -> "rgba(56,189,248,0.55)";   // blue
+            case "Medium" -> "rgba(34,197,94,0.50)";  // green
+            case "Hard" -> "rgba(249,115,22,0.55)";   // orange
+            default -> "rgba(37,99,235,0.25)";
+        };
 
+        String formGlow = switch (difficulty) {
+            case "Easy" -> "rgba(56,189,248,0.20)";
+            case "Medium" -> "rgba(34,197,94,0.18)";
+            case "Hard" -> "rgba(249,115,22,0.20)";
+            default -> "rgba(37,99,235,0.18)";
+        };
+
+        form.setBorder(new Border(new BorderStroke(
+                Color.web(formBorder),
+                BorderStrokeStyle.SOLID,
+                new CornerRadii(18),
+                new BorderWidths(1.6)
+        )));
+
+        form.setEffect(new DropShadow(26, Color.web(formGlow)));
+      
+    }
 
     private VBox createLabeledInput(String label, String placeholder) {
         Label lbl = new Label(label);
