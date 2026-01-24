@@ -303,6 +303,7 @@ public class GameController implements GameModelObserver {
         addEventHandlersToBoard(board2Controller);
 
         updateUI();
+        gameView.initMascotScoreTracking();
         highlightCurrentPlayer();
     }
 
@@ -476,7 +477,7 @@ public class GameController implements GameModelObserver {
 
 
     public void updateUI() {
-        gameView.sharedScoreLabel.setText("" + gameModel.getSharedScore());
+    	gameView.setSharedScoreWithReaction(gameModel.getSharedScore());
         gameView.sharedLivesLabel.setText("" + gameModel.getSharedLives());
         gameView.currentPlayerLabel.setText((currentPlayer == 1 ? player1Name : player2Name) + "'s Turn");
 
@@ -507,6 +508,10 @@ public class GameController implements GameModelObserver {
         if (!isGameActive()) return;
 
         gameModel.addLives(-1);
+
+        // ✅ mascot reacts sad when mine hit
+        gameView.onMineHitMascot();
+
         showMessage("Mine Hit!",
                 "You hit a mine! -1 life.\nShared Lives Remaining: " + gameModel.getSharedLives());
 
