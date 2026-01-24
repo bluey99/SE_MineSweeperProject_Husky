@@ -15,7 +15,7 @@ public abstract class AbstractDialogTemplate {
     // -------- TEMPLATE METHOD --------
     public final ButtonType show() {
         createDialog();
-        buildContent();
+        buildContent();        // can now be overridden
         configureButtons();
         styleButtons();
         return dialog.showAndWait().orElse(ButtonType.CANCEL);
@@ -25,11 +25,22 @@ public abstract class AbstractDialogTemplate {
     private void createDialog() {
         dialog = new Dialog<>();
         dialog.setHeaderText(null);
+
+        dialog.getDialogPane().setStyle(
+                "-fx-background-color: #0f172a;" +
+                "-fx-border-color: #1E293B;" +
+                "-fx-border-radius: 10;"
+        );
     }
 
-    private void buildContent() {
+    // 🔧 CHANGED: was private → now protected
+    protected void buildContent() {
         Label titleLbl = new Label(getTitle());
-        titleLbl.setStyle("-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;");
+        titleLbl.setStyle(
+                "-fx-text-fill: white;" +
+                "-fx-font-size: 18px;" +
+                "-fx-font-weight: bold;"
+        );
 
         Label msgLbl = new Label(getMessage());
         msgLbl.setWrapText(true);
@@ -40,11 +51,6 @@ public abstract class AbstractDialogTemplate {
         box.setStyle("-fx-background-color: #0f172a;");
 
         dialog.getDialogPane().setContent(box);
-        dialog.getDialogPane().setStyle(
-                "-fx-background-color: #0f172a;" +
-                "-fx-border-color: #1E293B;" +
-                "-fx-border-radius: 10;"
-        );
     }
 
     // -------- HOOKS --------
@@ -52,4 +58,25 @@ public abstract class AbstractDialogTemplate {
     protected abstract String getMessage();
     protected abstract void configureButtons();
     protected abstract void styleButtons();
+
+    // ✅ Added helper (used by SettingsDialog only)
+    protected VBox createBaseBox(String title, String subtitle) {
+
+        Label titleLbl = new Label(title);
+        titleLbl.setStyle(
+                "-fx-text-fill: white;" +
+                "-fx-font-size: 18px;" +
+                "-fx-font-weight: bold;"
+        );
+
+        Label subLbl = new Label(subtitle);
+        subLbl.setWrapText(true);
+        subLbl.setStyle("-fx-text-fill: #9CA3AF;");
+
+        VBox box = new VBox(10, titleLbl, subLbl);
+        box.setPadding(new Insets(18));
+        box.setStyle("-fx-background-color: #0f172a;");
+
+        return box;
+    }
 }
