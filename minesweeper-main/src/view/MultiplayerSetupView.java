@@ -3,6 +3,7 @@ package view;
 
 import controller.GameController;
 import controller.Main;
+
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.BooleanProperty;
@@ -13,8 +14,13 @@ import javafx.scene.control.*;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.RadialGradient;
+import javafx.scene.paint.Stop;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+
 import multiplayer.GameSettings;
 import multiplayer.LanDiscoveryService;
 import multiplayer.MpMessage;
@@ -26,6 +32,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+
+
 
 public class MultiplayerSetupView extends BorderPane {
 
@@ -88,7 +96,19 @@ public class MultiplayerSetupView extends BorderPane {
     }
 
     private void buildUI() {
-        setStyle("-fx-background-color: #0f172a;");
+
+        // ===== BACKGROUND (like setup screen) =====
+        RadialGradient bg = new RadialGradient(
+                0, 0,
+                0.5, 0.25,
+                0.95,
+                true,
+                CycleMethod.NO_CYCLE,
+                new Stop(0, Color.web("#0E1B35")),
+                new Stop(0.55, Color.web("#090F1F")),
+                new Stop(1, Color.web("#050812"))
+        );
+        setBackground(new Background(new BackgroundFill(bg, CornerRadii.EMPTY, Insets.EMPTY)));
 
         // ===== TOP BAR =====
         HBox topBar = new HBox();
@@ -101,47 +121,76 @@ public class MultiplayerSetupView extends BorderPane {
             Main.showMainMenu(Main.getPrimaryStage());
         });
 
-        Label title = new Label("Multiplayer (LAN)");
-        title.setFont(Font.font("Arial", FontWeight.BOLD, 22));
-        title.setTextFill(Color.WHITE);
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        topBar.getChildren().addAll(backBtn, spacer, title);
+        topBar.getChildren().add(backBtn);
         setTop(topBar);
 
         // ===== CENTER CONTENT =====
         VBox root = new VBox(16);
         root.setAlignment(Pos.TOP_CENTER);
-        root.setPadding(new Insets(18, 30, 20, 30));
+        root.setPadding(new Insets(12, 30, 20, 30));
+
+        // ===== TITLE (MineMates style) =====
+        Font logoFont = Font.loadFont(getClass().getResourceAsStream("/fonts/ka1.ttf"), 34);
+
+        Label title = new Label("MINEMATES");
+        if (logoFont != null) title.setFont(logoFont);
+        else title.setFont(Font.font("Arial", FontWeight.EXTRA_BOLD, 32));
+        title.setTextFill(Color.web("#E9FFF3"));
+
+        DropShadow logoGlow = new DropShadow();
+        logoGlow.setRadius(18);
+        logoGlow.setSpread(0.22);
+        logoGlow.setColor(Color.web("#34D399"));
+        title.setEffect(logoGlow);
 
         Label subtitle = new Label("Host picks difficulty • Each player enters their name • Same Wi-Fi required");
         subtitle.setTextFill(Color.web("#9CA3AF"));
         subtitle.setFont(Font.font("Arial", 13));
 
-        // Name card
+        Region accent = new Region();
+        accent.setPrefHeight(4);
+        accent.setMaxWidth(320);
+        accent.setBackground(new Background(new BackgroundFill(
+                new LinearGradient(0, 0, 1, 0, true, CycleMethod.NO_CYCLE,
+                        new Stop(0, Color.web("#3B82F6")),
+                        new Stop(1, Color.web("#22C55E"))
+                ),
+                new CornerRadii(999),
+                Insets.EMPTY
+        )));
+
+        VBox heading = new VBox(6, title, subtitle, accent);
+        heading.setAlignment(Pos.CENTER);
+
+        // ===== NAME CARD =====
         VBox nameCard = card();
+        nameCard.setMaxWidth(820);
+
         Label nameLbl = new Label("Your Name");
         nameLbl.setTextFill(Color.web("#E5E7EB"));
         nameLbl.setFont(Font.font("Arial", FontWeight.BOLD, 13));
 
         nameField.setPromptText("Enter your name...");
-        nameField.setFont(Font.font("Arial", 14));
-        nameField.setStyle("""
-            -fx-background-color: rgba(255,255,255,0.08);
-            -fx-text-fill: #E5E7EB;
-            -fx-prompt-text-fill: rgba(148,163,184,0.8);
-            -fx-background-radius: 14;
-            -fx-border-radius: 14;
-            -fx-border-color: rgba(148,163,184,0.18);
-            -fx-padding: 11 14;
-        """);
+        nameField.setFont(Font.font("Arial", 15));
+        nameField.setPrefHeight(44);
+        nameField.setStyle(
+                "-fx-background-color: rgba(255,255,255,0.08);" +
+                "-fx-text-fill: #E5E7EB;" +
+                "-fx-prompt-text-fill: rgba(148,163,184,0.75);" +
+                "-fx-background-radius: 18;" +
+                "-fx-border-radius: 18;" +
+                "-fx-border-width: 1.4;" +
+                "-fx-border-color: rgba(148,163,184,0.18);" +
+                "-fx-padding: 12 18;"
+        );
+
         nameCard.getChildren().addAll(nameLbl, nameField);
 
-        // Host card
+        // ===== HOST CARD =====
         VBox hostCard = card();
-        Label hostLbl = new Label("Host a Game (you choose difficulty)");
+        hostCard.setMaxWidth(820);
+
+        Label hostLbl = new Label("Host a Game (choose difficulty)");
         hostLbl.setTextFill(Color.web("#BFDBFE"));
         hostLbl.setFont(Font.font("Arial", FontWeight.BOLD, 14));
 
@@ -151,16 +200,23 @@ public class MultiplayerSetupView extends BorderPane {
         hardBtn.setToggleGroup(diffGroup);
         easyBtn.setSelected(true);
 
-        styleRadio(easyBtn, "#22C55E");
-        styleRadio(mediumBtn, "#3B82F6");
-        styleRadio(hardBtn, "#EF4444");
+        styleRadio(easyBtn, "#38BDF8");
+        styleRadio(mediumBtn, "#22C55E");
+        styleRadio(hardBtn, "#F97316");
 
-        HBox diffs = new HBox(18, easyBtn, mediumBtn, hardBtn);
-        diffs.setAlignment(Pos.CENTER_LEFT);
+        HBox diffs = new HBox(34, easyBtn, mediumBtn, hardBtn);
+        diffs.setAlignment(Pos.CENTER);
+        diffs.setPadding(new Insets(14));
+        diffs.setStyle(
+                "-fx-background-color: rgba(2,6,23,0.55);" +
+                "-fx-background-radius: 18;" +
+                "-fx-border-radius: 18;" +
+                "-fx-border-width: 2.0;" +
+                "-fx-border-color: rgba(56,189,248,0.55);"
+        );
 
         stylePrimary(hostBtn, "#22C55E");
 
-        // Host disabled when joined or empty name
         hostBtn.disableProperty().bind(Bindings.createBooleanBinding(
                 () -> safeName().isEmpty() || joined.get(),
                 nameField.textProperty(),
@@ -170,21 +226,22 @@ public class MultiplayerSetupView extends BorderPane {
 
         hostCard.getChildren().addAll(hostLbl, diffs, hostBtn);
 
-        // Join card
+        // ===== JOIN CARD =====
         VBox joinCard = card();
+        joinCard.setMaxWidth(820);
+
         Label joinLbl = new Label("Join a Game");
         joinLbl.setTextFill(Color.web("#BFDBFE"));
         joinLbl.setFont(Font.font("Arial", FontWeight.BOLD, 14));
 
         hostsList.setPlaceholder(new Label("No hosts found yet. Click Refresh."));
-        hostsList.setStyle("""
-            -fx-background-color: #020617;
-            -fx-control-inner-background: #020617;
-            -fx-border-color: rgba(148,163,184,0.18);
-            -fx-border-radius: 14;
-            -fx-background-radius: 14;
-            -fx-text-fill: #E5E7EB;
-        """);
+        hostsList.setStyle(
+                "-fx-background-color: rgba(2,6,23,0.72);" +
+                "-fx-control-inner-background: rgba(2,6,23,0.72);" +
+                "-fx-border-color: rgba(148,163,184,0.18);" +
+                "-fx-border-radius: 18;" +
+                "-fx-background-radius: 18;"
+        );
 
         hostsList.setCellFactory(list -> new ListCell<>() {
             @Override
@@ -192,73 +249,44 @@ public class MultiplayerSetupView extends BorderPane {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setText(null);
+                    setStyle("");
                 } else {
                     setText(item.hostName() + "  •  " + item.difficulty() + "  •  " + item.ip());
                     setTextFill(Color.web("#E5E7EB"));
+                    if (isSelected()) {
+                        setStyle("-fx-background-color: rgba(56,189,248,0.20); -fx-background-radius: 12;");
+                    } else {
+                        setStyle("-fx-background-color: transparent;");
+                    }
                 }
             }
         });
 
         styleSecondary(refreshBtn);
-     // ✅ Stable Join styles (no flash)
+
         joinBtn.setPrefHeight(40);
         joinBtn.setFont(Font.font("Arial", FontWeight.BOLD, 14));
-
-        // initial (safe)
         joinBtn.setStyle(JOIN_DISABLED_STYLE);
 
-        // when disabled/enabled changes
-        joinBtn.disabledProperty().addListener((obs, wasDisabled, isDisabled) -> {
-            joinBtn.setStyle(isDisabled ? JOIN_DISABLED_STYLE : JOIN_ENABLED_STYLE);
-        });
-
-        // when selection changes (extra safety)
-        hostsList.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
-            boolean disabled = joinBtn.isDisabled();
-            joinBtn.setStyle(disabled ? JOIN_DISABLED_STYLE : JOIN_ENABLED_STYLE);
-        });
-
-        // also re-apply on press/release (prevents skin "flash")
-        joinBtn.setOnMousePressed(e -> {
-            boolean disabled = joinBtn.isDisabled();
-            joinBtn.setStyle(disabled ? JOIN_DISABLED_STYLE : JOIN_ENABLED_STYLE);
-        });
-        joinBtn.setOnMouseReleased(e -> {
-            boolean disabled = joinBtn.isDisabled();
-            joinBtn.setStyle(disabled ? JOIN_DISABLED_STYLE : JOIN_ENABLED_STYLE);
-        });
-
-
-        refreshBtn.setOnAction(e -> refreshHostList());
-
-        // Join disabled when hosting OR empty name OR no selection
         joinBtn.disableProperty().bind(Bindings.createBooleanBinding(
                 () -> hosting.get() || safeName().isEmpty() || hostsList.getSelectionModel().getSelectedItem() == null,
                 hosting,
                 nameField.textProperty(),
                 hostsList.getSelectionModel().selectedItemProperty()
         ));
+        joinBtn.disabledProperty().addListener((obs, wasDisabled, isDisabled) ->
+                joinBtn.setStyle(isDisabled ? JOIN_DISABLED_STYLE : JOIN_ENABLED_STYLE)
+        );
+
+        refreshBtn.setOnAction(e -> refreshHostList());
         joinBtn.setOnAction(e -> joinSelectedHost());
-
-        // ✅ Force stable style (prevents "flash")
-        joinBtn.setStyle(JOIN_DISABLED_STYLE);
-
-        joinBtn.disabledProperty().addListener((obs, wasDisabled, isDisabled) -> {
-            joinBtn.setStyle(isDisabled ? JOIN_DISABLED_STYLE : JOIN_ENABLED_STYLE);
-        });
-
-        // Also re-apply style when selection changes (extra safety)
-        hostsList.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
-            boolean disabled = joinBtn.isDisabled();
-            joinBtn.setStyle(disabled ? JOIN_DISABLED_STYLE : JOIN_ENABLED_STYLE);
-        });
 
         HBox joinButtons = new HBox(10, refreshBtn, joinBtn);
         joinButtons.setAlignment(Pos.CENTER_LEFT);
 
         joinCard.getChildren().addAll(joinLbl, hostsList, joinButtons);
 
-        // Busy binding
+        // Busy binding (same as before)
         BooleanProperty busy = new SimpleBooleanProperty();
         busy.bind(hosting.or(joined));
 
@@ -272,11 +300,13 @@ public class MultiplayerSetupView extends BorderPane {
         statusLabel.setTextFill(Color.web("#93C5FD"));
         statusLabel.setFont(Font.font("Arial", 13));
 
-        root.getChildren().addAll(subtitle, nameCard, hostCard, joinCard, statusLabel);
+        root.getChildren().addAll(heading, nameCard, hostCard, joinCard, statusLabel);
         setCenter(root);
 
         refreshHostList();
     }
+
+
 
     private void startDiscoveryListener() {
         discovery.startListening(host -> {
