@@ -28,7 +28,7 @@ public class Menu extends StackPane {
     public Menu() {
 
         // === BACKGROUND IMAGE ===
-        Image bg = new Image("img/menuBackground.jpg");
+        Image bg = new Image( "/backgrounds/menuBackground.png");
 
         BackgroundSize bgSize = new BackgroundSize(
                 100, 100,
@@ -111,8 +111,7 @@ public class Menu extends StackPane {
 
         content.getChildren().addAll(title, subtitle, btnContainer);
 
-        overlay.getChildren().add(content);
-        this.getChildren().add(overlay);
+        this.getChildren().add(content);
     }
 
     // Neon green main button

@@ -334,43 +334,42 @@ public class GameView extends BorderPane {
 
         var url = getClass().getResource(t.bgPath);
 
+        System.out.println("THEME = " + t.name() + " | bgPath = " + t.bgPath);
+        System.out.println("URL   = " + (url == null ? "NULL" : url.toExternalForm()));
+
         if (url == null) {
-            System.out.println("❌ Background not found: " + t.bgPath);
+            // fallback color if image fails
             setBackground(new Background(new BackgroundFill(
                     Color.web("#0F172A"),
                     CornerRadii.EMPTY,
                     Insets.EMPTY
             )));
-        } else {
-            Image bg = new Image(url.toExternalForm(), false);
-
-            BackgroundImage bgImg = new BackgroundImage(
-                    bg,
-                    BackgroundRepeat.NO_REPEAT,
-                    BackgroundRepeat.NO_REPEAT,
-                    BackgroundPosition.CENTER,
-                    new BackgroundSize(
-                            100, 100,
-                            true, true,
-                            true, false
-                    )
-            );
-
-            BackgroundFill overlay = new BackgroundFill(
-                    t.overlay,
-                    CornerRadii.EMPTY,
-                    Insets.EMPTY
-            );
-
-            setBackground(new Background(
-                    new BackgroundFill[]{overlay},
-                    new BackgroundImage[]{bgImg}
-            ));
+            currentPlayerLabel.setTextFill(Color.web(t.accent));
+            return;
         }
 
-        // Only text accents here (do not override glass cards)
+        Image bg = new Image(url.toExternalForm(), false);
+
+        System.out.println("IMG   = " + bg.getWidth() + " x " + bg.getHeight());
+
+        BackgroundImage bgImg = new BackgroundImage(
+                bg,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundPosition.CENTER,
+                new BackgroundSize(
+                        100, 100,
+                        true, true,
+                        true, false   // ✅ cover = true
+                )
+        );
+
+        // ✅ Just set the image background (no overlay behind it)
+        setBackground(new Background(bgImg));
+
         currentPlayerLabel.setTextFill(Color.web(t.accent));
     }
+
 
     /**
      * ✅ Force all panels to use the same "Shared-like" glass card look
