@@ -465,35 +465,50 @@ public class GameView extends BorderPane {
                 "-fx-border-width: 2;" +
                 "-fx-border-radius: 16;" +
                 "-fx-background-radius: 16;" +
-                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.55), 18, 0, 0, 8);";
+                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 16, 0, 0, 6);";
 
-        sharedInfoPanel.setStyle(cardBase + "-fx-border-color: rgba(96,165,250,0.95);");
-        player1Panel.setStyle(cardBase + "-fx-border-color: rgba(34,197,94,0.95);");
-        player2Panel.setStyle(cardBase + "-fx-border-color: rgba(244,63,94,0.90);");
-        gridPane1.setStyle("-fx-background-color: transparent;");
-        gridPane2.setStyle("-fx-background-color: transparent;");
+        String activeCard =
+                "-fx-background-color: rgba(17,24,39,0.65);" + // darker glass
+                "-fx-border-width: 3;" +
+                "-fx-border-radius: 16;" +
+                "-fx-background-radius: 16;" +
+                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.65), 22, 0, 0, 8);";
 
+        // normal
+        sharedInfoPanel.setStyle(cardBase + "-fx-border-color: rgba(255,255,255,0.18);");
+        player1Panel.setStyle(cardBase + "-fx-border-color: rgba(255,255,255,0.22);");
+        player2Panel.setStyle(cardBase + "-fx-border-color: rgba(255,255,255,0.22);");
 
-        // Lighter inner glass (so background shows through more)
-        String innerGlass =
+        // store active styles
+        player1Panel.setUserData(activeCard + "-fx-border-color: rgba(255,255,255,0.35);");
+        player2Panel.setUserData(activeCard + "-fx-border-color: rgba(255,255,255,0.35);");
+
+        boardContainer1.setStyle(
                 "-fx-background-color: transparent;" +
                 "-fx-border-color: rgba(255,255,255,0.08);" +
-                "-fx-border-radius: 14;" +
-                "-fx-background-radius: 14;";
+                "-fx-border-radius: 14;"
+        );
 
-
-        boardContainer1.setStyle(innerGlass);
-        boardContainer2.setStyle(innerGlass);
+        boardContainer2.setStyle(
+                "-fx-background-color: transparent;" +
+                "-fx-border-color: rgba(255,255,255,0.08);" +
+                "-fx-border-radius: 14;"
+        );
     }
+
     
     public void setActivePlayer(int playerNum) {
-        player1Panel.getStyleClass().remove("active");
-        player2Panel.getStyleClass().remove("active");
 
-        if (playerNum == 1) player1Panel.getStyleClass().add("active");
-        else player2Panel.getStyleClass().add("active");
+        // reset both to normal (base)
+        applyGlassPanels();
+
+        if (playerNum == 1) {
+            // apply the "active" style you stored in userData
+            player1Panel.setStyle((String) player1Panel.getUserData());
+        } else {
+            player2Panel.setStyle((String) player2Panel.getUserData());
+        }
     }
-    
     
  // ===== Mascot API (called from GameController) =====
 
