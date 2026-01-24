@@ -1,18 +1,42 @@
 // view/MultiplayerSetupView.java
 package view;
 
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import controller.GameController;
 import controller.Main;
-
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.effect.DropShadow;
-import javafx.scene.layout.*;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.Border;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.BorderStroke;
+import javafx.scene.layout.BorderStrokeStyle;
+import javafx.scene.layout.BorderWidths;
+import javafx.scene.layout.CornerRadii;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.LinearGradient;
@@ -20,18 +44,12 @@ import javafx.scene.paint.RadialGradient;
 import javafx.scene.paint.Stop;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-
 import multiplayer.GameSettings;
 import multiplayer.LanDiscoveryService;
 import multiplayer.MpMessage;
 import multiplayer.MpMessageType;
 import multiplayer.MultiplayerSession;
 import multiplayer.NetworkSession;
-
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 
@@ -110,8 +128,8 @@ public class MultiplayerSetupView extends BorderPane {
         );
         setBackground(new Background(new BackgroundFill(bg, CornerRadii.EMPTY, Insets.EMPTY)));
 
-        // ===== TOP BAR =====
-        HBox topBar = new HBox();
+     // ===== TOP BAR =====
+        HBox topBar = new HBox(20);
         topBar.setPadding(new Insets(18, 28, 8, 28));
         topBar.setAlignment(Pos.CENTER_LEFT);
 
@@ -121,8 +139,22 @@ public class MultiplayerSetupView extends BorderPane {
             Main.showMainMenu(Main.getPrimaryStage());
         });
 
-        topBar.getChildren().add(backBtn);
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        // Reusable settings bar
+        HBox settingsBar = TopBarFactory.createTopBar();
+        // IMPORTANT: remove its internal padding so alignment is exact
+        settingsBar.setPadding(Insets.EMPTY);
+
+        topBar.getChildren().addAll(
+                backBtn,
+                spacer,
+                settingsBar
+        );
+
         setTop(topBar);
+
 
         // ===== CENTER CONTENT =====
         VBox root = new VBox(16);

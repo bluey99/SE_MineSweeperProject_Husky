@@ -9,19 +9,25 @@ import javafx.scene.layout.Region;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import view.dialogs.SettingsDialog;
+import view.dialogs.HelpDialog;
+
 
 public class TopBarFactory {
 
     public static HBox createTopBar() {
-        Button settingsBtn = new Button("⚙");
-        styleSettingsButton(settingsBtn);
+    	Button helpBtn = new Button("?");
+    	styleSettingsButton(helpBtn);
+    	helpBtn.setOnAction(e -> new HelpDialog().show());
 
-        settingsBtn.setOnAction(e -> new SettingsDialog().show());
+    	Button settingsBtn = new Button("⚙");
+    	styleSettingsButton(settingsBtn);
+    	settingsBtn.setOnAction(e -> new SettingsDialog().show());
 
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
+    	Region spacer = new Region();
+    	HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        HBox bar = new HBox(spacer, settingsBtn);
+    	HBox bar = new HBox(10, spacer, helpBtn, settingsBtn);
+
         bar.setAlignment(Pos.CENTER_LEFT);
         bar.setPadding(new Insets(18, 24, 18, 24));
 
