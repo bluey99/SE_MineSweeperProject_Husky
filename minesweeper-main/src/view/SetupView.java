@@ -207,25 +207,43 @@ public class SetupView extends BorderPane {
     private void updateDifficultyInfo(String difficulty) {
         diffInfoBox.getChildren().clear();
 
+        // Theme colors per difficulty
         String borderColor = switch (difficulty) {
-            case "Easy" -> "#22C55E";
-            case "Medium" -> "#3B82F6";
-            case "Hard" -> "#EF4444";
+            case "Easy" -> "#38BDF8";   // ocean blue
+            case "Medium" -> "#22C55E"; // jungle green
+            case "Hard" -> "#F97316";   // lava orange
             default -> "#334155";
         };
 
+        String titleColor = switch (difficulty) {
+            case "Easy" -> "#BAE6FD";   // light blue
+            case "Medium" -> "#BBF7D0"; // light green
+            case "Hard" -> "#FED7AA";   // light orange
+            default -> "#BFDBFE";
+        };
+
+        // Border + subtle glow feel
         diffInfoBox.setBorder(new Border(new BorderStroke(
-                Color.web(borderColor, 0.6),
+                Color.web(borderColor, 0.75),
                 BorderStrokeStyle.SOLID,
                 new CornerRadii(14),
-                new BorderWidths(1.5)
+                new BorderWidths(1.7)
         )));
 
-        Label title = new Label(difficulty + " Mode:");
-        title.setFont(Font.font("Arial", FontWeight.BOLD, 13));
-        title.setTextFill(Color.web("#BFDBFE"));
+        // Title text with theme name
+        String titleText = switch (difficulty) {
+            case "Easy" -> "Easy Mode: Under the Sea";
+            case "Medium" -> "Medium Mode: Jungle";
+            case "Hard" -> "Hard Mode: Lava";
+            default -> difficulty + " Mode:";
+        };
+
+        Label title = new Label(titleText);
+        title.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        title.setTextFill(Color.web(titleColor));
         diffInfoBox.getChildren().add(title);
 
+        // Details
         String[] lines = switch (difficulty) {
             case "Medium" -> new String[]{"13×13 grid", "26 mines", "8 shared lives"};
             case "Hard" -> new String[]{"16×16 grid", "44 mines", "6 shared lives"};
@@ -239,6 +257,7 @@ public class SetupView extends BorderPane {
             diffInfoBox.getChildren().add(line);
         }
     }
+
 
     private VBox createLabeledInput(String label, String placeholder) {
         Label lbl = new Label(label);
@@ -269,10 +288,10 @@ public class SetupView extends BorderPane {
         rb.setStyle("-fx-cursor: hand;");
 
         switch (text) {
-            case "Easy" -> rb.setStyle(rb.getStyle() + "-fx-mark-color: #22C55E;");
-            case "Medium" -> rb.setStyle(rb.getStyle() + "-fx-mark-color: #3B82F6;");
-            case "Hard" -> rb.setStyle(rb.getStyle() + "-fx-mark-color: #EF4444;");
-        }
+        case "Easy" -> rb.setStyle(rb.getStyle() + "-fx-mark-color: #38BDF8;");
+        case "Medium" -> rb.setStyle(rb.getStyle() + "-fx-mark-color: #22C55E;");
+        case "Hard" -> rb.setStyle(rb.getStyle() + "-fx-mark-color: #F97316;");
+    }
         return rb;
     }
 
