@@ -25,7 +25,7 @@ public class Menu extends StackPane {
     public Menu() {
 
         // === BACKGROUND IMAGE ===
-        Image bg = new Image("img/menuBackground.jpg");
+        Image bg = new Image( "/backgrounds/menuBackground.png");
 
         BackgroundSize bgSize = new BackgroundSize(
                 100, 100, true, true, false, true
@@ -113,6 +113,7 @@ public class Menu extends StackPane {
 
         content.getChildren().addAll(title, subtitle, btnContainer);
         overlay.setCenter(content);
+
 
         getChildren().add(overlay);
     }
