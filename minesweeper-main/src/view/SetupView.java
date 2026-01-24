@@ -50,21 +50,35 @@ public class SetupView extends BorderPane {
         );
         setBackground(new Background(new BackgroundFill(bg, CornerRadii.EMPTY, Insets.EMPTY)));
 
-        // ===== TOP BAR =====
-        HBox topBar = new HBox();
-        topBar.setPadding(new Insets(18, 28, 8, 28));
-        topBar.setAlignment(Pos.CENTER_LEFT);
+     // =========================
+     // TOP BAR (Reusable layout)
+     // =========================
 
-        styleMenuButton(backBtn);
+     // Back button styling (unchanged)
+     styleMenuButton(backBtn);
 
-        // ✅ Singleton clean behavior: leaving setup → kill any running game controller instance
-        backBtn.setOnAction(e -> {
-            GameController.resetInstance();
-            Main.showMainMenu(Main.getPrimaryStage());
-        });
+     // Leaving setup → reset game controller
+     backBtn.setOnAction(e -> {
+         GameController.resetInstance();
+         Main.showMainMenu(Main.getPrimaryStage());
+     });
 
-        topBar.getChildren().add(backBtn);
-        setTop(topBar);
+     // LEFT side (menu button only for setup)
+     HBox headerLeft = new HBox(backBtn);
+     headerLeft.setAlignment(Pos.CENTER_LEFT);
+
+     // RIGHT side (settings bar)
+     HBox settingsBar = TopBarFactory.createTopBar();
+     settingsBar.setPadding(Insets.EMPTY);
+
+     // Header container
+     BorderPane header = new BorderPane();
+     header.setPadding(new Insets(18, 28, 8, 28));
+     header.setLeft(headerLeft);
+     header.setRight(settingsBar);
+
+     setTop(header);
+
 
         // ===== CENTER CONTENT =====
         VBox root = new VBox(14);

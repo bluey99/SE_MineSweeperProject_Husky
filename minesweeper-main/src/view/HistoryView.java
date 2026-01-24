@@ -77,10 +77,9 @@ public class HistoryView extends BorderPane {
 
         setStyle("-fx-background-color: #0f172a;");
 
-        // Top bar 
-     HBox topBar = new HBox(20);
-     topBar.setPadding(new Insets(20, 30, 10, 30));
-     topBar.setAlignment(Pos.CENTER_LEFT);
+     // =========================
+     // TOP BAR
+     // =========================
 
      backBtn.setFont(Font.font("Arial", FontWeight.BOLD, 14));
 
@@ -104,11 +103,12 @@ public class HistoryView extends BorderPane {
      backBtn.setOnMouseEntered(e -> backBtn.setStyle(hoverStyle));
      backBtn.setOnMouseExited(e -> backBtn.setStyle(normalStyle));
 
-     // CLOCK ICON (restored)
+     // Icon
      Label iconLabel = new Label("🕒");
      iconLabel.setTextFill(Color.web("#8B5CF6"));
      iconLabel.setFont(Font.font("Arial", FontWeight.BOLD, 28));
 
+     // Title
      VBox titleBox = new VBox(5);
      Label title = new Label("Game History");
      title.setTextFill(Color.WHITE);
@@ -120,12 +120,23 @@ public class HistoryView extends BorderPane {
 
      titleBox.getChildren().addAll(title, subtitle);
 
-     Region spacer = new Region();
-     HBox.setHgrow(spacer, Priority.ALWAYS);
+     // LEFT content
+     HBox headerLeft = new HBox(20, backBtn, iconLabel, titleBox);
+     headerLeft.setAlignment(Pos.CENTER_LEFT);
 
-     // Order preserved exactly as before
-     topBar.getChildren().addAll(backBtn, iconLabel, titleBox, spacer);
-     setTop(topBar);
+     // RIGHT content (settings)
+     HBox settingsBar = TopBarFactory.createTopBar();
+     settingsBar.setPadding(Insets.EMPTY);
+
+     // HEADER container
+     BorderPane header = new BorderPane();
+     header.setPadding(new Insets(20, 30, 10, 30));
+     header.setLeft(headerLeft);
+     header.setRight(settingsBar);
+
+     setTop(header);
+
+
 
 
         // Actions row (unchanged layout)
