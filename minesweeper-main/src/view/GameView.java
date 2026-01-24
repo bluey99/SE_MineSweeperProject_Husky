@@ -14,7 +14,9 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-
+import javafx.scene.image.ImageView;
+import javafx.animation.PauseTransition;
+import javafx.util.Duration;
 /**
  * Game screen UI containing:
  * - Player 1 Board
@@ -55,6 +57,13 @@ public class GameView extends BorderPane {
     // containers so we can theme them too
     private final StackPane boardContainer1 = new StackPane();
     private final StackPane boardContainer2 = new StackPane();
+    
+    private Theme currentTheme;
+
+    private final javafx.scene.image.ImageView mascotView = new javafx.scene.image.ImageView();
+    private javafx.animation.PauseTransition mascotTimer;
+
+    private int lastScore = 0;
 
     public GameView(GameController controller) {
 
@@ -64,6 +73,11 @@ public class GameView extends BorderPane {
         setupLayout();
         setupTopSection();
         setupSharedPanel();
+        mascotView.setFitWidth(120);
+        mascotView.setPreserveRatio(true);
+        mascotView.setSmooth(true);
+        mascotView.setOpacity(0.95);
+
         setupPlayer1Panel();
         setupPlayer2Panel();
         setupCenterSection();
@@ -76,10 +90,79 @@ public class GameView extends BorderPane {
 
 
         // Theme last
-        applyTheme(pickTheme(controller));
-        applyGlassPanels(); // ✅ force shared-like glass on player panels too
+     // Theme last
+        currentTheme = pickTheme(controller);
+        applyTheme(currentTheme);
+        applyGlassPanels();
+
+        // ✅ Mascot
+        setMascotNeutral();
+
+        // ✅ start tracking score
+        lastScore = parseScore(sharedScoreLabel.getText());
+// ✅ force shared-like glass on player panels too
     }
 
+    private void setupMascotUI() {
+        mascotView.setFitWidth(120);
+        mascotView.setPreserveRatio(true);
+        mascotView.setSmooth(true);
+        mascotView.setOpacity(0.95);
+
+        // Put it under the time/difficulty info
+        sharedInfoPanel.getChildren().add(mascotView);
+    }
+
+    private void setMascotNeutral() { setMascot(currentTheme.mascotNeutral); }
+    private void setMascotHappy()   { setMascot(currentTheme.mascotHappy); }
+    private void setMascotSad()     { setMascot(currentTheme.mascotSad); }
+
+    private void setMascot(String path) {
+        if (path == null) return;
+
+        var url = getClass().getResource(path);
+        if (url == null) {
+            System.out.println("❌ Mascot not found: " + path);
+            return;
+        }
+        mascotView.setImage(new Image(url.toExternalForm(), false));
+    }
+    
+    private void reactHappy() {
+        setMascotHappy();
+        restartMascotTimer();
+    }
+
+    private void reactSad() {
+        setMascotSad();
+        restartMascotTimer();
+    }
+
+    private void restartMascotTimer() {
+        if (mascotTimer != null) mascotTimer.stop();
+
+        mascotTimer = new PauseTransition(Duration.seconds(2));
+        mascotTimer.setOnFinished(e -> setMascotNeutral());
+        mascotTimer.playFromStart();
+    }
+    
+    
+    private int parseScore(String s) {
+        try {
+            return Integer.parseInt(s.trim());
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+  
+    
+    
+    public void onMineHit() {
+        reactSad();
+    }
+    
+    //------------------------------
     private void setupLayout() {
         setPadding(Insets.EMPTY);
 
@@ -202,7 +285,7 @@ public class GameView extends BorderPane {
 
         infoBox.getChildren().addAll(diffBox, timeBox);
 
-        sharedInfoPanel.getChildren().addAll(header, scoreBox, livesBox, div1, infoBox);
+        sharedInfoPanel.getChildren().addAll(header, scoreBox, livesBox, div1, infoBox, mascotView);
     }
 
     private void setupPlayer1Panel() {
@@ -410,6 +493,38 @@ public class GameView extends BorderPane {
         if (playerNum == 1) player1Panel.getStyleClass().add("active");
         else player2Panel.getStyleClass().add("active");
     }
+    
+    
+ // ===== Mascot API (called from GameController) =====
+
+    private int safeParseInt(String s) {
+        try { return Integer.parseInt(s.trim()); }
+        catch (Exception e) { return 0; }
+    }
+
+    public void initMascotScoreTracking() {
+        lastScore = safeParseInt(sharedScoreLabel.getText());
+        setMascotNeutral();
+    }
+
+    public void setSharedScoreWithReaction(int newScore) {
+        int delta = newScore - lastScore;
+
+        sharedScoreLabel.setText(String.valueOf(newScore));
+
+        if (delta >= 10) {
+            reactHappy();
+        } else if (delta <= -5) {
+            reactSad();
+        }
+
+        lastScore = newScore;
+    }
+
+    public void onMineHitMascot() {
+        reactSad();
+    }
+
     
   
 }
