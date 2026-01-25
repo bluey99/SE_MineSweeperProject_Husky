@@ -8,3 +8,5 @@ dateTime,difficulty,player1Name,player2Name,result,finalScore,gameLengthSeconds
 2026-01-25T19:36:00.983589,Easy,Salim,Mona,WIN,133,76
 2026-01-25T19:42:03.8798292,Easy,Mona,Salim,WIN,126,58
 2026-01-25T19:45:02.0247102,Easy,Salim,Jawad,WIN,118,53
+2026-01-25T23:38:41.0839353,Easy,Player 1,Player 2,LOSE,112,36
+2026-01-25T23:41:02.6713205,Easy,Player 1,Player 2,WIN,140,138

@@ -46,6 +46,10 @@ public class SoundService {
     private static AudioClip correctAnswerSound;
     private static AudioClip wrongAnswerSound;
     private static AudioClip flagSound;
+    // 🎮 END GAME SFX
+    private static AudioClip victorySound;
+    private static AudioClip failSound;
+
 
 
     /* =========================================================
@@ -137,6 +141,22 @@ public class SoundService {
                 ).toExternalForm()
             );
         }
+        if (victorySound == null) {
+            victorySound = new AudioClip(
+                SoundService.class.getResource(
+                    "/sounds/sfx/victorySound.mp3"
+                ).toExternalForm()
+            );
+        }
+
+        if (failSound == null) {
+            failSound = new AudioClip(
+                SoundService.class.getResource(
+                    "/sounds/sfx/failSound.mp3"
+                ).toExternalForm()
+            );
+        }
+
 
 
         applyGameSfxVolume();
@@ -154,6 +174,9 @@ public class SoundService {
         if (correctAnswerSound != null) correctAnswerSound.setVolume(v);
         if (wrongAnswerSound != null) wrongAnswerSound.setVolume(1.0);
         if (flagSound != null) flagSound.setVolume(sfxVolume * 0.75);
+        if (victorySound != null) victorySound.setVolume(sfxVolume);
+        if (failSound != null) failSound.setVolume(sfxVolume);
+
 
 
     }
@@ -319,6 +342,14 @@ public class SoundService {
     public static void playFlagPlaced() {
         if (sfxEnabled && flagSound != null) flagSound.play(); 
     }
+    public static void playVictory() {
+        if (sfxEnabled && victorySound != null) victorySound.play();
+    }
+
+    public static void playFail() {
+        if (sfxEnabled && failSound != null) failSound.play();
+    }
+
 
 
 

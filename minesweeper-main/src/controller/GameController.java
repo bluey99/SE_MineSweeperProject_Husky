@@ -1408,6 +1408,12 @@ public class GameController implements GameModelObserver {
     }
 
     private void showEndGameDialog(boolean won, int lifeBonus, int finalScore) {
+    	 // 🔊 End-game SFX (play once per dialog)
+        if (won) {
+            SoundService.playVictory();
+        } else {
+            SoundService.playFail();
+        }
         Stage dialog = new Stage(StageStyle.TRANSPARENT);
         dialog.initOwner(primaryStage);
         dialog.initModality(Modality.WINDOW_MODAL);
