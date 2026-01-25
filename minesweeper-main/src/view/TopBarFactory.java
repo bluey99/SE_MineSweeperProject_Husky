@@ -20,10 +20,14 @@ public class TopBarFactory {
         styleSettingsButton(helpBtn);
         helpBtn.setOnAction(e -> new HelpDialog().show());
 
-        // ✅ NEW: Statistics button (histogram icon)
         Button statsBtn = new Button("📊");
         styleSettingsButton(statsBtn);
         statsBtn.setOnAction(e -> Main.showStatistics(Main.getPrimaryStage()));
+
+        // ✅ NEW: Leaderboards button
+        Button leaderboardBtn = new Button("🏆");
+        styleSettingsButton(leaderboardBtn);
+        leaderboardBtn.setOnAction(e -> Main.showLeaderboards(Main.getPrimaryStage()));
 
         Button settingsBtn = new Button("⚙");
         styleSettingsButton(settingsBtn);
@@ -32,8 +36,8 @@ public class TopBarFactory {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        // ✅ Order: Help, Statistics, Settings
-        HBox bar = new HBox(10, spacer, helpBtn, statsBtn, settingsBtn);
+        // ✅ Order: Help, Statistics, Leaderboards, Settings
+        HBox bar = new HBox(10, spacer, helpBtn, statsBtn, leaderboardBtn, settingsBtn);
 
         bar.setAlignment(Pos.CENTER_LEFT);
         bar.setPadding(new Insets(18, 24, 18, 24));

@@ -6,6 +6,8 @@ import controller.StatisticsController;
 
 import service.SoundService;
 import view.Theme;
+import controller.LeaderboardsController;
+
 
 import javafx.application.Platform;
 import javafx.geometry.Rectangle2D;
@@ -101,6 +103,13 @@ public class Main extends Application {
             instance.showStatisticsInstance(stage);
         }
     }
+    
+    public static void showLeaderboards(Stage stage) {
+        if (instance != null) {
+            instance.showLeaderboardsInstance(stage);
+        }
+    }
+
 
 
     /** ✅ NEW: go to Question Management from anywhere (Menu button uses it). */
@@ -214,6 +223,23 @@ public class Main extends Application {
 
         applyFixedWindowSize(stage, width, height);
     }
+    
+    private void showLeaderboardsInstance(Stage stage) {
+        double[] size = getClampedMenuSize();
+        double width = size[0];
+        double height = size[1];
+
+        LeaderboardsController lc = new LeaderboardsController(stage);
+        Scene scene = lc.createScene(width, height);
+        scene.setFill(Color.BLACK);
+
+        SoundService.applyUiSoundsWhenReady(scene.getRoot());
+        stage.setScene(scene);
+        stage.sizeToScene();
+
+        applyFixedWindowSize(stage, width, height);
+    }
+
 
 
     private void showQuestionManagementInstance(Stage stage) {
