@@ -307,13 +307,13 @@ public class GameController implements GameModelObserver {
     }
 
     private void disableMultiplayerLocally() {
-        multiplayerEnabled = false;
-        // close session safely
-        if (multiplayerSession != null) {
-            try { multiplayerSession.close(); } catch (Exception ignored) {}
-        }
-        multiplayerSession = null;
-        localPlayerNum = -1;
+//        multiplayerEnabled = false;
+//        // close session safely
+//        if (multiplayerSession != null) {
+//            try { multiplayerSession.close(); } catch (Exception ignored) {}
+//        }
+//        multiplayerSession = null;
+//        localPlayerNum = -1;
 
         // ✅ clear pending map
         pendingQuestionDiffByCell.clear();
