@@ -22,6 +22,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.RadioButton;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.effect.DropShadow;
