@@ -227,12 +227,15 @@ public class GameController implements GameModelObserver {
             session.respondToPendingRequest(ok);
         }));
 
-        // ✅ Execute actions coming from host (we support NEW_GAME + RETURN_MENU)
+        // ✅ Execute actions coming from host
         session.setOnExecuteAction(action -> Platform.runLater(() -> {
             if (action.type == MenuAction.Type.NEW_GAME) {
                 executeNewGameNow();
-            } else if (action.type == MenuAction.Type.RETURN_MENU) {
-                // Close session locally and go menu
+                return;
+            }
+
+            if (action.type == MenuAction.Type.RETURN_MENU) {
+                // ✅ Close session HERE (not in PLAYER_LEFT)
                 disableMultiplayerLocally();
 
                 if (gameTimer != null) gameTimer.cancel();
@@ -244,13 +247,13 @@ public class GameController implements GameModelObserver {
             showMessage("Request Declined", "The other player declined the New Game request.");
         }));
 
-        // ✅ Show message when other leaves (but DON'T force close here - menu will arrive via EXECUTE_ACTION)
+        // ✅ Only show message. DO NOT close the socket here.
         session.setOnPlayerLeft(name -> Platform.runLater(() -> {
             showMessage("Player Left", "Player " + name + " is out now.");
-            // Do NOT disable here; we'll disable on EXECUTE_ACTION RETURN_MENU
-            // This avoids race conditions.
+            // ❌ no disableMultiplayerLocally() here
         }));
     }
+
 
 
     private void disableMultiplayerLocally() {
@@ -359,35 +362,34 @@ public class GameController implements GameModelObserver {
                     "New Game");
 
             if (!ok) return;
-
             executeNewGameNow();
         });
 
-        // ✅ Exit -> confirm first, then notify and exit
+        // ✅ Exit -> confirm first, then exit. (You can decide if you want to force other to menu too)
         gameView.exitBtn.addEventHandler(MouseEvent.MOUSE_CLICKED, e -> {
 
             boolean ok = showConfirmation("Exit Game", "Are you sure you want to exit the game?", "Exit");
             if (!ok) return;
 
-            // Only AFTER confirm:
             if (multiplayerEnabled && multiplayerSession != null) {
                 String me = multiplayerSession.isHost() ? player1Name : player2Name;
 
+                // Best effort (may fail if other already closed)
                 try { multiplayerSession.notifyPlayerLeft(me); } catch (Exception ignored) {}
 
-                // Force both to menu first (optional, but keeps both in sync)
-                multiplayerSession.sendMessage(new MpMessage(
-                        MpMessageType.EXECUTE_ACTION,
-                        new MenuAction(MenuAction.Type.RETURN_MENU, me)
-                ));
+                try {
+                    multiplayerSession.sendMessage(new MpMessage(
+                            MpMessageType.EXECUTE_ACTION,
+                            new MenuAction(MenuAction.Type.RETURN_MENU, me)
+                    ));
+                } catch (Exception ignored) {}
             }
 
-            // Exit this PC
             Platform.exit();
             System.exit(0);
         });
 
-        // ✅ Return to Menu -> confirm first, then notify + force BOTH to menu
+        // ✅ Return to Menu -> confirm first, THEN notify + force BOTH to menu
         gameView.backToMenuBtn.setOnAction(e -> {
 
             boolean ok = showConfirmation("Return to Menu",
@@ -396,28 +398,29 @@ public class GameController implements GameModelObserver {
 
             if (!ok) return;
 
-            // Only AFTER confirm:
             if (multiplayerEnabled && multiplayerSession != null) {
                 String me = multiplayerSession.isHost() ? player1Name : player2Name;
 
-                // 1) show message on other side
+                // 1) message on other side
                 try { multiplayerSession.notifyPlayerLeft(me); } catch (Exception ignored) {}
 
-                // 2) force BOTH to menu (including me)
-                multiplayerSession.sendMessage(new MpMessage(
-                        MpMessageType.EXECUTE_ACTION,
-                        new MenuAction(MenuAction.Type.RETURN_MENU, me)
-                ));
+                // 2) force BOTH to menu
+                try {
+                    multiplayerSession.sendMessage(new MpMessage(
+                            MpMessageType.EXECUTE_ACTION,
+                            new MenuAction(MenuAction.Type.RETURN_MENU, me)
+                    ));
+                } catch (Exception ignored) {}
 
-                // return; local will be handled by EXECUTE_ACTION handler
+                // local will go menu via EXECUTE_ACTION handler
                 return;
             }
 
-            // Offline normal behavior
             if (gameTimer != null) gameTimer.cancel();
             Main.showMainMenu(primaryStage);
         });
     }
+
 
 
     private void executeNewGameNow() {
@@ -1125,7 +1128,7 @@ public class GameController implements GameModelObserver {
                     -fx-background-radius: 16;
                 """);
 
-     // ✅ Return to menu -> NO approval, but force BOTH to menu + notify other
+
         menuBtn.setOnAction(e -> {
             dialog.close();
 
@@ -1134,17 +1137,20 @@ public class GameController implements GameModelObserver {
 
                 try { multiplayerSession.notifyPlayerLeft(me); } catch (Exception ignored) {}
 
-                multiplayerSession.sendMessage(new MpMessage(
-                        MpMessageType.EXECUTE_ACTION,
-                        new MenuAction(MenuAction.Type.RETURN_MENU, me)
-                ));
+                try {
+                    multiplayerSession.sendMessage(new MpMessage(
+                            MpMessageType.EXECUTE_ACTION,
+                            new MenuAction(MenuAction.Type.RETURN_MENU, me)
+                    ));
+                } catch (Exception ignored) {}
 
-                // local handled by EXECUTE_ACTION handler
+                // local will go menu via EXECUTE_ACTION handler
                 return;
             }
 
             Main.showMainMenu(primaryStage);
         });
+
 
 
         HBox buttons = new HBox(14, newGameBtn, menuBtn);
