@@ -156,6 +156,49 @@ public class GameView extends BorderPane {
         mascotTimer.playFromStart();
     }
     
+    public void enableMultiplayerAutoFit(int rows, int cols) {
+
+        // allow shrinking
+        gridPane1.setMinSize(0, 0);
+        gridPane2.setMinSize(0, 0);
+
+        // parent containers must be Regions (GridPane parent is usually StackPane/VBox/etc.)
+        Region p1 = (Region) gridPane1.getParent();
+        Region p2 = (Region) gridPane2.getParent();
+
+        p1.setMinSize(0, 0);
+        p2.setMinSize(0, 0);
+
+        double cell = controller.CellController.getCellSide();
+        double gridW = cols * cell;
+        double gridH = rows * cell;
+
+        // scale calculation (uniform scale)
+        Runnable apply = () -> {
+            double s1 = Math.min(p1.getWidth() / gridW, p1.getHeight() / gridH);
+            double s2 = Math.min(p2.getWidth() / gridW, p2.getHeight() / gridH);
+
+            double s = Math.min(s1, s2); // keep both same scale so they look identical
+            if (s > 1.0) s = 1.0;        // don’t upscale
+            if (s < 0.35) s = 0.35;      // avoid too tiny
+
+            gridPane1.setScaleX(s);
+            gridPane1.setScaleY(s);
+            gridPane2.setScaleX(s);
+            gridPane2.setScaleY(s);
+        };
+
+        // re-apply on resize
+        p1.widthProperty().addListener((o,a,b) -> apply.run());
+        p1.heightProperty().addListener((o,a,b) -> apply.run());
+        p2.widthProperty().addListener((o,a,b) -> apply.run());
+        p2.heightProperty().addListener((o,a,b) -> apply.run());
+
+        // first apply (after layout)
+        javafx.application.Platform.runLater(apply);
+    }
+
+    
     
     private int parseScore(String s) {
         try {

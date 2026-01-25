@@ -225,8 +225,11 @@ public class GameController implements GameModelObserver {
         this.multiplayerSession = session;
         this.multiplayerEnabled = true;
         this.localPlayerNum = session.isHost() ? 1 : 2;
-        
-     // ✅ Receive seed + difficulty + names from host
+
+        // ✅ Enable auto-fit scaling ONLY in multiplayer (keeps UI same, just scales if needed)
+        Platform.runLater(() -> gameView.enableMultiplayerAutoFit(N, M));
+
+        // ✅ Receive seed + difficulty + names from host
         session.setOnGameSettings(settings -> Platform.runLater(() -> {
 
             // seed for next NEW_GAME
@@ -235,24 +238,23 @@ public class GameController implements GameModelObserver {
             // difficulty must be identical on both sides
             this.difficulty = settings.difficulty;
 
-            // ✅ FIX: restore player names on receiver
+            // ✅ restore player names on receiver
             if (settings.hostName != null && !settings.hostName.isBlank()) {
                 this.player1Name = settings.hostName;
             }
-
             if (settings.joinName != null && !settings.joinName.isBlank()) {
                 this.player2Name = settings.joinName;
             }
 
             updateUI(); // refresh labels immediately
+
+            // ✅ re-apply auto-fit after settings (safe)
+            gameView.enableMultiplayerAutoFit(N, M);
         }));
-
-
-
 
         session.setOnActionReceived(action -> Platform.runLater(() -> applyRemoteAction(action)));
 
-        // ✅ NEW: receive QUESTION_RESULT (no popup on remote)
+        // ✅ receive QUESTION_RESULT (no popup on remote)
         session.setOnQuestionResult(payload -> Platform.runLater(() -> applyQuestionResultFromNetwork(payload)));
 
         // Game Over broadcast
@@ -273,7 +275,7 @@ public class GameController implements GameModelObserver {
             session.respondToPendingRequest(ok);
         }));
 
-     // ✅ Execute actions coming from the OTHER side
+        // ✅ Execute actions coming from the OTHER side
         session.setOnExecuteAction(action -> Platform.runLater(() -> {
 
             if (action.type == MenuAction.Type.NEW_GAME) {
@@ -288,22 +290,29 @@ public class GameController implements GameModelObserver {
                     // store locally too (host uses same seed)
                     pendingNewGameSeed = seedToUse;
 
-                    // send seed + difficulty to client BEFORE starting
+                    // send seed + difficulty + names to client BEFORE starting
                     try {
-                    	multiplayerSession.sendGameSettings(
-                    	        new multiplayer.GameSettings(player1Name, player2Name, difficulty, seedToUse)
+                        multiplayerSession.sendGameSettings(
+                                new multiplayer.GameSettings(player1Name, player2Name, difficulty, seedToUse)
                         );
                     } catch (Exception ignored) {}
 
                 } else {
-                    // ✅ Client uses the seed that arrived from host
-                    seedToUse = (pendingNewGameSeed != null) ? pendingNewGameSeed : System.nanoTime();
+                    // ✅ Client must use the seed that arrived from host (DO NOT fallback)
+                    if (pendingNewGameSeed == null) {
+                        System.err.println("[MP] NEW_GAME executed but no seed received yet!");
+                        return;
+                    }
+                    seedToUse = pendingNewGameSeed;
                 }
 
                 pendingNewGameSeed = null;
 
                 // ✅ Start new game using the SAME seed on both sides
                 executeNewGameNowWithSeed(seedToUse);
+
+                // ✅ re-apply auto-fit after rebuilding boards
+                Platform.runLater(() -> gameView.enableMultiplayerAutoFit(N, M));
                 return;
             }
 
@@ -316,7 +325,6 @@ public class GameController implements GameModelObserver {
             }
         }));
 
-
         session.setOnActionDeclined(type -> Platform.runLater(() -> {
             showMessage("Request Declined", "The other player declined the New Game request.");
         }));
@@ -326,6 +334,7 @@ public class GameController implements GameModelObserver {
             showMessage("Player Left", "Player " + name + " is out now.");
         }));
     }
+
 
     private void disableMultiplayerLocally() {
         multiplayerEnabled = false;
