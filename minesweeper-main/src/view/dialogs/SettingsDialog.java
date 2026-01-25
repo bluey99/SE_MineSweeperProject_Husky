@@ -91,7 +91,7 @@ public class SettingsDialog extends AbstractDialogTemplate {
         ComboBox<MusicTheme> musicSelect = new ComboBox<>();
         musicSelect.getItems().addAll(MusicTheme.values());
         musicSelect.setValue(SoundService.getCurrentTheme());
-        musicSelect.setOnAction(e -> SoundService.setMusicTheme(musicSelect.getValue()));
+        musicSelect.setOnAction(e ->SoundService.setMenuTheme(musicSelect.getValue()));
         musicSelect.disableProperty().bind(musicToggle.selectedProperty().not());
 
         Slider musicSlider = createSlider(SoundService.getMusicVolume());

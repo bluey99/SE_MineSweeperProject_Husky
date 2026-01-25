@@ -37,7 +37,7 @@ public class Main extends Application {
         primaryStage.setTitle("Cooperative Minesweeper");
 
         // start background music on app launch
-        SoundService.playGameBackgroundMusic();
+        SoundService.playMenuMusic();
         // preload UI hover/click sounds
         SoundService.initUiSounds();
       
@@ -55,6 +55,7 @@ public class Main extends Application {
 
     /** Static wrapper: other classes call this to return to the main menu. */
     public static void showMainMenu(Stage stage) {
+    	 SoundService.playMenuMusic();
         if (instance != null) {
             instance.showMainMenuInstance(stage);
         }
@@ -111,7 +112,8 @@ public class Main extends Application {
     }
 
     private void showMainMenuInstance(Stage stage) {
-
+    	
+    	SoundService.playMenuMusic();
         // ✅ RESET stage state from the game
         stage.setFullScreen(false);
         stage.setMaximized(false);
@@ -201,6 +203,8 @@ public class Main extends Application {
      */
 
     public void startGameFromSetup(String p1, String p2, String difficulty) {
+
+    	SoundService.playGameMusicForDifficulty(difficulty);
 
         // ✅ RESET stage state from menu
         primaryStage.setFullScreen(false);

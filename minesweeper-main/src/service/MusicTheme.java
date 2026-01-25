@@ -1,8 +1,8 @@
-// service/MusicTheme.java
 package service;
 
 public enum MusicTheme {
 
+    // ===== UI / MENU THEMES =====
     NEON_AMBIENT(
             "Neon Ambient (Default)",
             "/sounds/music/aboard-a-aurora-game-menu-pulse-203549.mp3"
@@ -26,6 +26,22 @@ public enum MusicTheme {
     FANTASY_CHOIR(
             "Fantasy Choir",
             "/sounds/music/fairy-chant-elven-song-epic-music-amp-vocals-1229.mp3"
+    ),
+
+    // ===== GAME THEMES (NEW) =====
+    GAME_EASY_UNDERSEA(
+            "Game – Undersea",
+            "/sounds/music/chilling-waves-ambient-chill-out-music-for-relaxation-13880.mp3"
+    ),
+
+    GAME_MEDIUM_JUNGLE(
+            "Game – Jungle",
+            "/sounds/music/jungle-ish-beat-for-video-games-314073.mp3"
+    ),
+
+    GAME_HARD_VOLCANO(
+            "Game – Volcano",
+            "/sounds/music/lava-150307.mp3"
     );
 
     private final String displayName;
@@ -42,6 +58,6 @@ public enum MusicTheme {
 
     @Override
     public String toString() {
-        return displayName; // 👈 ComboBox shows this
+        return displayName;
     }
 }

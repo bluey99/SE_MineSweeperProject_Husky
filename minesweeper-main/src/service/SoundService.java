@@ -10,9 +10,19 @@ import javafx.scene.media.MediaPlayer;
 
 public class SoundService {
 
-    // 🎵 MUSIC (MediaPlayer)
-    private static MediaPlayer backgroundMusic;
-    private static MusicTheme currentTheme = MusicTheme.NEON_AMBIENT;
+	// 🎵 Single background music player
+	private static MediaPlayer backgroundMusic;
+
+	// 🎛 User-selected menu theme (persists across games)
+	private static MusicTheme menuTheme = MusicTheme.NEON_AMBIENT;
+
+	// 🎶 What is ACTUALLY playing right now
+	private static MusicTheme activeTheme = null;
+
+	// 📍 Where we currently are in the app
+	private enum Mode { MENU, GAME }
+	private static Mode currentMode = Mode.MENU;
+
 
 
 
@@ -53,52 +63,66 @@ public class SoundService {
     /* =========================================================
        BACKGROUND MUSIC (MediaPlayer)
        ========================================================= */
+   
 
-    public static void playGameBackgroundMusic() {
-        if (!musicEnabled) return;
+    
+    /**
+     * Returns the theme that is currently playing.
+     */
+    public static MusicTheme getCurrentTheme() {
+        return activeTheme;
+    }
 
-        if (backgroundMusic == null) {
-            loadAndPlayTheme(currentTheme);
-        } else {
-            backgroundMusic.play();
+    /**
+     * Called when user selects a menu music theme.
+     * Applies immediately ONLY if we are in menu.
+     */
+    public static void setMenuTheme(MusicTheme theme) {
+        if (theme == null) return;
+
+        menuTheme = theme;
+
+        // Only change music now if we're currently in the menu
+        if (currentMode == Mode.MENU) {
+            playTheme(menuTheme);
         }
     }
-    
-    public static MusicTheme getCurrentTheme() {
-        return currentTheme;
-    }
+
 
     
-    public static void setMusicTheme(MusicTheme theme) {
-        if (theme == null || theme == currentTheme) return;
+    /**
+     * Plays a theme if it is not already playing.
+     * Handles stopping, disposing, and reloading safely.
+     */
+    private static void playTheme(MusicTheme theme) {
+        if (!musicEnabled || theme == null) return;
 
-        currentTheme = theme;
+        // Avoid restarting the same track
+        if (theme == activeTheme && backgroundMusic != null) return;
 
+        activeTheme = theme;
+
+        // Stop previous music cleanly
         if (backgroundMusic != null) {
             backgroundMusic.stop();
             backgroundMusic.dispose();
             backgroundMusic = null;
         }
 
-        if (musicEnabled) {
-            playGameBackgroundMusic();
+        var url = SoundService.class.getResource(theme.getResourcePath());
+        if (url == null) {
+            System.err.println("❌ MUSIC NOT FOUND: " + theme.getResourcePath());
+            return;
         }
-    }
 
-    
-    private static void loadAndPlayTheme(MusicTheme theme) {
-        Media media = new Media(
-            SoundService.class
-                .getResource(theme.getResourcePath())
-                .toExternalForm()
-        );
-
+        Media media = new Media(url.toExternalForm());
         backgroundMusic = new MediaPlayer(media);
         backgroundMusic.setCycleCount(MediaPlayer.INDEFINITE);
         backgroundMusic.setVolume(clamp01(musicVolume));
         backgroundMusic.play();
     }
-   
+
+
     public static void setMusicEnabled(boolean enabled) {
         musicEnabled = enabled;
 
@@ -126,6 +150,40 @@ public class SoundService {
     public static double getMusicVolume() {
         return musicVolume;
     }
+    
+ // =========================================================
+ // INTENT-BASED MUSIC CONTROL
+ // =========================================================
+
+    /**
+     * Call when entering the main menu.
+     * Restores the user's chosen menu theme.
+     */
+    public static void playMenuMusic() {
+        currentMode = Mode.MENU;
+        playTheme(menuTheme);
+    }
+
+
+
+    /**
+     * Call once when the game starts.
+     * Overrides menu music with difficulty-based theme.
+     */
+    public static void playGameMusicForDifficulty(String difficulty) {
+        currentMode = Mode.GAME;
+
+        if (difficulty == null) return;
+
+        switch (difficulty) {
+            case "Easy"   -> playTheme(MusicTheme.GAME_EASY_UNDERSEA);
+            case "Medium" -> playTheme(MusicTheme.GAME_MEDIUM_JUNGLE);
+            case "Hard"   -> playTheme(MusicTheme.GAME_HARD_VOLCANO);
+            default       -> playTheme(menuTheme);
+        }
+    }
+
+
 
     /* =========================================================
        SFX
