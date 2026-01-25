@@ -6,6 +6,7 @@ import controller.SetupController;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
@@ -30,6 +31,7 @@ import javafx.scene.paint.RadialGradient;
 import javafx.scene.paint.Stop;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.Stage;
 
 
 public class SetupView extends BorderPane {
@@ -401,12 +403,83 @@ public class SetupView extends BorderPane {
         String p1 = player1Field.getText() == null ? "" : player1Field.getText().trim();
         String p2 = player2Field.getText() == null ? "" : player2Field.getText().trim();
 
+        // ✅ defaults for empty fields
         if (p1.isEmpty()) p1 = "Player 1";
         if (p2.isEmpty()) p2 = "Player 2";
+
+        // ❌ block SAME names only
+        String error = controller.validateSameNames(p1, p2);
+        if (error != null) {
+            showNameErrorPopup(error);
+            return;
+        }
 
         String diff = easyBtn.isSelected() ? "Easy" :
                 mediumBtn.isSelected() ? "Medium" : "Hard";
 
         mainApp.startGameFromSetup(p1, p2, diff);
     }
+    
+    private void showNameErrorPopup(String message) {
+        Stage dialog = new Stage();
+        dialog.initOwner(getScene().getWindow());
+        dialog.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+        dialog.initStyle(javafx.stage.StageStyle.TRANSPARENT);
+
+        // Root container
+        VBox root = new VBox(14);
+        root.setAlignment(Pos.CENTER);
+        root.setPadding(new Insets(22));
+        root.setMaxWidth(380);
+
+        root.setBackground(new Background(new BackgroundFill(
+                Color.web("rgba(15,23,42,0.96)"),
+                new CornerRadii(18),
+                Insets.EMPTY
+        )));
+
+        root.setBorder(new Border(new BorderStroke(
+                Color.web("#22C55E", 0.55),
+                BorderStrokeStyle.SOLID,
+                new CornerRadii(18),
+                new BorderWidths(1.6)
+        )));
+
+        root.setEffect(new DropShadow(28, Color.rgb(0, 0, 0, 0.6)));
+
+        // Title
+        Label title = new Label("Invalid Player Names");
+        title.setFont(Font.font("Arial", FontWeight.EXTRA_BOLD, 16));
+        title.setTextFill(Color.web("#ECFDF5"));
+
+        // Message
+        Label msg = new Label(message);
+        msg.setFont(Font.font("Arial", 13));
+        msg.setTextFill(Color.web("#9CA3AF"));
+        msg.setWrapText(true);
+        msg.setAlignment(Pos.CENTER);
+
+        // OK button
+        Button okBtn = new Button("OK");
+        okBtn.setPrefWidth(120);
+        okBtn.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        okBtn.setStyle("""
+            -fx-background-color: linear-gradient(to right, #22C55E, #16A34A);
+            -fx-text-fill: #ECFDF5;
+            -fx-background-radius: 999;
+            -fx-cursor: hand;
+        """);
+
+        okBtn.setOnAction(e -> dialog.close());
+
+        root.getChildren().addAll(title, msg, okBtn);
+
+        Scene scene = new Scene(root);
+        scene.setFill(Color.TRANSPARENT);
+
+        dialog.setScene(scene);
+        dialog.showAndWait();
+    }
+
+
 }
