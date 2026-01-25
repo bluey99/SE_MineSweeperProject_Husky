@@ -598,6 +598,9 @@ public class GameController implements GameModelObserver {
     }
 
     private void applyQuestionReward(boolean correct, String qDiff) {
+    	
+    	 if (correct) gameView.onQuestionCorrect();
+    	    else         gameView.onQuestionWrong();
 
         SpecialCellResult res = specialCellService.processQuestion(
                 difficulty, qDiff, correct,

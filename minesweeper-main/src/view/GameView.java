@@ -138,6 +138,15 @@ public class GameView extends BorderPane {
         setMascotSad();
         restartMascotTimer();
     }
+    
+    public void onQuestionCorrect() {
+        reactHappy();
+    }
+
+    public void onQuestionWrong() {
+        reactSad();
+    }
+
 
     private void restartMascotTimer() {
         if (mascotTimer != null) mascotTimer.stop();
