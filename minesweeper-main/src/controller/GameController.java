@@ -227,6 +227,72 @@ public class GameController implements GameModelObserver {
         session.setOnGameSettings(payload -> Platform.runLater(() -> {
             pendingNewGameSeed = payload.seed;
             this.difficulty = payload.difficulty; // keep both sides same difficulty
+            int baseCellSize;
+            switch (difficulty) {
+            case "Easy":
+                N = M = 9;
+                mineCount = 10;
+                sharedLives = 10;
+                baseCellSize = 36;
+                break;
+
+            case "Medium":
+                N = M = 13;
+                mineCount = 26;
+                sharedLives = 8;
+                baseCellSize = 28;
+                break;
+
+            case "Hard":
+            default:
+                N = M = 16;
+                mineCount = 44;
+                sharedLives = 6;
+                baseCellSize = 26;
+                break;
+        }
+            this.seed = pendingNewGameSeed;
+            this.rng = new Random(this.seed);
+            this.specialCellService = new SpecialCellService(this.rng);
+
+            Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
+            double screenHeight = bounds.getHeight();
+            double screenWidth = bounds.getWidth();
+
+            double boardHeightBudget = screenHeight - 360;
+            if (boardHeightBudget < 220) {
+                boardHeightBudget = 220;
+            }
+
+        int maxByHeight = (int) Math.floor(boardHeightBudget / N);
+
+        double centerAreaWidth = 340;
+        double perBoardWidthBudget = (screenWidth - centerAreaWidth) / 2.0;
+        if (perBoardWidthBudget < 180) {
+            perBoardWidthBudget = 180;
+        }
+        int maxByWidth = (int) Math.floor(perBoardWidthBudget / M);
+
+        int maxAllowed = Math.min(maxByHeight, maxByWidth);
+        int cellSize = Math.min(baseCellSize, maxAllowed);
+
+        if (cellSize > 20) {
+            cellSize -= 2;
+        }
+        cellSize = Math.max(cellSize, 18);
+
+        CellController.setCellSide(cellSize);
+
+        gameModel = new GameModel(this, mineCount, sharedLives, rng);
+        gameModel.addObserver(this);
+
+        gameView = new GameView(this);
+
+        mpDispatcher = new MultiplayerDispatcher(this, MultiplayerDispatcher.Role.OFFLINE, null);
+
+        init();
+        setupEventHandlers();
+        startTimer();
         }));
 
 
