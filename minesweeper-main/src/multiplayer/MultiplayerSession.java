@@ -1,11 +1,23 @@
 package multiplayer;
 
+import java.util.Objects;
 import java.util.function.Consumer;
 
+/**
+ * MultiplayerSession:
+ * - Wraps NetworkSession and routes MpMessages to callbacks.
+ * - Keeps approval flow state.
+ * - Adds an optional "beforeApplyGameSettings" hook (use it on CLIENT to reset Stage constraints
+ *   BEFORE rebuilding the game view, fixing bad sizing after restarting/new game).
+ */
 public class MultiplayerSession {
 
     private final NetworkSession network;
 
+    // ✅ Hook: run before applying GAME_SETTINGS (use on CLIENT to reset Stage constraints)
+    private Runnable beforeApplyGameSettings;
+
+    // Core callbacks
     private Consumer<GameAction> onActionReceived;
 
     // Game over
@@ -19,10 +31,10 @@ public class MultiplayerSession {
     // Player-left notification
     private Consumer<String> onPlayerLeft;
 
-    // ✅ Question result sync (popup only local; remote receives result)
+    // Question result sync (popup only local; remote receives result)
     private Consumer<QuestionResultPayload> onQuestionResult;
 
-    // ✅ FIX: use EXISTING GameSettings (do NOT use GameSettingsPayload)
+    // Game settings sync (difficulty/seed + optional UI sizing)
     private Consumer<GameSettings> onGameSettings;
 
     private boolean isHost = false;
@@ -31,8 +43,10 @@ public class MultiplayerSession {
     private MenuAction pendingHostOutgoingRequest = null;
 
     public MultiplayerSession(NetworkSession network) {
-        this.network = network;
+        this.network = Objects.requireNonNull(network, "network");
     }
+
+    // ------------------ Role ------------------
 
     public void setRole(boolean isHost) {
         this.isHost = isHost;
@@ -40,6 +54,16 @@ public class MultiplayerSession {
 
     public boolean isHost() {
         return isHost;
+    }
+
+    // ------------------ Hooks / Handlers ------------------
+
+    /**
+     * Called right before firing onGameSettings when a GAME_SETTINGS message arrives.
+     * Use this on the CLIENT to reset Stage min/max constraints BEFORE rebuilding the UI.
+     */
+    public void setBeforeApplyGameSettings(Runnable r) {
+        this.beforeApplyGameSettings = r;
     }
 
     public void setOnActionReceived(Consumer<GameAction> handler) {
@@ -70,10 +94,11 @@ public class MultiplayerSession {
         this.onQuestionResult = h;
     }
 
-    // ✅ FIX: handler uses GameSettings
     public void setOnGameSettings(Consumer<GameSettings> h) {
         this.onGameSettings = h;
     }
+
+    // ------------------ Sending ------------------
 
     public void sendMessage(MpMessage msg) {
         try {
@@ -83,142 +108,149 @@ public class MultiplayerSession {
         }
     }
 
-    // ✅ Notify other side & close
     public void notifyPlayerLeft(String name) {
         sendMessage(new MpMessage(MpMessageType.PLAYER_LEFT, name));
     }
 
-    // ✅ send question result to other side (no popup on remote)
     public void sendQuestionResult(QuestionResultPayload payload) {
         sendMessage(new MpMessage(MpMessageType.QUESTION_RESULT, payload));
     }
 
-    // ✅ FIX: send existing GameSettings to other side
     public void sendGameSettings(GameSettings settings) {
         sendMessage(new MpMessage(MpMessageType.GAME_SETTINGS, settings));
     }
 
-    // ✅ Step 3: request shared action (we will use only NEW_GAME)
+    public void send(GameAction action) {
+        sendMessage(new MpMessage(MpMessageType.GAME_ACTION, action));
+    }
+
+    // ------------------ Shared-action approval flow ------------------
+
+    /**
+     * Request a shared menu action (you said you only use this for NEW_GAME).
+     */
     public void requestSharedAction(MenuAction.Type type, String requestedBy) {
         MenuAction action = new MenuAction(type, requestedBy);
 
-        if (isHost) {
-            pendingHostOutgoingRequest = action;
-            sendMessage(new MpMessage(MpMessageType.REQUEST_ACTION, action));
-        } else {
-            // client asks host to coordinate
-            sendMessage(new MpMessage(MpMessageType.REQUEST_ACTION, action));
-        }
+        // host also uses the same message; host keeps state for matching the response
+        if (isHost) pendingHostOutgoingRequest = action;
+
+        sendMessage(new MpMessage(MpMessageType.REQUEST_ACTION, action));
     }
 
-    // Called AFTER user presses Approve/Decline on THIS side
+    /**
+     * Called AFTER user presses Approve/Decline on THIS side for the last REQUEST_ACTION received.
+     */
     public void respondToPendingRequest(boolean approved) {
         if (pendingIncomingRequest == null) return;
 
         MenuAction action = pendingIncomingRequest;
         pendingIncomingRequest = null;
 
-        if (isHost) {
-            // host responding to client's request
-            sendMessage(new MpMessage(MpMessageType.ACTION_RESPONSE, new ActionResponse(approved, action.type)));
+        // Send response first
+        sendMessage(new MpMessage(
+                MpMessageType.ACTION_RESPONSE,
+                new ActionResponse(approved, action.type)
+        ));
 
-            if (approved) {
-                // ✅ IMPORTANT FIX: host executes locally too
-                if (onExecuteAction != null) onExecuteAction.accept(action);
+        if (!isHost) {
+            // client just responds; host will decide what to execute/broadcast
+            return;
+        }
 
-                // and tells client to execute
-                sendMessage(new MpMessage(MpMessageType.EXECUTE_ACTION, action));
-            } else {
-                if (onActionDeclined != null) onActionDeclined.accept(action.type);
-            }
+        // Host responding to client's request:
+        if (approved) {
+            // ✅ host executes locally
+            if (onExecuteAction != null) onExecuteAction.accept(action);
 
+            // and tells client to execute
+            sendMessage(new MpMessage(MpMessageType.EXECUTE_ACTION, action));
         } else {
-            // client responding to host request
-            sendMessage(new MpMessage(MpMessageType.ACTION_RESPONSE, new ActionResponse(approved, action.type)));
+            if (onActionDeclined != null) onActionDeclined.accept(action.type);
         }
     }
+
+    // ------------------ Incoming routing ------------------
 
     public void handleIncoming(MpMessage msg) {
-
         if (msg == null) return;
 
-        if (msg.type == MpMessageType.GAME_ACTION) {
-            GameAction action = (GameAction) msg.payload;
-            if (onActionReceived != null) onActionReceived.accept(action);
-            return;
-        }
+        switch (msg.type) {
 
-        // ✅ FIX: GAME_SETTINGS uses GameSettings (the class your MultiplayerSetupView expects)
-        if (msg.type == MpMessageType.GAME_SETTINGS) {
-            GameSettings settings = (GameSettings) msg.payload;
-            if (onGameSettings != null) onGameSettings.accept(settings);
-            return;
-        }
-
-        if (msg.type == MpMessageType.GAME_OVER) {
-            if (onGameOver != null) onGameOver.accept((GameOverPayload) msg.payload);
-            return;
-        }
-
-        if (msg.type == MpMessageType.PLAYER_LEFT) {
-            String name = (String) msg.payload;
-            if (onPlayerLeft != null) onPlayerLeft.accept(name);
-            return;
-        }
-
-        // ✅ Question result received
-        if (msg.type == MpMessageType.QUESTION_RESULT) {
-            QuestionResultPayload payload = (QuestionResultPayload) msg.payload;
-            if (onQuestionResult != null) onQuestionResult.accept(payload);
-            return;
-        }
-
-        // Approval flow
-        if (msg.type == MpMessageType.REQUEST_ACTION) {
-            MenuAction action = (MenuAction) msg.payload;
-            pendingIncomingRequest = action;
-            if (onActionRequest != null) onActionRequest.accept(action);
-            return;
-        }
-
-        if (msg.type == MpMessageType.ACTION_RESPONSE) {
-            ActionResponse res = (ActionResponse) msg.payload;
-
-            // Host waiting for client response for host-initiated request
-            if (isHost && pendingHostOutgoingRequest != null && pendingHostOutgoingRequest.type == res.type) {
-                MenuAction action = pendingHostOutgoingRequest;
-                pendingHostOutgoingRequest = null;
-
-                if (res.approved) {
-                    // ✅ IMPORTANT FIX: host executes locally too
-                    if (onExecuteAction != null) onExecuteAction.accept(action);
-
-                    // and tells client to execute
-                    sendMessage(new MpMessage(MpMessageType.EXECUTE_ACTION, action));
-                } else {
-                    if (onActionDeclined != null) onActionDeclined.accept(action.type);
-                }
-            } else {
-                // Client can optionally show decline feedback
-                if (!res.approved && onActionDeclined != null) onActionDeclined.accept(res.type);
+            case GAME_ACTION -> {
+                GameAction action = (GameAction) msg.payload;
+                if (onActionReceived != null) onActionReceived.accept(action);
             }
-            return;
-        }
 
-        if (msg.type == MpMessageType.EXECUTE_ACTION) {
-            MenuAction action = (MenuAction) msg.payload;
-            if (onExecuteAction != null) onExecuteAction.accept(action);
-            return;
+            case GAME_SETTINGS -> {
+                GameSettings settings = (GameSettings) msg.payload;
+
+                // ✅ IMPORTANT: run hook BEFORE rebuilding the game UI (client fix)
+                if (beforeApplyGameSettings != null) {
+                    beforeApplyGameSettings.run();
+                }
+
+                if (onGameSettings != null) onGameSettings.accept(settings);
+            }
+
+            case GAME_OVER -> {
+                if (onGameOver != null) onGameOver.accept((GameOverPayload) msg.payload);
+            }
+
+            case PLAYER_LEFT -> {
+                String name = (String) msg.payload;
+                if (onPlayerLeft != null) onPlayerLeft.accept(name);
+            }
+
+            case QUESTION_RESULT -> {
+                QuestionResultPayload payload = (QuestionResultPayload) msg.payload;
+                if (onQuestionResult != null) onQuestionResult.accept(payload);
+            }
+
+            // Approval flow
+            case REQUEST_ACTION -> {
+                MenuAction action = (MenuAction) msg.payload;
+                pendingIncomingRequest = action;
+                if (onActionRequest != null) onActionRequest.accept(action);
+            }
+
+            case ACTION_RESPONSE -> {
+                ActionResponse res = (ActionResponse) msg.payload;
+
+                // Host waiting for client response for host-initiated request
+                if (isHost && pendingHostOutgoingRequest != null
+                        && pendingHostOutgoingRequest.type == res.type) {
+
+                    MenuAction action = pendingHostOutgoingRequest;
+                    pendingHostOutgoingRequest = null;
+
+                    if (res.approved) {
+                        // ✅ host executes locally
+                        if (onExecuteAction != null) onExecuteAction.accept(action);
+
+                        // and tells client to execute
+                        sendMessage(new MpMessage(MpMessageType.EXECUTE_ACTION, action));
+                    } else {
+                        if (onActionDeclined != null) onActionDeclined.accept(action.type);
+                    }
+                } else {
+                    // Client can optionally show decline feedback
+                    if (!res.approved && onActionDeclined != null) onActionDeclined.accept(res.type);
+                }
+            }
+
+            case EXECUTE_ACTION -> {
+                MenuAction action = (MenuAction) msg.payload;
+                if (onExecuteAction != null) onExecuteAction.accept(action);
+            }
+
+            default -> {
+                // ignore
+            }
         }
     }
 
-    public void send(GameAction action) {
-        try {
-            network.send(new MpMessage(MpMessageType.GAME_ACTION, action));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+    // ------------------ Close ------------------
 
     public void close() {
         network.close();
