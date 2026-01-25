@@ -35,6 +35,18 @@ public class SoundService {
 
     private static double musicVolume = 0.25;
     private static double sfxVolume = 0.6;
+    // 🎮 GAME SFX
+    private static AudioClip revealNormalSound;
+    private static AudioClip revealMineSound;
+    private static AudioClip revealSpecialSound;
+
+    private static AudioClip goodSurpriseSound;
+    private static AudioClip badSurpriseSound;
+
+    private static AudioClip correctAnswerSound;
+    private static AudioClip wrongAnswerSound;
+    private static AudioClip flagSound;
+
 
     /* =========================================================
        INIT
@@ -59,6 +71,93 @@ public class SoundService {
 
         applySfxVolume();
     }
+
+    public static void initGameSounds() {
+
+        if (revealNormalSound == null) {
+            revealNormalSound = new AudioClip(
+                SoundService.class.getResource(
+                    "/sounds/sfx/soft-subtle-ui-pop-sfx-348820.mp3"
+                ).toExternalForm()
+            );
+        }
+
+        if (revealMineSound == null) {
+            revealMineSound = new AudioClip(
+                SoundService.class.getResource(
+                    "/sounds/sfx/animated-cartoon-explosion-impact-352744.mp3"
+                ).toExternalForm()
+            );
+        }
+
+        if (revealSpecialSound == null) {
+            revealSpecialSound = new AudioClip(
+                SoundService.class.getResource(
+                    "/sounds/sfx/specialCellReveal.mp3"
+                ).toExternalForm()
+            );
+        }
+
+        if (goodSurpriseSound == null) {
+            goodSurpriseSound = new AudioClip(
+                SoundService.class.getResource(
+                    "/sounds/sfx/goodSurprise.mp3"
+                ).toExternalForm()
+            );
+        }
+
+        if (badSurpriseSound == null) {
+            badSurpriseSound = new AudioClip(
+                SoundService.class.getResource(
+                    "/sounds/sfx/badSurprise.mp3"
+                ).toExternalForm()
+            );
+            badSurpriseSound.play(0.0);
+        }
+
+        if (correctAnswerSound == null) {
+            correctAnswerSound = new AudioClip(
+                SoundService.class.getResource(
+                    "/sounds/sfx/correctAnswer.mp3"
+                ).toExternalForm()
+            );
+        }
+
+        if (wrongAnswerSound == null) {
+            wrongAnswerSound = new AudioClip(
+                SoundService.class.getResource(
+                    "/sounds/sfx/wrongAnswer.mp3"
+                ).toExternalForm()
+            );
+        }
+        if (flagSound == null) {
+            flagSound = new AudioClip(
+                SoundService.class.getResource(
+                    "/sounds/sfx/flagSfx.mp3"
+                ).toExternalForm()
+            );
+        }
+
+
+        applyGameSfxVolume();
+    }
+    private static void applyGameSfxVolume() {
+        double v = sfxVolume;
+
+        if (revealNormalSound != null) revealNormalSound.setVolume(v * 0.9);
+        if (revealSpecialSound != null) revealSpecialSound.setVolume(v);
+        if (revealMineSound != null) revealMineSound.setVolume(v * 1.2);
+
+        if (goodSurpriseSound != null) goodSurpriseSound.setVolume(v);
+        if (badSurpriseSound != null) badSurpriseSound.setVolume(v);
+
+        if (correctAnswerSound != null) correctAnswerSound.setVolume(v);
+        if (wrongAnswerSound != null) wrongAnswerSound.setVolume(1.0);
+        if (flagSound != null) flagSound.setVolume(sfxVolume * 0.75);
+
+
+    }
+
 
     /* =========================================================
        BACKGROUND MUSIC (MediaPlayer)
@@ -182,6 +281,38 @@ public class SoundService {
             default       -> playTheme(menuTheme);
         }
     }
+    
+    public static void playRevealNormal() {
+        if (sfxEnabled && revealNormalSound != null) revealNormalSound.play();
+    }
+
+    public static void playRevealMine() {
+        if (sfxEnabled && revealMineSound != null) revealMineSound.play();
+    }
+
+    public static void playRevealSpecial() {
+        if (sfxEnabled && revealSpecialSound != null) revealSpecialSound.play();
+    }
+
+    public static void playGoodSurprise() {
+        if (sfxEnabled && goodSurpriseSound != null) goodSurpriseSound.play();
+    }
+
+    public static void playBadSurprise() {
+        if (sfxEnabled && badSurpriseSound != null) badSurpriseSound.play();
+    }
+
+    public static void playCorrectAnswer() {
+        if (sfxEnabled && correctAnswerSound != null) correctAnswerSound.play();
+    }
+
+    public static void playWrongAnswer() {
+        if (sfxEnabled && wrongAnswerSound != null) wrongAnswerSound.play();
+    }
+    public static void playFlagPlaced() {
+        if (sfxEnabled && flagSound != null) flagSound.play(); 
+    }
+
 
 
 
@@ -204,6 +335,8 @@ public class SoundService {
     public static void setSfxVolume(double volume01) {
         sfxVolume = clamp01(volume01);
         applySfxVolume();
+        applyGameSfxVolume();
+
     }
 
     private static void applySfxVolume() {

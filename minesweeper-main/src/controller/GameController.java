@@ -48,6 +48,7 @@ import multiplayer.MultiplayerSession;
 import view.GameView;
 
 import service.RevealService;
+import service.SoundService;
 import service.SpecialAction;
 import service.SpecialCellResult;
 import service.SpecialCellService;
@@ -277,6 +278,8 @@ public class GameController implements GameModelObserver {
     }
 
     public void init() {
+    	
+    	SoundService.initGameSounds(); 
         gameActive = true;
         endGameTriggered = false;
         endGameDialogShown = false;
@@ -533,6 +536,14 @@ public class GameController implements GameModelObserver {
                 gameModel.getSharedScore(),
                 gameModel.getSharedLives()
         );
+        
+        //  surprise activation SFX
+        if (res.newScore > gameModel.getSharedScore()
+            || res.newLives > gameModel.getSharedLives()) {
+            SoundService.playGoodSurprise();
+        } else {
+            SoundService.playBadSurprise();
+        }
 
         if (!res.allowed) {
             showMessage(res.title, res.message);
@@ -573,6 +584,13 @@ public class GameController implements GameModelObserver {
 
         if (result.isPresent()) {
             boolean correct = result.get();
+            // question result SFX
+            if (correct) {
+                SoundService.playCorrectAnswer();
+            } else {
+                SoundService.playWrongAnswer();
+            }
+
 
             applyQuestionReward(correct, qDiffLabel);
 

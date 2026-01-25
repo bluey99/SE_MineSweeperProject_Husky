@@ -5,6 +5,7 @@ import model.Cell;
 import model.GameModel;
 import service.RevealResult;
 import service.RevealService;
+import service.SoundService;
 
 public class BoardController {
 
@@ -159,6 +160,15 @@ public class BoardController {
         if (cell.isOpen() || cell.isFlag()) return;
 
         RevealResult revealResult = revealService.revealCell(logicalBoard, gameModel, row, col, true);
+        // reveal SFX
+        if (cell.isMine()) {
+            SoundService.playRevealMine();
+        } else if (cell.isSpecial()) {
+            SoundService.playRevealSpecial();
+        } else {
+            SoundService.playRevealNormal();
+        }
+
 
         for (RevealResult.CellPos p : revealResult.getOpenedCells()) {
             uiBoard[p.row][p.col].init();
@@ -208,6 +218,12 @@ public class BoardController {
         boolean wasFlagged = cell.isFlag();
         cell.toggleFlag();
         boolean isFlagged = cell.isFlag();
+        
+        // flag placed SFX
+        if (!wasFlagged && isFlagged) {
+            SoundService.playFlagPlaced();
+        }
+
 
         if (!wasFlagged && isFlagged) {
             if (cell.isMine()) correctFlagCount++;
