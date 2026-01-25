@@ -2,6 +2,8 @@
 package controller;
 
 import javafx.application.Application;
+import controller.StatisticsController;
+
 import service.SoundService;
 import view.Theme;
 
@@ -92,6 +94,14 @@ public class Main extends Application {
             instance.showHistoryInstance(stage);
         }
     }
+    
+    /** ✅ NEW: go to Statistics screen from anywhere (TopBar button uses it). */
+    public static void showStatistics(Stage stage) {
+        if (instance != null) {
+            instance.showStatisticsInstance(stage);
+        }
+    }
+
 
     /** ✅ NEW: go to Question Management from anywhere (Menu button uses it). */
     public static void showQuestionManagement(Stage stage) {
@@ -188,6 +198,23 @@ public class Main extends Application {
 
         applyFixedWindowSize(stage, width, height);
     }
+    
+    private void showStatisticsInstance(Stage stage) {
+        double[] size = getClampedMenuSize();
+        double width = size[0];
+        double height = size[1];
+
+        StatisticsController sc = new StatisticsController(stage);
+        Scene statsScene = sc.createScene(width, height);
+        statsScene.setFill(Color.BLACK);
+
+        SoundService.applyUiSoundsWhenReady(statsScene.getRoot());
+        stage.setScene(statsScene);
+        stage.sizeToScene();
+
+        applyFixedWindowSize(stage, width, height);
+    }
+
 
     private void showQuestionManagementInstance(Stage stage) {
         double[] size = getClampedMenuSize();

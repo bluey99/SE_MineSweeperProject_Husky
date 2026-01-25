@@ -1,7 +1,9 @@
 dateTime,difficulty,player1Name,player2Name,result,finalScore,gameLengthSeconds
 2025-12-20T14:35:04.634127,Medium,Player 1,Player 2,WIN,15,64
-2025-12-20T18:45:15.322677,Easy,test 1,test 2,WIN,64,257
 2025-12-20T19:15:30.7400186,Hard,test2,test3,LOSE,1,44
 2025-12-20T19:16:12.4943172,Hard,test2,test3,LOSE,-94,36
 2026-01-10T23:45:11.6894709,Medium,testFactory,testFactory2,LOSE,169,144
 2026-01-25T15:36:33.9904118,Easy,Player 1,Player 2,WIN,175,89
+2026-01-25T19:16:11.3270755,Easy,Player 1,Player 2,WIN,155,103
+2026-01-25T19:33:20.7233636,Easy,Salim,Mona,WIN,165,97
+2026-01-25T19:36:00.983589,Easy,Salim,Mona,WIN,133,76

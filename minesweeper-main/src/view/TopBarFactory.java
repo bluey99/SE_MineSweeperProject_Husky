@@ -1,5 +1,6 @@
 package view;
 
+import controller.Main;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -8,25 +9,31 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import view.dialogs.SettingsDialog;
 import view.dialogs.HelpDialog;
-
+import view.dialogs.SettingsDialog;
 
 public class TopBarFactory {
 
     public static HBox createTopBar() {
-    	Button helpBtn = new Button("?");
-    	styleSettingsButton(helpBtn);
-    	helpBtn.setOnAction(e -> new HelpDialog().show());
 
-    	Button settingsBtn = new Button("⚙");
-    	styleSettingsButton(settingsBtn);
-    	settingsBtn.setOnAction(e -> new SettingsDialog().show());
+        Button helpBtn = new Button("?");
+        styleSettingsButton(helpBtn);
+        helpBtn.setOnAction(e -> new HelpDialog().show());
 
-    	Region spacer = new Region();
-    	HBox.setHgrow(spacer, Priority.ALWAYS);
+        // ✅ NEW: Statistics button (histogram icon)
+        Button statsBtn = new Button("📊");
+        styleSettingsButton(statsBtn);
+        statsBtn.setOnAction(e -> Main.showStatistics(Main.getPrimaryStage()));
 
-    	HBox bar = new HBox(10, spacer, helpBtn, settingsBtn);
+        Button settingsBtn = new Button("⚙");
+        styleSettingsButton(settingsBtn);
+        settingsBtn.setOnAction(e -> new SettingsDialog().show());
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        // ✅ Order: Help, Statistics, Settings
+        HBox bar = new HBox(10, spacer, helpBtn, statsBtn, settingsBtn);
 
         bar.setAlignment(Pos.CENTER_LEFT);
         bar.setPadding(new Insets(18, 24, 18, 24));
