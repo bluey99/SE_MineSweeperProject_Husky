@@ -202,12 +202,10 @@ public class GameController implements GameModelObserver {
         Platform.runLater(this::updateUI);
     }
 
-    // ✅ Attach multiplayer session once game starts (host or client)
     public void attachMultiplayer(MultiplayerSession session) {
         this.multiplayerSession = session;
         this.multiplayerEnabled = true;
         this.localPlayerNum = session.isHost() ? 1 : 2;
-
 
         session.setOnActionReceived(action -> Platform.runLater(() -> applyRemoteAction(action)));
 
@@ -216,7 +214,6 @@ public class GameController implements GameModelObserver {
 
         // ✅ ONLY New Game uses approval now
         session.setOnActionRequest(action -> Platform.runLater(() -> {
-            // We only support approval for NEW_GAME
             if (action.type != MenuAction.Type.NEW_GAME) {
                 session.respondToPendingRequest(false);
                 return;
@@ -230,9 +227,16 @@ public class GameController implements GameModelObserver {
             session.respondToPendingRequest(ok);
         }));
 
+        // ✅ Execute actions coming from host (we support NEW_GAME + RETURN_MENU)
         session.setOnExecuteAction(action -> Platform.runLater(() -> {
             if (action.type == MenuAction.Type.NEW_GAME) {
                 executeNewGameNow();
+            } else if (action.type == MenuAction.Type.RETURN_MENU) {
+                // Close session locally and go menu
+                disableMultiplayerLocally();
+
+                if (gameTimer != null) gameTimer.cancel();
+                Main.showMainMenu(primaryStage);
             }
         }));
 
@@ -240,12 +244,14 @@ public class GameController implements GameModelObserver {
             showMessage("Request Declined", "The other player declined the New Game request.");
         }));
 
-        // ✅ when other leaves -> show message and disable multiplayer locally
+        // ✅ Show message when other leaves (but DON'T force close here - menu will arrive via EXECUTE_ACTION)
         session.setOnPlayerLeft(name -> Platform.runLater(() -> {
-            showMessage("Player Left", "Player " + name + " is out now.\nMultiplayer session ended.");
-            disableMultiplayerLocally();
+            showMessage("Player Left", "Player " + name + " is out now.");
+            // Do NOT disable here; we'll disable on EXECUTE_ACTION RETURN_MENU
+            // This avoids race conditions.
         }));
     }
+
 
     private void disableMultiplayerLocally() {
         multiplayerEnabled = false;
@@ -357,31 +363,32 @@ public class GameController implements GameModelObserver {
             executeNewGameNow();
         });
 
-        // ✅ Exit -> NO approval (leave immediately)
+        // ✅ Exit -> confirm first, then notify and exit
         gameView.exitBtn.addEventHandler(MouseEvent.MOUSE_CLICKED, e -> {
-
-            if (multiplayerEnabled && multiplayerSession != null) {
-                // notify other side and close session
-                String me = multiplayerSession.isHost() ? player1Name : player2Name;
-                try { multiplayerSession.notifyPlayerLeft(me); } catch (Exception ignored) {}
-                disableMultiplayerLocally();
-            }
 
             boolean ok = showConfirmation("Exit Game", "Are you sure you want to exit the game?", "Exit");
             if (!ok) return;
 
+            // Only AFTER confirm:
+            if (multiplayerEnabled && multiplayerSession != null) {
+                String me = multiplayerSession.isHost() ? player1Name : player2Name;
+
+                try { multiplayerSession.notifyPlayerLeft(me); } catch (Exception ignored) {}
+
+                // Force both to menu first (optional, but keeps both in sync)
+                multiplayerSession.sendMessage(new MpMessage(
+                        MpMessageType.EXECUTE_ACTION,
+                        new MenuAction(MenuAction.Type.RETURN_MENU, me)
+                ));
+            }
+
+            // Exit this PC
             Platform.exit();
             System.exit(0);
         });
 
-        // ✅ Return menu -> NO approval (leave immediately)
+        // ✅ Return to Menu -> confirm first, then notify + force BOTH to menu
         gameView.backToMenuBtn.setOnAction(e -> {
-
-            if (multiplayerEnabled && multiplayerSession != null) {
-                String me = multiplayerSession.isHost() ? player1Name : player2Name;
-                try { multiplayerSession.notifyPlayerLeft(me); } catch (Exception ignored) {}
-                disableMultiplayerLocally();
-            }
 
             boolean ok = showConfirmation("Return to Menu",
                     "Return to the main menu?\nCurrent game progress will be lost.",
@@ -389,10 +396,29 @@ public class GameController implements GameModelObserver {
 
             if (!ok) return;
 
+            // Only AFTER confirm:
+            if (multiplayerEnabled && multiplayerSession != null) {
+                String me = multiplayerSession.isHost() ? player1Name : player2Name;
+
+                // 1) show message on other side
+                try { multiplayerSession.notifyPlayerLeft(me); } catch (Exception ignored) {}
+
+                // 2) force BOTH to menu (including me)
+                multiplayerSession.sendMessage(new MpMessage(
+                        MpMessageType.EXECUTE_ACTION,
+                        new MenuAction(MenuAction.Type.RETURN_MENU, me)
+                ));
+
+                // return; local will be handled by EXECUTE_ACTION handler
+                return;
+            }
+
+            // Offline normal behavior
             if (gameTimer != null) gameTimer.cancel();
             Main.showMainMenu(primaryStage);
         });
     }
+
 
     private void executeNewGameNow() {
         if (gameTimer != null) gameTimer.cancel();
@@ -1099,18 +1125,27 @@ public class GameController implements GameModelObserver {
                     -fx-background-radius: 16;
                 """);
 
-        // ✅ Return to menu -> NO approval, leave immediately & notify other
+     // ✅ Return to menu -> NO approval, but force BOTH to menu + notify other
         menuBtn.setOnAction(e -> {
             dialog.close();
 
             if (multiplayerEnabled && multiplayerSession != null) {
                 String me = multiplayerSession.isHost() ? player1Name : player2Name;
+
                 try { multiplayerSession.notifyPlayerLeft(me); } catch (Exception ignored) {}
-                disableMultiplayerLocally();
+
+                multiplayerSession.sendMessage(new MpMessage(
+                        MpMessageType.EXECUTE_ACTION,
+                        new MenuAction(MenuAction.Type.RETURN_MENU, me)
+                ));
+
+                // local handled by EXECUTE_ACTION handler
+                return;
             }
 
             Main.showMainMenu(primaryStage);
         });
+
 
         HBox buttons = new HBox(14, newGameBtn, menuBtn);
         buttons.setAlignment(Pos.CENTER_RIGHT);
@@ -1138,4 +1173,9 @@ public class GameController implements GameModelObserver {
     public String getDifficulty() {
         return difficulty;
     }
+    private void returnToMenuNow() {
+        if (gameTimer != null) gameTimer.cancel();
+        Main.showMainMenu(primaryStage);
+    }
+
 }

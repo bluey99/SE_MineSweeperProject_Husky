@@ -290,7 +290,7 @@ public class MultiplayerSetupView extends BorderPane {
             // force repaint so the blue row stays stable visually
             hostsList.refresh();
         });
-     // Extra safety: force repaint when index changes (prevents visual flicker)
+        // Extra safety: force repaint when index changes (prevents visual flicker)
         hostsList.getSelectionModel().selectedIndexProperty().addListener((obs, o, n) -> {
             hostsList.refresh();
         });
