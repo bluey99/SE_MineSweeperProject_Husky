@@ -205,6 +205,10 @@ public class GameController implements GameModelObserver {
 
         gameView = new GameView(this);
 
+        // ✅ FIX: prevent window from shrinking and hiding a board
+        primaryStage.setMinWidth(1200);
+        primaryStage.setMinHeight(700);
+
         mpDispatcher = new MultiplayerDispatcher(this, MultiplayerDispatcher.Role.OFFLINE, null);
 
         init();
@@ -222,10 +226,27 @@ public class GameController implements GameModelObserver {
         this.multiplayerEnabled = true;
         this.localPlayerNum = session.isHost() ? 1 : 2;
         
+     // ✅ Receive seed + difficulty + names from host
         session.setOnGameSettings(settings -> Platform.runLater(() -> {
+
+            // seed for next NEW_GAME
             pendingNewGameSeed = settings.seed;
+
+            // difficulty must be identical on both sides
             this.difficulty = settings.difficulty;
+
+            // ✅ FIX: restore player names on receiver
+            if (settings.hostName != null && !settings.hostName.isBlank()) {
+                this.player1Name = settings.hostName;
+            }
+
+            if (settings.joinName != null && !settings.joinName.isBlank()) {
+                this.player2Name = settings.joinName;
+            }
+
+            updateUI(); // refresh labels immediately
         }));
+
 
 
 
@@ -269,13 +290,8 @@ public class GameController implements GameModelObserver {
 
                     // send seed + difficulty to client BEFORE starting
                     try {
-                        multiplayerSession.sendGameSettings(
-                            new multiplayer.GameSettings(
-                                "",              // hostName (not needed for new game)
-                                "",              // joinName (not needed for new game)
-                                difficulty,      // difficulty
-                                seedToUse        // shared seed
-                            )
+                    	multiplayerSession.sendGameSettings(
+                    	        new multiplayer.GameSettings(player1Name, player2Name, difficulty, seedToUse)
                         );
                     } catch (Exception ignored) {}
 
