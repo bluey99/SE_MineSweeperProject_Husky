@@ -3,7 +3,8 @@ package view;
 import controller.GameController;
 import javafx.scene.image.PixelWriter;
 import javafx.scene.image.WritableImage;
-
+import view.dialogs.SettingsDialog;
+import view.dialogs.HelpDialog;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -14,7 +15,9 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-
+import javafx.scene.image.ImageView;
+import javafx.animation.PauseTransition;
+import javafx.util.Duration;
 /**
  * Game screen UI containing:
  * - Player 1 Board
@@ -30,6 +33,9 @@ public class GameView extends BorderPane {
     private final VBox topSection = new VBox();
     private final HBox centerSection = new HBox();
     private final VBox bottomSection = new VBox();
+    //top bar for in-game settings/help
+    private final HBox topBar = new HBox();
+
 
     public final VBox sharedInfoPanel = new VBox();
     public final Label sharedScoreLabel = new Label("0");
@@ -55,6 +61,14 @@ public class GameView extends BorderPane {
     // containers so we can theme them too
     private final StackPane boardContainer1 = new StackPane();
     private final StackPane boardContainer2 = new StackPane();
+    
+    private Theme currentTheme;
+
+    private final javafx.scene.image.ImageView mascotView = new javafx.scene.image.ImageView();
+    private javafx.animation.PauseTransition mascotTimer;
+
+    private int lastScore = 0;
+    private int lastLives = 0; 
 
     public GameView(GameController controller) {
 
@@ -63,7 +77,13 @@ public class GameView extends BorderPane {
 
         setupLayout();
         setupTopSection();
+        setupTopBar();
         setupSharedPanel();
+        mascotView.setFitWidth(120);
+        mascotView.setPreserveRatio(true);
+        mascotView.setSmooth(true);
+        mascotView.setOpacity(0.95);
+
         setupPlayer1Panel();
         setupPlayer2Panel();
         setupCenterSection();
@@ -76,14 +96,139 @@ public class GameView extends BorderPane {
 
 
         // Theme last
-        applyTheme(pickTheme(controller));
-        applyGlassPanels(); // ✅ force shared-like glass on player panels too
+     // Theme last
+        currentTheme = pickTheme(controller);
+        applyTheme(currentTheme);
+        applyGlassPanels();
+        refreshBrightness();
+
+
+        // ✅ Mascot
+        setMascotNeutral();
+
+        // ✅ start tracking score
+        lastScore = parseScore(sharedScoreLabel.getText());
+// ✅ force shared-like glass on player panels too
     }
 
+    private void setupMascotUI() {
+        mascotView.setFitWidth(120);
+        mascotView.setPreserveRatio(true);
+        mascotView.setSmooth(true);
+        mascotView.setOpacity(0.95);
+
+        // Put it under the time/difficulty info
+        sharedInfoPanel.getChildren().add(mascotView);
+    }
+
+    private void setMascotNeutral() { setMascot(currentTheme.mascotNeutral); }
+    private void setMascotHappy()   { setMascot(currentTheme.mascotHappy); }
+    private void setMascotSad()     { setMascot(currentTheme.mascotSad); }
+
+    private void setMascot(String path) {
+        if (path == null) return;
+
+        var url = getClass().getResource(path);
+        if (url == null) {
+            System.out.println("❌ Mascot not found: " + path);
+            return;
+        }
+        mascotView.setImage(new Image(url.toExternalForm(), false));
+    }
+    
+    private void reactHappy() {
+        setMascotHappy();
+        restartMascotTimer();
+    }
+
+    private void reactSad() {
+        setMascotSad();
+        restartMascotTimer();
+    }
+    
+    public void onQuestionCorrect() {
+        reactHappy();
+    }
+
+    public void onQuestionWrong() {
+        reactSad();
+    }
+
+
+    private void restartMascotTimer() {
+        if (mascotTimer != null) mascotTimer.stop();
+
+        mascotTimer = new PauseTransition(Duration.seconds(2));
+        mascotTimer.setOnFinished(e -> setMascotNeutral());
+        mascotTimer.playFromStart();
+    }
+    
+    public void enableMultiplayerAutoFit(int rows, int cols) {
+
+        // allow shrinking
+        gridPane1.setMinSize(0, 0);
+        gridPane2.setMinSize(0, 0);
+
+        // parent containers must be Regions (GridPane parent is usually StackPane/VBox/etc.)
+        Region p1 = (Region) gridPane1.getParent();
+        Region p2 = (Region) gridPane2.getParent();
+
+        p1.setMinSize(0, 0);
+        p2.setMinSize(0, 0);
+
+        double cell = controller.CellController.getCellSide();
+        double gridW = cols * cell;
+        double gridH = rows * cell;
+
+        // scale calculation (uniform scale)
+        Runnable apply = () -> {
+            double s1 = Math.min(p1.getWidth() / gridW, p1.getHeight() / gridH);
+            double s2 = Math.min(p2.getWidth() / gridW, p2.getHeight() / gridH);
+
+            double s = Math.min(s1, s2); // keep both same scale so they look identical
+            if (s > 1.0) s = 1.0;        // don’t upscale
+            if (s < 0.35) s = 0.35;      // avoid too tiny
+
+            gridPane1.setScaleX(s);
+            gridPane1.setScaleY(s);
+            gridPane2.setScaleX(s);
+            gridPane2.setScaleY(s);
+        };
+
+        // re-apply on resize
+        p1.widthProperty().addListener((o,a,b) -> apply.run());
+        p1.heightProperty().addListener((o,a,b) -> apply.run());
+        p2.widthProperty().addListener((o,a,b) -> apply.run());
+        p2.heightProperty().addListener((o,a,b) -> apply.run());
+
+        // first apply (after layout)
+        javafx.application.Platform.runLater(apply);
+    }
+
+    
+    
+    private int parseScore(String s) {
+        try {
+            return Integer.parseInt(s.trim());
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+  
+    
+    
+    public void onMineHit() {
+        reactSad();
+    }
+    
+    //------------------------------
     private void setupLayout() {
         setPadding(Insets.EMPTY);
 
-        setTop(topSection);
+        VBox topWrapper = new VBox(topBar, topSection);
+        setTop(topWrapper);
+
         setCenter(centerSection);
         setBottom(bottomSection);
 
@@ -202,7 +347,7 @@ public class GameView extends BorderPane {
 
         infoBox.getChildren().addAll(diffBox, timeBox);
 
-        sharedInfoPanel.getChildren().addAll(header, scoreBox, livesBox, div1, infoBox);
+        sharedInfoPanel.getChildren().addAll(header, scoreBox, livesBox, div1, infoBox, mascotView);
     }
 
     private void setupPlayer1Panel() {
@@ -382,34 +527,169 @@ public class GameView extends BorderPane {
                 "-fx-border-width: 2;" +
                 "-fx-border-radius: 16;" +
                 "-fx-background-radius: 16;" +
-                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.55), 18, 0, 0, 8);";
+                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 16, 0, 0, 6);";
 
-        sharedInfoPanel.setStyle(cardBase + "-fx-border-color: rgba(96,165,250,0.95);");
-        player1Panel.setStyle(cardBase + "-fx-border-color: rgba(34,197,94,0.95);");
-        player2Panel.setStyle(cardBase + "-fx-border-color: rgba(244,63,94,0.90);");
-        gridPane1.setStyle("-fx-background-color: transparent;");
-        gridPane2.setStyle("-fx-background-color: transparent;");
+        String activeCard =
+                "-fx-background-color: rgba(17,24,39,0.65);" + // darker glass
+                "-fx-border-width: 3;" +
+                "-fx-border-radius: 16;" +
+                "-fx-background-radius: 16;" +
+                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.65), 22, 0, 0, 8);";
 
+        // normal
+        sharedInfoPanel.setStyle(cardBase + "-fx-border-color: rgba(255,255,255,0.18);");
+        player1Panel.setStyle(cardBase + "-fx-border-color: rgba(255,255,255,0.22);");
+        player2Panel.setStyle(cardBase + "-fx-border-color: rgba(255,255,255,0.22);");
 
-        // Lighter inner glass (so background shows through more)
-        String innerGlass =
+        // store active styles
+        player1Panel.setUserData(activeCard + "-fx-border-color: rgba(255,255,255,0.35);");
+        player2Panel.setUserData(activeCard + "-fx-border-color: rgba(255,255,255,0.35);");
+
+        boardContainer1.setStyle(
                 "-fx-background-color: transparent;" +
                 "-fx-border-color: rgba(255,255,255,0.08);" +
-                "-fx-border-radius: 14;" +
-                "-fx-background-radius: 14;";
+                "-fx-border-radius: 14;"
+        );
 
-
-        boardContainer1.setStyle(innerGlass);
-        boardContainer2.setStyle(innerGlass);
+        boardContainer2.setStyle(
+                "-fx-background-color: transparent;" +
+                "-fx-border-color: rgba(255,255,255,0.08);" +
+                "-fx-border-radius: 14;"
+        );
     }
+
     
     public void setActivePlayer(int playerNum) {
-        player1Panel.getStyleClass().remove("active");
-        player2Panel.getStyleClass().remove("active");
 
-        if (playerNum == 1) player1Panel.getStyleClass().add("active");
-        else player2Panel.getStyleClass().add("active");
+        // reset both to normal (base)
+        applyGlassPanels();
+
+        if (playerNum == 1) {
+            // apply the "active" style you stored in userData
+            player1Panel.setStyle((String) player1Panel.getUserData());
+        } else {
+            player2Panel.setStyle((String) player2Panel.getUserData());
+        }
     }
     
+ // ===== Mascot API (called from GameController) =====
+
+    private int safeParseInt(String s) {
+        try { return Integer.parseInt(s.trim()); }
+        catch (Exception e) { return 0; }
+    }
+
+    public void initMascotScoreTracking() {
+        lastScore = safeParseInt(sharedScoreLabel.getText());
+        lastLives = safeParseInt(sharedLivesLabel.getText());
+        setMascotNeutral();
+    }
+
+    public void setSharedScoreWithReaction(int newScore) {
+        int delta = newScore - lastScore;
+
+        sharedScoreLabel.setText(String.valueOf(newScore));
+
+        if (delta >= 10) {
+            reactHappy();
+        } else if (delta <= -5) {
+            reactSad();
+        }
+
+        lastScore = newScore;
+    }
+
+    public void onMineHitMascot() {
+        reactSad();
+    }
+
+    public void setSharedLivesWithReaction(int newLives) {
+        int oldLives = safeParseInt(sharedLivesLabel.getText());
+
+        sharedLivesLabel.setText(String.valueOf(newLives));
+
+        // 🎉 Life added → happy mascot
+        if (newLives > oldLives) {
+            reactHappy();
+        }
+        // 💔 Life lost → sad mascot (optional but nice)
+        else if (newLives < oldLives) {
+            reactSad();
+        }
+    }
+    //  minimal top bar (does not affect layout)
+    private void setupTopBar() {
+
+        Button helpBtn = new Button("?");
+        Button settingsBtn = new Button("⚙");
+
+        styleTopBarButton(helpBtn);
+        styleTopBarButton(settingsBtn);
+
+        helpBtn.setOnAction(e -> new HelpDialog().show());
+        settingsBtn.setOnAction(e -> new SettingsDialog().show());
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        topBar.setSpacing(10); 
+        topBar.getChildren().setAll(spacer, helpBtn, settingsBtn);
+
+        topBar.setPadding(new Insets(10, 16, 0, 16));
+        topBar.setAlignment(Pos.CENTER_LEFT);
+    }
+    // keep buttons visually isolated
+    private void styleTopBarButton(Button btn) {
+        btn.setPrefSize(38, 38);
+        btn.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+        btn.setStyle("""
+            -fx-background-color: rgba(15,23,42,0.85);
+            -fx-text-fill: white;
+            -fx-background-radius: 999;
+            -fx-cursor: hand;
+        """);
+
+        btn.setOnMouseEntered(e -> btn.setStyle("""
+            -fx-background-color: rgba(34,197,94,0.6);
+            -fx-text-fill: white;
+            -fx-background-radius: 999;
+            -fx-cursor: hand;
+        """));
+
+        btn.setOnMouseExited(e -> btn.setStyle("""
+            -fx-background-color: rgba(15,23,42,0.85);
+            -fx-text-fill: white;
+            -fx-background-radius: 999;
+            -fx-cursor: hand;
+        """));
+    }
+    //  brightness overlay support
+    public void refreshBrightness() {
+        double opacity = service.VisualSettingsService.getOverlayOpacity();
+
+        if (opacity <= 0.01) {
+            centerSection.setBackground(Background.EMPTY);
+            return;
+        }
+
+        centerSection.setBackground(
+            new Background(
+                new BackgroundFill(
+                    Color.rgb(0, 0, 0, opacity),
+                    CornerRadii.EMPTY,
+                    Insets.EMPTY
+                )
+            )
+        );
+    }
+ // bayan added here – reapply audio when settings change
+    public void refreshAudio() {
+        service.SoundService.applyCurrentSettings();
+    }
+
+    
+
+
+
   
 }

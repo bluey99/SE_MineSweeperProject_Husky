@@ -1,6 +1,7 @@
 package view.dialogs;
 
 import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 
@@ -27,6 +28,7 @@ public abstract class AbstractDialogTemplate {
         dialog.setHeaderText(null);
     }
 
+    // ✅ CHANGED: still fixed, but now supports optional extra content
     private void buildContent() {
         Label titleLbl = new Label(getTitle());
         titleLbl.setStyle("-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;");
@@ -38,6 +40,12 @@ public abstract class AbstractDialogTemplate {
         VBox box = new VBox(10, titleLbl, msgLbl);
         box.setPadding(new Insets(18));
         box.setStyle("-fx-background-color: #0f172a;");
+
+        // ✅ NEW: optional extra content hook (Settings uses this)
+        Node extra = buildExtraContent();
+        if (extra != null) {
+            box.getChildren().add(extra);
+        }
 
         dialog.getDialogPane().setContent(box);
         dialog.getDialogPane().setStyle(
@@ -52,4 +60,9 @@ public abstract class AbstractDialogTemplate {
     protected abstract String getMessage();
     protected abstract void configureButtons();
     protected abstract void styleButtons();
+
+    // ✅ NEW HOOK (default: no extra content)
+    protected Node buildExtraContent() {
+        return null;
+    }
 }

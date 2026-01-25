@@ -5,8 +5,15 @@ import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.Tooltip;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
@@ -78,68 +85,67 @@ public class QuestionManagementView extends BorderPane {
         // Global background color for the screen
         setStyle("-fx-background-color: #0f172a;");
 
-        // ---------------------------------------------------------------------
-        // Top bar (navigation + title)
-        // ---------------------------------------------------------------------
-        HBox topBar = new HBox(20);
-        topBar.setPadding(new Insets(20, 30, 10, 30));
-        topBar.setAlignment(Pos.CENTER_LEFT);
+        
+     // =========================
+     // TOP BAR (Reusable layout)
+     // =========================
 
-        // Back button styling (consistent with other views)
-        backBtn.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+     // Back button styling (unchanged)
+     backBtn.setFont(Font.font("Arial", FontWeight.BOLD, 14));
 
-        String normalStyle = """
-            -fx-background-color: #1e293b;
-            -fx-text-fill: #e5e7eb;
-            -fx-background-radius: 999;
-            -fx-padding: 7 18 7 18;
-            -fx-cursor: hand;
-        """;
+     String normalStyle = """
+         -fx-background-color: #1e293b;
+         -fx-text-fill: #e5e7eb;
+         -fx-background-radius: 999;
+         -fx-padding: 7 18 7 18;
+         -fx-cursor: hand;
+     """;
 
-        String hoverStyle = """
-            -fx-background-color: #334155;
-            -fx-text-fill: #ffffff;
-            -fx-background-radius: 999;
-            -fx-padding: 7 18 7 18;
-            -fx-cursor: hand;
-        """;
+     String hoverStyle = """
+         -fx-background-color: #334155;
+         -fx-text-fill: #ffffff;
+         -fx-background-radius: 999;
+         -fx-padding: 7 18 7 18;
+         -fx-cursor: hand;
+     """;
 
-        backBtn.setStyle(normalStyle);
-        backBtn.setOnMouseEntered(e -> backBtn.setStyle(hoverStyle));
-        backBtn.setOnMouseExited(e -> backBtn.setStyle(normalStyle));
+     backBtn.setStyle(normalStyle);
+     backBtn.setOnMouseEntered(e -> backBtn.setStyle(hoverStyle));
+     backBtn.setOnMouseExited(e -> backBtn.setStyle(normalStyle));
 
-        /**
-         * Initial UI state:
-         * Edit and Delete are disabled until a table row is selected.
-         * 
-         * The controller is responsible for enabling them when appropriate.
-         */
-        editBtn.setDisable(true);
-        deleteBtn.setDisable(true);
+     // Icon
+     Label iconLabel = new Label("📚");
+     iconLabel.setTextFill(Color.web("#8B5CF6"));
+     iconLabel.setFont(Font.font("Arial", FontWeight.BOLD, 28));
 
-        // Title and subtitle
-        Label iconLabel = new Label("📚");
-        iconLabel.setTextFill(Color.web("#8B5CF6"));
-        iconLabel.setFont(Font.font("Arial", FontWeight.BOLD, 28));
+     // Title
+     VBox titleBox = new VBox(5);
+     Label title = new Label("Question Management");
+     title.setTextFill(Color.WHITE);
+     title.setFont(Font.font("Arial", FontWeight.BOLD, 26));
 
-        VBox titleBox = new VBox(5);
-        Label title = new Label("Question Management");
-        title.setTextFill(Color.WHITE);
-        title.setFont(Font.font("Arial", FontWeight.BOLD, 26));
+     Label subtitle = new Label("Manage trivia questions for the game");
+     subtitle.setTextFill(Color.web("#9CA3AF"));
+     subtitle.setFont(Font.font("Arial", 14));
 
-        Label subtitle = new Label("Manage trivia questions for the game");
-        subtitle.setTextFill(Color.web("#9CA3AF"));
-        subtitle.setFont(Font.font("Arial", 14));
+     titleBox.getChildren().addAll(title, subtitle);
 
-        titleBox.getChildren().addAll(title, subtitle);
+     // LEFT side (content)
+     HBox headerLeft = new HBox(20, backBtn, iconLabel, titleBox);
+     headerLeft.setAlignment(Pos.CENTER_LEFT);
 
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
+     // RIGHT side (settings bar)
+     HBox settingsBar = TopBarFactory.createTopBar();
+     settingsBar.setPadding(Insets.EMPTY);
 
-        stylePrimary(addBtn);
+     // HEADER container
+     BorderPane header = new BorderPane();
+     header.setPadding(new Insets(20, 30, 10, 30));
+     header.setLeft(headerLeft);
+     header.setRight(settingsBar);
 
-        topBar.getChildren().addAll(backBtn, iconLabel, titleBox, spacer);
-        setTop(topBar);
+     setTop(header);
+
 
         // ---------------------------------------------------------------------
         // Center table (question list)

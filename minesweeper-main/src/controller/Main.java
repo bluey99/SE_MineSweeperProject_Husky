@@ -2,11 +2,13 @@
 package controller;
 
 import javafx.application.Application;
+import service.SoundService;
 import view.Theme;
 
 import javafx.application.Platform;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.paint.Color;          // ✅ ADDED
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -44,6 +46,11 @@ public class Main extends Application {
         primaryStage = stage;
         primaryStage.setTitle("Cooperative Minesweeper");
 
+        // start background music on app launch
+        SoundService.playMenuMusic();
+        // preload UI hover/click sounds
+        SoundService.initUiSounds();
+      
         // Show the main menu
         showMainMenu(primaryStage);
         
@@ -56,10 +63,12 @@ public class Main extends Application {
         });
     }
 
+
     // --- STATIC HELPERS ------------------------------------------------------
 
     /** Static wrapper: other classes call this to return to the main menu. */
     public static void showMainMenu(Stage stage) {
+    	 SoundService.playMenuMusic();
         if (instance != null) {
             instance.showMainMenuInstance(stage);
         }
@@ -116,7 +125,8 @@ public class Main extends Application {
     }
 
     private void showMainMenuInstance(Stage stage) {
-
+    	
+    	SoundService.playMenuMusic();
         // ✅ RESET stage state from the game
         stage.setFullScreen(false);
         stage.setMaximized(false);
@@ -128,6 +138,8 @@ public class Main extends Application {
         stage.setResizable(true);   // allow resizing while switching scenes
 
         Menu menu = new Menu();
+        
+        SoundService.applyUiSoundsWhenReady(menu);
 
         double[] size = getClampedMenuSize();
         double width = size[0];
@@ -153,6 +165,7 @@ public class Main extends Application {
         double height = size[1];
 
         SetupView setup = new SetupView(this);
+        SoundService.applyUiSoundsWhenReady(setup);
         Scene setupScene = new Scene(setup, width, height);
         setupScene.setFill(Color.BLACK);             // ✅ ADDED
         stage.setScene(setupScene);
@@ -169,6 +182,7 @@ public class Main extends Application {
         HistoryController hc = new HistoryController(stage);
         Scene historyScene = hc.createScene(width, height);
         historyScene.setFill(Color.BLACK);           // ✅ ADDED
+        SoundService.applyUiSoundsWhenReady(historyScene.getRoot());
         stage.setScene(historyScene);
         stage.sizeToScene();
 
@@ -190,9 +204,9 @@ public class Main extends Application {
         QuestionManagementController qm = new QuestionManagementController(stage);
         Scene qmScene = new Scene(qm.view, width, height);
         qmScene.setFill(Color.BLACK);                // ✅ ADDED
+        SoundService.applyUiSoundsWhenReady(qm.view);
         stage.setScene(qmScene);
         stage.sizeToScene();
-
         applyFixedWindowSize(stage, width, height);
     }
     
@@ -204,6 +218,8 @@ public class Main extends Application {
     public void startGameFromSetup(String p1, String p2, String difficulty) {
     	
         SysData.deleteLocalResumePayload();
+
+    	SoundService.playGameMusicForDifficulty(difficulty);
 
         // ✅ RESET stage state from menu
         primaryStage.setFullScreen(false);
@@ -360,12 +376,12 @@ public class Main extends Application {
         MultiplayerSetupView mpView = new MultiplayerSetupView(this);
         Scene scene = new Scene(mpView, width, height);
         scene.setFill(Color.BLACK);                  // ✅ ADDED
-
+        SoundService.applyUiSoundsWhenReady(mpView);
         stage.setScene(scene);
         stage.sizeToScene();
         applyFixedWindowSize(stage, width, height);
     }
-
+    
     public static void main(String[] args) {
         launch(args);
     }

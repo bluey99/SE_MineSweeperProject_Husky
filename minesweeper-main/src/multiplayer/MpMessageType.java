@@ -16,6 +16,9 @@ public enum MpMessageType {
     ACTION_RESPONSE,
     EXECUTE_ACTION,
 
-    // ✅ NEW: notify other side that player left to menu/exit
-    PLAYER_LEFT
+    // notify other side that player left to menu/exit
+    PLAYER_LEFT,
+
+    // ✅ NEW: Question popup sync (answer result only)
+    QUESTION_RESULT
 }

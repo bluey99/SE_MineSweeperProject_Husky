@@ -19,6 +19,12 @@ public class MultiplayerSession {
     // Player-left notification
     private Consumer<String> onPlayerLeft;
 
+    // ✅ Question result sync (popup only local; remote receives result)
+    private Consumer<QuestionResultPayload> onQuestionResult;
+
+    // ✅ FIX: use EXISTING GameSettings (do NOT use GameSettingsPayload)
+    private Consumer<GameSettings> onGameSettings;
+
     private boolean isHost = false;
 
     private MenuAction pendingIncomingRequest = null;
@@ -60,6 +66,15 @@ public class MultiplayerSession {
         this.onPlayerLeft = h;
     }
 
+    public void setOnQuestionResult(Consumer<QuestionResultPayload> h) {
+        this.onQuestionResult = h;
+    }
+
+    // ✅ FIX: handler uses GameSettings
+    public void setOnGameSettings(Consumer<GameSettings> h) {
+        this.onGameSettings = h;
+    }
+
     public void sendMessage(MpMessage msg) {
         try {
             network.send(msg);
@@ -71,6 +86,16 @@ public class MultiplayerSession {
     // ✅ Notify other side & close
     public void notifyPlayerLeft(String name) {
         sendMessage(new MpMessage(MpMessageType.PLAYER_LEFT, name));
+    }
+
+    // ✅ send question result to other side (no popup on remote)
+    public void sendQuestionResult(QuestionResultPayload payload) {
+        sendMessage(new MpMessage(MpMessageType.QUESTION_RESULT, payload));
+    }
+
+    // ✅ FIX: send existing GameSettings to other side
+    public void sendGameSettings(GameSettings settings) {
+        sendMessage(new MpMessage(MpMessageType.GAME_SETTINGS, settings));
     }
 
     // ✅ Step 3: request shared action (we will use only NEW_GAME)
@@ -115,9 +140,18 @@ public class MultiplayerSession {
 
     public void handleIncoming(MpMessage msg) {
 
+        if (msg == null) return;
+
         if (msg.type == MpMessageType.GAME_ACTION) {
             GameAction action = (GameAction) msg.payload;
             if (onActionReceived != null) onActionReceived.accept(action);
+            return;
+        }
+
+        // ✅ FIX: GAME_SETTINGS uses GameSettings (the class your MultiplayerSetupView expects)
+        if (msg.type == MpMessageType.GAME_SETTINGS) {
+            GameSettings settings = (GameSettings) msg.payload;
+            if (onGameSettings != null) onGameSettings.accept(settings);
             return;
         }
 
@@ -129,6 +163,13 @@ public class MultiplayerSession {
         if (msg.type == MpMessageType.PLAYER_LEFT) {
             String name = (String) msg.payload;
             if (onPlayerLeft != null) onPlayerLeft.accept(name);
+            return;
+        }
+
+        // ✅ Question result received
+        if (msg.type == MpMessageType.QUESTION_RESULT) {
+            QuestionResultPayload payload = (QuestionResultPayload) msg.payload;
+            if (onQuestionResult != null) onQuestionResult.accept(payload);
             return;
         }
 
