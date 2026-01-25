@@ -2,6 +2,11 @@
 package controller;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
+
+import service.LocalGameState;
+import service.LocalResumeCodec;
+
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -395,6 +400,9 @@ public class GameController implements GameModelObserver {
 
     private void executeNewGameNow() {
         if (gameTimer != null) gameTimer.cancel();
+        if (!multiplayerEnabled) {
+            SysData.deleteLocalResumePayload();
+        }
         init();
         startTimer();
     }
@@ -496,6 +504,85 @@ public class GameController implements GameModelObserver {
             gameView.sharedLivesLabel.setTextFill(Color.web("#A5B4FC"));
         }
     }
+    
+    // ===================== Local (Offline) Resume Support =====================
+    // IMPORTANT: OFFLINE ONLY. Must NEVER run in multiplayer.
+
+    public void maybeAutoSaveLocal() {
+        if (multiplayerEnabled) return;
+        if (!isGameActive()) return;
+
+        try {
+            LocalGameState st = exportLocalState();
+            String payload = LocalResumeCodec.encode(st);
+            SysData.saveLocalResumePayload(payload);
+        } catch (Exception ignored) {
+            // Never crash gameplay due to save issues
+        }
+    }
+
+    public LocalGameState exportLocalState() {
+        if (multiplayerEnabled) {
+            throw new IllegalStateException("exportLocalState must not be called in multiplayer mode");
+        }
+
+        LocalGameState st = new LocalGameState();
+        st.difficulty = this.difficulty;
+        st.p1Name = this.player1Name;
+        st.p2Name = this.player2Name;
+
+        st.seed = this.seed;
+        st.currentPlayer = this.currentPlayer;
+        st.sharedScore = this.gameModel.getSharedScore();
+        st.sharedLives = this.gameModel.getSharedLives();
+        st.elapsedTimeSec = this.elapsedTime;
+
+        st.board1 = LocalGameState.captureBoard(this.gameModel.getBoard1());
+        st.board2 = LocalGameState.captureBoard(this.gameModel.getBoard2());
+
+        return st;
+    }
+
+    public void applyLocalResumePayload(String payload) {
+        if (multiplayerEnabled) return;
+
+        Optional<LocalGameState> opt = LocalResumeCodec.decode(payload);
+        if (!opt.isPresent()) return;
+
+        LocalGameState st = opt.get();
+
+        // Restore primary fields
+        this.currentPlayer = (st.currentPlayer == 2) ? 2 : 1;
+        this.elapsedTime = Math.max(0, st.elapsedTimeSec);
+
+        this.gameModel.setSharedScore(st.sharedScore);
+        this.gameModel.setSharedLives(Math.max(0, st.sharedLives));
+
+        // Apply board flags/open/discovered/activated/flagScored
+        LocalGameState.applyBoard(this.gameModel.getBoard1(), st.board1);
+        LocalGameState.applyBoard(this.gameModel.getBoard2(), st.board2);
+
+        // Refresh UI cells
+        for (int r = 0; r < N; r++) {
+            for (int c = 0; c < M; c++) {
+                board1[r][c].init();
+                board2[r][c].init();
+            }
+        }
+
+        // Fix counters (mines left, etc.)
+        if (board1Controller != null) board1Controller.recalculateCountersFromCells();
+        if (board2Controller != null) board2Controller.recalculateCountersFromCells();
+
+        highlightCurrentPlayer();
+        updateUI();
+        checkWinCondition();
+    }
+
+    public long getSeed() {
+        return seed;
+    }
+
 
     private String formatTime(int sec) {
         int m = sec / 60;
@@ -546,6 +633,8 @@ public class GameController implements GameModelObserver {
             endGame(false);
             return false;
         }
+        
+        maybeAutoSaveLocal();
 
         return true;
     }
@@ -577,6 +666,11 @@ public class GameController implements GameModelObserver {
 
             if (gameModel.getSharedLives() <= 0) {
                 endGame(false);
+            }
+            else {
+            // ✅ Save immediately after applying question consequences.
+            // Multiplayer is unaffected (guarded in maybeAutoSaveLocal()).
+            maybeAutoSaveLocal();
             }
         }
     }
@@ -809,6 +903,11 @@ public class GameController implements GameModelObserver {
         gameActive = false;
 
         stopTimer();
+        
+        if (!multiplayerEnabled) {
+            SysData.deleteLocalResumePayload();
+        }
+
 
         if (board1Controller != null) board1Controller.forceRevealAll();
         if (board2Controller != null) board2Controller.forceRevealAll();

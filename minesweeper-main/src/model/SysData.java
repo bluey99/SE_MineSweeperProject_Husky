@@ -4,6 +4,12 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.Optional;
+
 
 /**
  * Central data access class.
@@ -26,6 +32,11 @@ public class SysData {
     private static final String QUESTIONS_FILE = "QuestionsCSV.csv";
     private static final String QUESTIONS_HEADER =
             "ID,Question,Difficulty,A,B,C,D,Correct Answer";
+    
+    // ===================== LOCAL RESUME (OFFLINE ONLY) =====================
+    // Stored as an opaque payload string (properties text).
+    private static final String LOCAL_RESUME_FILE = "local_resume_payload.txt";
+
 
     // ============================================================
     //                      GAME HISTORY API
@@ -823,4 +834,81 @@ public class SysData {
             }
         }
     }
+    
+    // ============================================================
+    //                LOCAL RESUME PAYLOAD (OFFLINE ONLY)
+    // ============================================================
+
+    /** True if a local resume payload exists and is non-empty. */
+    public static boolean hasLocalResumePayload() {
+        File f = new File(LOCAL_RESUME_FILE);
+        return f.exists() && f.isFile() && f.length() > 0;
+    }
+
+    /**
+     * Save an opaque payload string for offline resume.
+     * If payload is null/empty => deletes the payload file.
+     */
+    public static void saveLocalResumePayload(String payload) {
+        if (payload == null || payload.trim().isEmpty()) {
+            deleteLocalResumePayload();
+            return;
+        }
+
+        try {
+            Path target = new File(LOCAL_RESUME_FILE).toPath();
+            Path dir = target.toAbsolutePath().getParent();
+            if (dir != null) Files.createDirectories(dir);
+
+            Path tmp = new File(LOCAL_RESUME_FILE + ".tmp").toPath();
+
+            // Write temp file
+            try (Writer w = new OutputStreamWriter(new FileOutputStream(tmp.toFile(), false), StandardCharsets.UTF_8)) {
+                w.write(payload);
+            }
+
+            // Atomic move if supported
+            try {
+                Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
+            }
+
+        } catch (IOException e) {
+            System.err.println("Failed to save local resume payload: " + e.getMessage());
+        }
+    }
+
+    /** Load the opaque payload string for offline resume. */
+    public static Optional<String> loadLocalResumePayload() {
+        File f = new File(LOCAL_RESUME_FILE);
+        if (!f.exists() || f.length() == 0) return Optional.empty();
+
+        try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(new FileInputStream(f), StandardCharsets.UTF_8))) {
+
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = br.readLine()) != null) {
+                sb.append(line).append("\n");
+            }
+
+            String payload = sb.toString().trim();
+            if (payload.isEmpty()) return Optional.empty();
+            return Optional.of(payload);
+
+        } catch (IOException e) {
+            return Optional.empty();
+        }
+    }
+
+    /** Delete local resume payload (offline only). */
+    public static void deleteLocalResumePayload() {
+        try {
+            Files.deleteIfExists(new File(LOCAL_RESUME_FILE).toPath());
+        } catch (IOException ignored) {
+            // best effort
+        }
+    }
+
 }

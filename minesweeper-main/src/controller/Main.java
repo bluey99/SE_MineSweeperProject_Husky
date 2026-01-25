@@ -15,6 +15,13 @@ import model.SysData;
 import view.Menu;
 import view.MultiplayerSetupView;
 import view.SetupView;
+import java.util.Optional;
+
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
+
+import service.LocalGameState;
+import service.LocalResumeCodec;
 
 public class Main extends Application {
 
@@ -23,6 +30,9 @@ public class Main extends Application {
 
     // Hold the running Main instance so we can use instance methods from static calls
     private static Main instance = null;
+    
+    private static boolean resumePromptShown = false;
+
 
     // Preferred menu size (will be clamped to screen)
     private static final double MENU_WIDTH = 900;
@@ -36,6 +46,9 @@ public class Main extends Application {
 
         // Show the main menu
         showMainMenu(primaryStage);
+        
+        Platform.runLater(this::maybeOfferResumeLocalGame);
+
 
         primaryStage.setOnCloseRequest(e -> {
             Platform.exit();
@@ -189,6 +202,8 @@ public class Main extends Application {
      */
 
     public void startGameFromSetup(String p1, String p2, String difficulty) {
+    	
+        SysData.deleteLocalResumePayload();
 
         // ✅ RESET stage state from menu
         primaryStage.setFullScreen(false);
@@ -354,4 +369,95 @@ public class Main extends Application {
     public static void main(String[] args) {
         launch(args);
     }
+    
+    private void maybeOfferResumeLocalGame() {
+        if (resumePromptShown) return;
+        resumePromptShown = true;
+
+        if (!SysData.hasLocalResumePayload()) return;
+
+        Optional<String> payloadOpt = SysData.loadLocalResumePayload();
+        if (!payloadOpt.isPresent()) {
+            SysData.deleteLocalResumePayload();
+            return;
+        }
+
+        String payload = payloadOpt.get();
+        Optional<LocalGameState> stOpt = LocalResumeCodec.decode(payload);
+        if (!stOpt.isPresent()) {
+            SysData.deleteLocalResumePayload();
+            return;
+        }
+
+        LocalGameState st = stOpt.get();
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Continue Game?");
+        alert.setHeaderText("A local game is still in progress.");
+        alert.setContentText("Do you want to continue where you left off?");
+
+        ButtonType btnContinue = new ButtonType("Continue");
+        ButtonType btnNew = new ButtonType("Start New Game");
+        alert.getButtonTypes().setAll(btnContinue, btnNew);
+
+        Optional<ButtonType> res = alert.showAndWait();
+        if (!res.isPresent()) return;
+
+        if (res.get() == btnContinue) {
+            try {
+                startOfflineGameFromSavedState(st, payload);
+            } catch (Exception ex) {
+                SysData.deleteLocalResumePayload();
+            }
+        } else {
+            SysData.deleteLocalResumePayload();
+        }
+    }
+
+    private void startOfflineGameFromSavedState(LocalGameState st, String payload) {
+        if (st == null) return;
+
+        // Reset stage state from menu (same as your startGameFromSetup)
+        primaryStage.setFullScreen(false);
+        primaryStage.setMaximized(false);
+
+        primaryStage.setMinWidth(0);
+        primaryStage.setMinHeight(0);
+        primaryStage.setMaxWidth(Double.MAX_VALUE);
+        primaryStage.setMaxHeight(Double.MAX_VALUE);
+        primaryStage.setResizable(true);
+
+        GameController.resetInstance();
+
+        GameController controller = GameController.getInstance(
+                st.difficulty,
+                safeName(st.p1Name, "Player 1"),
+                safeName(st.p2Name, "Player 2"),
+                primaryStage,
+                st.seed
+        );
+
+        Scene gameScene = new Scene(controller.gameView);
+        gameScene.setFill(Color.BLACK);
+        gameScene.getStylesheets().add(
+                Main.class.getResource("/css/game.css").toExternalForm()
+        );
+
+        primaryStage.setScene(gameScene);
+
+        // Apply saved state AFTER UI exists
+        controller.applyLocalResumePayload(payload);
+
+        Platform.runLater(() -> {
+            primaryStage.setMaximized(true);
+            primaryStage.centerOnScreen();
+        });
+    }
+
+    private String safeName(String name, String def) {
+        if (name == null) return def;
+        String t = name.trim();
+        return t.isEmpty() ? def : t;
+    }
+
 }

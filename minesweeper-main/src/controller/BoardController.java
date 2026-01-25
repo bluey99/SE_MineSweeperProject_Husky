@@ -194,6 +194,8 @@ public class BoardController {
         // Observer should refresh UI, but leaving these is ok:
         gameController.updateUI();
         gameController.checkWinCondition();
+        gameController.maybeAutoSaveLocal();
+
     }
 
     public void handleRightClick(int row, int col) {
@@ -229,7 +231,26 @@ public class BoardController {
         gameController.updateUI();
 
         gameController.checkWinCondition();
+        gameController.maybeAutoSaveLocal();
+
     }
+    
+    public void recalculateCountersFromCells() {
+        int correct = 0;
+        int openedMines = 0;
+
+        for (int r = 0; r < logicalBoard.getRows(); r++) {
+            for (int c = 0; c < logicalBoard.getCols(); c++) {
+                Cell cell = logicalBoard.getCell(r, c);
+                if (cell.isMine() && cell.isFlag()) correct++;
+                if (cell.isMine() && cell.isOpen()) openedMines++;
+            }
+        }
+
+        this.correctFlagCount = correct;
+        this.openedMineCount = openedMines;
+    }
+
 
     public void forceRevealAll() {
         RevealResult res = revealService.revealAllForce(logicalBoard);
