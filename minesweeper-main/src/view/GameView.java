@@ -3,7 +3,8 @@ package view;
 import controller.GameController;
 import javafx.scene.image.PixelWriter;
 import javafx.scene.image.WritableImage;
-
+import view.dialogs.SettingsDialog;
+import view.dialogs.HelpDialog;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -32,6 +33,9 @@ public class GameView extends BorderPane {
     private final VBox topSection = new VBox();
     private final HBox centerSection = new HBox();
     private final VBox bottomSection = new VBox();
+    //top bar for in-game settings/help
+    private final HBox topBar = new HBox();
+
 
     public final VBox sharedInfoPanel = new VBox();
     public final Label sharedScoreLabel = new Label("0");
@@ -73,6 +77,7 @@ public class GameView extends BorderPane {
 
         setupLayout();
         setupTopSection();
+        setupTopBar();
         setupSharedPanel();
         mascotView.setFitWidth(120);
         mascotView.setPreserveRatio(true);
@@ -95,6 +100,8 @@ public class GameView extends BorderPane {
         currentTheme = pickTheme(controller);
         applyTheme(currentTheme);
         applyGlassPanels();
+        refreshBrightness();
+
 
         // ✅ Mascot
         setMascotNeutral();
@@ -219,7 +226,9 @@ public class GameView extends BorderPane {
     private void setupLayout() {
         setPadding(Insets.EMPTY);
 
-        setTop(topSection);
+        VBox topWrapper = new VBox(topBar, topSection);
+        setTop(topWrapper);
+
         setCenter(centerSection);
         setBottom(bottomSection);
 
@@ -608,6 +617,79 @@ public class GameView extends BorderPane {
             reactSad();
         }
     }
+    //  minimal top bar (does not affect layout)
+    private void setupTopBar() {
+
+        Button helpBtn = new Button("?");
+        Button settingsBtn = new Button("⚙");
+
+        styleTopBarButton(helpBtn);
+        styleTopBarButton(settingsBtn);
+
+        helpBtn.setOnAction(e -> new HelpDialog().show());
+        settingsBtn.setOnAction(e -> new SettingsDialog().show());
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        topBar.setSpacing(10); 
+        topBar.getChildren().setAll(spacer, helpBtn, settingsBtn);
+
+        topBar.setPadding(new Insets(10, 16, 0, 16));
+        topBar.setAlignment(Pos.CENTER_LEFT);
+    }
+    // keep buttons visually isolated
+    private void styleTopBarButton(Button btn) {
+        btn.setPrefSize(38, 38);
+        btn.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+        btn.setStyle("""
+            -fx-background-color: rgba(15,23,42,0.85);
+            -fx-text-fill: white;
+            -fx-background-radius: 999;
+            -fx-cursor: hand;
+        """);
+
+        btn.setOnMouseEntered(e -> btn.setStyle("""
+            -fx-background-color: rgba(34,197,94,0.6);
+            -fx-text-fill: white;
+            -fx-background-radius: 999;
+            -fx-cursor: hand;
+        """));
+
+        btn.setOnMouseExited(e -> btn.setStyle("""
+            -fx-background-color: rgba(15,23,42,0.85);
+            -fx-text-fill: white;
+            -fx-background-radius: 999;
+            -fx-cursor: hand;
+        """));
+    }
+    //  brightness overlay support
+    public void refreshBrightness() {
+        double opacity = service.VisualSettingsService.getOverlayOpacity();
+
+        if (opacity <= 0.01) {
+            centerSection.setBackground(Background.EMPTY);
+            return;
+        }
+
+        centerSection.setBackground(
+            new Background(
+                new BackgroundFill(
+                    Color.rgb(0, 0, 0, opacity),
+                    CornerRadii.EMPTY,
+                    Insets.EMPTY
+                )
+            )
+        );
+    }
+ // bayan added here – reapply audio when settings change
+    public void refreshAudio() {
+        service.SoundService.applyCurrentSettings();
+    }
+
+    
+
+
 
   
 }

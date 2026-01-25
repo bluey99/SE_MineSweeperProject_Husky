@@ -49,6 +49,14 @@ public class SettingsDialog extends AbstractDialogTemplate {
     protected Node buildExtraContent() {
 
         SoundService.initUiSounds();
+        boolean inGame = false;
+
+        if (Main.getPrimaryStage() != null
+                && Main.getPrimaryStage().getScene() != null
+                && Main.getPrimaryStage().getScene().getRoot() instanceof view.GameView) {
+            inGame = true;
+        }
+
 
         /* ================= VISUALS ================= */
         Label visualsHeader = sectionHeader("Visuals");
@@ -91,8 +99,13 @@ public class SettingsDialog extends AbstractDialogTemplate {
         ComboBox<MusicTheme> musicSelect = new ComboBox<>();
         musicSelect.getItems().addAll(MusicTheme.values());
         musicSelect.setValue(SoundService.getCurrentTheme());
-        musicSelect.setOnAction(e ->SoundService.setMenuTheme(musicSelect.getValue()));
+        musicSelect.setOnAction(e -> SoundService.setMenuTheme(musicSelect.getValue()));
         musicSelect.disableProperty().bind(musicToggle.selectedProperty().not());
+
+        // hide theme selector inside game (game music is fixed)
+        musicSelect.setVisible(!inGame);
+        musicSelect.setManaged(!inGame);
+
 
         Slider musicSlider = createSlider(SoundService.getMusicVolume());
         Label musicValue = createPercentLabel(musicSlider);
@@ -104,11 +117,21 @@ public class SettingsDialog extends AbstractDialogTemplate {
         musicGrid.setHgap(12);
         musicGrid.setVgap(12);
         musicGrid.setPadding(new Insets(0, 0, 0, 16));
-        musicGrid.add(styledLabel("Theme"), 0, 0);
-        musicGrid.add(musicSelect, 1, 0);
-        musicGrid.add(styledLabel("Volume"), 0, 1);
-        musicGrid.add(musicSlider, 1, 1);
-        musicGrid.add(musicValue, 2, 1);
+     //  only show Theme row in menu
+        if (!inGame) {
+            musicGrid.add(styledLabel("Theme"), 0, 0);
+            musicGrid.add(musicSelect, 1, 0);
+
+            musicGrid.add(styledLabel("Volume"), 0, 1);
+            musicGrid.add(musicSlider, 1, 1);
+            musicGrid.add(musicValue, 2, 1);
+        } else {
+            // in game: only Volume row
+            musicGrid.add(styledLabel("Volume"), 0, 0);
+            musicGrid.add(musicSlider, 1, 0);
+            musicGrid.add(musicValue, 2, 0);
+        }
+
 
         /* ================= SFX ================= */
         Label sfxHeader = sectionHeader("Sound Effects");
@@ -150,10 +173,18 @@ public class SettingsDialog extends AbstractDialogTemplate {
         if (Main.getPrimaryStage() == null) return;
         if (Main.getPrimaryStage().getScene() == null) return;
 
-        if (Main.getPrimaryStage().getScene().getRoot() instanceof Menu menu) {
+        var root = Main.getPrimaryStage().getScene().getRoot();
+
+        if (root instanceof Menu menu) {
             menu.refreshVisuals();
+        } 
+        else if (root instanceof view.GameView gameView) {
+            gameView.refreshBrightness();
+            gameView.refreshAudio(); // bayan added here
         }
     }
+
+
 
     /* ---------- helpers ---------- */
 

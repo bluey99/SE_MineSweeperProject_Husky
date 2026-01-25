@@ -33,7 +33,7 @@ public class SoundService {
     private static boolean musicEnabled = true;
     private static boolean sfxEnabled = true;
 
-    private static double musicVolume = 0.25;
+    private static double musicVolume = 0.50;
     private static double sfxVolume = 0.6;
     // 🎮 GAME SFX
     private static AudioClip revealNormalSound;
@@ -217,8 +217,14 @@ public class SoundService {
         Media media = new Media(url.toExternalForm());
         backgroundMusic = new MediaPlayer(media);
         backgroundMusic.setCycleCount(MediaPlayer.INDEFINITE);
-        backgroundMusic.setVolume(clamp01(musicVolume));
-        backgroundMusic.play();
+
+        // apply volume BEFORE playback to avoid loud start
+        backgroundMusic.setVolume(musicLoudness(musicVolume));
+
+        if (musicEnabled) {
+            backgroundMusic.play();
+        }
+
     }
 
 
@@ -238,7 +244,8 @@ public class SoundService {
         musicVolume = clamp01(volume01);
 
         if (backgroundMusic != null) {
-            backgroundMusic.setVolume(musicVolume); // ✅ LIVE update
+        	backgroundMusic.setVolume(musicLoudness(musicVolume));
+
         }
     }
 
@@ -386,4 +393,31 @@ public class SoundService {
     private static double clamp01(double v) {
         return Math.max(0, Math.min(1, v));
     }
+    
+ //  perceptual curve for music loudness
+    private static double musicLoudness(double linearVolume) {
+        // exponent >1 makes mid values quieter without affecting max
+        return Math.pow(clamp01(linearVolume), 1.8);
+    }
+
+ // re-apply all current audio settings safely
+    public static void applyCurrentSettings() {
+
+        // MUSIC
+        if (backgroundMusic != null) {
+        	backgroundMusic.setVolume(musicLoudness(musicVolume));
+
+
+            if (musicEnabled) {
+                backgroundMusic.play();
+            } else {
+                backgroundMusic.pause();
+            }
+        }
+
+        // SFX
+        applySfxVolume();
+        applyGameSfxVolume();
+    }
+
 }
