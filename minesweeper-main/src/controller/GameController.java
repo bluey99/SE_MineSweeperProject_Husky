@@ -222,11 +222,11 @@ public class GameController implements GameModelObserver {
         this.multiplayerEnabled = true;
         this.localPlayerNum = session.isHost() ? 1 : 2;
         
-        // ✅ Receive seed+difficulty from host for NEW_GAME
-        session.setOnGameSettings(payload -> Platform.runLater(() -> {
-            pendingNewGameSeed = payload.seed;
-            this.difficulty = payload.difficulty; // keep both sides same difficulty
+        session.setOnGameSettings(settings -> Platform.runLater(() -> {
+            pendingNewGameSeed = settings.seed;
+            this.difficulty = settings.difficulty;
         }));
+
 
 
         session.setOnActionReceived(action -> Platform.runLater(() -> applyRemoteAction(action)));
@@ -270,7 +270,12 @@ public class GameController implements GameModelObserver {
                     // send seed + difficulty to client BEFORE starting
                     try {
                         multiplayerSession.sendGameSettings(
-                                new multiplayer.GameSettingsPayload(difficulty, seedToUse)
+                            new multiplayer.GameSettings(
+                                "",              // hostName (not needed for new game)
+                                "",              // joinName (not needed for new game)
+                                difficulty,      // difficulty
+                                seedToUse        // shared seed
+                            )
                         );
                     } catch (Exception ignored) {}
 

@@ -22,8 +22,8 @@ public class MultiplayerSession {
     // ✅ Question result sync (popup only local; remote receives result)
     private Consumer<QuestionResultPayload> onQuestionResult;
 
-    // ✅ NEW: Game settings sync (seed + difficulty for New Game)
-    private Consumer<GameSettingsPayload> onGameSettings;
+    // ✅ FIX: use EXISTING GameSettings (do NOT use GameSettingsPayload)
+    private Consumer<GameSettings> onGameSettings;
 
     private boolean isHost = false;
 
@@ -70,8 +70,8 @@ public class MultiplayerSession {
         this.onQuestionResult = h;
     }
 
-    // ✅ NEW
-    public void setOnGameSettings(Consumer<GameSettingsPayload> h) {
+    // ✅ FIX: handler uses GameSettings
+    public void setOnGameSettings(Consumer<GameSettings> h) {
         this.onGameSettings = h;
     }
 
@@ -93,9 +93,9 @@ public class MultiplayerSession {
         sendMessage(new MpMessage(MpMessageType.QUESTION_RESULT, payload));
     }
 
-    // ✅ NEW: send game settings to other side (seed + difficulty)
-    public void sendGameSettings(GameSettingsPayload payload) {
-        sendMessage(new MpMessage(MpMessageType.GAME_SETTINGS, payload));
+    // ✅ FIX: send existing GameSettings to other side
+    public void sendGameSettings(GameSettings settings) {
+        sendMessage(new MpMessage(MpMessageType.GAME_SETTINGS, settings));
     }
 
     // ✅ Step 3: request shared action (we will use only NEW_GAME)
@@ -148,10 +148,10 @@ public class MultiplayerSession {
             return;
         }
 
-        // ✅ NEW: GAME_SETTINGS (seed + difficulty)
+        // ✅ FIX: GAME_SETTINGS uses GameSettings (the class your MultiplayerSetupView expects)
         if (msg.type == MpMessageType.GAME_SETTINGS) {
-            GameSettingsPayload payload = (GameSettingsPayload) msg.payload;
-            if (onGameSettings != null) onGameSettings.accept(payload);
+            GameSettings settings = (GameSettings) msg.payload;
+            if (onGameSettings != null) onGameSettings.accept(settings);
             return;
         }
 
