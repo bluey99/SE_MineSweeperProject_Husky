@@ -1,5 +1,6 @@
 package view;
 
+import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -77,67 +78,64 @@ public class HistoryView extends BorderPane {
 
         setStyle("-fx-background-color: #0f172a;");
 
-     // =========================
-     // TOP BAR
-     // =========================
+        // =========================
+        // TOP BAR
+        // =========================
 
-     backBtn.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        backBtn.setFont(Font.font("Arial", FontWeight.BOLD, 14));
 
-     String normalStyle = """
-         -fx-background-color: #1e293b;
-         -fx-text-fill: #e5e7eb;
-         -fx-background-radius: 999;
-         -fx-padding: 7 18 7 18;
-         -fx-cursor: hand;
-     """;
+        String normalStyle = """
+            -fx-background-color: #1e293b;
+            -fx-text-fill: #e5e7eb;
+            -fx-background-radius: 999;
+            -fx-padding: 7 18 7 18;
+            -fx-cursor: hand;
+        """;
 
-     String hoverStyle = """
-         -fx-background-color: #334155;
-         -fx-text-fill: #ffffff;
-         -fx-background-radius: 999;
-         -fx-padding: 7 18 7 18;
-         -fx-cursor: hand;
-     """;
+        String hoverStyle = """
+            -fx-background-color: #334155;
+            -fx-text-fill: #ffffff;
+            -fx-background-radius: 999;
+            -fx-padding: 7 18 7 18;
+            -fx-cursor: hand;
+        """;
 
-     backBtn.setStyle(normalStyle);
-     backBtn.setOnMouseEntered(e -> backBtn.setStyle(hoverStyle));
-     backBtn.setOnMouseExited(e -> backBtn.setStyle(normalStyle));
+        backBtn.setStyle(normalStyle);
+        backBtn.setOnMouseEntered(e -> backBtn.setStyle(hoverStyle));
+        backBtn.setOnMouseExited(e -> backBtn.setStyle(normalStyle));
 
-     // Icon
-     Label iconLabel = new Label("🕒");
-     iconLabel.setTextFill(Color.web("#8B5CF6"));
-     iconLabel.setFont(Font.font("Arial", FontWeight.BOLD, 28));
+        // Icon
+        Label iconLabel = new Label("🕒");
+        iconLabel.setTextFill(Color.web("#8B5CF6"));
+        iconLabel.setFont(Font.font("Arial", FontWeight.BOLD, 28));
 
-     // Title
-     VBox titleBox = new VBox(5);
-     Label title = new Label("Game History");
-     title.setTextFill(Color.WHITE);
-     title.setFont(Font.font("Arial", FontWeight.BOLD, 26));
+        // Title
+        VBox titleBox = new VBox(5);
+        Label title = new Label("Game History");
+        title.setTextFill(Color.WHITE);
+        title.setFont(Font.font("Arial", FontWeight.BOLD, 26));
 
-     Label subtitle = new Label("Review previous cooperative games");
-     subtitle.setTextFill(Color.web("#9CA3AF"));
-     subtitle.setFont(Font.font("Arial", 14));
+        Label subtitle = new Label("Review previous cooperative games");
+        subtitle.setTextFill(Color.web("#9CA3AF"));
+        subtitle.setFont(Font.font("Arial", 14));
 
-     titleBox.getChildren().addAll(title, subtitle);
+        titleBox.getChildren().addAll(title, subtitle);
 
-     // LEFT content
-     HBox headerLeft = new HBox(20, backBtn, iconLabel, titleBox);
-     headerLeft.setAlignment(Pos.CENTER_LEFT);
+        // LEFT content
+        HBox headerLeft = new HBox(20, backBtn, iconLabel, titleBox);
+        headerLeft.setAlignment(Pos.CENTER_LEFT);
 
-     // RIGHT content (settings)
-     HBox settingsBar = TopBarFactory.createTopBar();
-     settingsBar.setPadding(Insets.EMPTY);
+        // RIGHT content (settings)
+        HBox settingsBar = TopBarFactory.createTopBar();
+        settingsBar.setPadding(Insets.EMPTY);
 
-     // HEADER container
-     BorderPane header = new BorderPane();
-     header.setPadding(new Insets(20, 30, 10, 30));
-     header.setLeft(headerLeft);
-     header.setRight(settingsBar);
+        // HEADER container
+        BorderPane header = new BorderPane();
+        header.setPadding(new Insets(20, 30, 10, 30));
+        header.setLeft(headerLeft);
+        header.setRight(settingsBar);
 
-     setTop(header);
-
-
-
+        setTop(header);
 
         // Actions row (unchanged layout)
         clearHistoryBtn.setPrefHeight(32);
@@ -163,6 +161,11 @@ public class HistoryView extends BorderPane {
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setPlaceholder(new Label("No history yet."));
 
+        // =========================
+        // ✅ UPDATED COLUMNS: show ALL CSV fields
+        // dateTime,difficulty,player1Name,player2Name,result,finalScore,gameLengthSeconds
+        // =========================
+
         TableColumn<GameHistoryEntry, String> cDate = new TableColumn<>("Date & Time");
         cDate.setCellValueFactory(new PropertyValueFactory<>("dateTime"));
 
@@ -175,7 +178,22 @@ public class HistoryView extends BorderPane {
         TableColumn<GameHistoryEntry, String> cP2 = new TableColumn<>("Player 2");
         cP2.setCellValueFactory(new PropertyValueFactory<>("player2Name"));
 
-        table.getColumns().setAll(cDate, cDiff, cP1, cP2);
+        // ✅ NEW: Result (WIN/LOSE)
+        TableColumn<GameHistoryEntry, String> cResult = new TableColumn<>("Result");
+        cResult.setCellValueFactory(new PropertyValueFactory<>("result"));
+
+        // ✅ NEW: Final Score
+        TableColumn<GameHistoryEntry, Integer> cScore = new TableColumn<>("Final Score");
+        cScore.setCellValueFactory(new PropertyValueFactory<>("finalScore"));
+
+        // ✅ NEW: Time formatted mm:ss from seconds
+        TableColumn<GameHistoryEntry, String> cTime = new TableColumn<>("Time");
+        cTime.setCellValueFactory(cellData -> {
+            int sec = cellData.getValue().getGameLengthSeconds();
+            return new SimpleStringProperty(formatSeconds(sec));
+        });
+
+        table.getColumns().setAll(cDate, cDiff, cP1, cP2, cResult, cScore, cTime);
 
         VBox centerBox = new VBox(10, actions, statusLabel, table, emptyLabel);
         centerBox.setPadding(new Insets(10, 30, 20, 30));
@@ -194,6 +212,17 @@ public class HistoryView extends BorderPane {
         btn.disabledProperty().addListener((o, oldV, disabled) ->
                 btn.setStyle(disabled ? DANGER_DISABLED_STYLE : DANGER_ENABLED_STYLE));
     }
+
+    /**
+     * ✅ NEW helper: format seconds to mm:ss (used by Time column)
+     */
+    private String formatSeconds(int sec) {
+        if (sec < 0) sec = 0;
+        int m = sec / 60;
+        int s = sec % 60;
+        return String.format("%02d:%02d", m, s);
+    }
+
     /**
      * Opens a dialog that asks the user how many recent games to keep.
      *
