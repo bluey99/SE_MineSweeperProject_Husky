@@ -10,6 +10,10 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
+// ✅ NEW imports
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -45,6 +49,9 @@ import multiplayer.MpMessage;
 import multiplayer.MpMessageType;
 import multiplayer.MultiplayerDispatcher;
 import multiplayer.MultiplayerSession;
+// ✅ NEW
+import multiplayer.QuestionResultPayload;
+
 import view.GameView;
 
 import service.RevealService;
@@ -100,11 +107,14 @@ public class GameController implements GameModelObserver {
     // Multiplayer hooks
     private MultiplayerSession multiplayerSession;
     private boolean multiplayerEnabled = false;
-    
+
     // ✅ which player am I on THIS PC?
     // Host = 1, Client = 2 (in multiplayer). Offline uses -1.
     private int localPlayerNum = -1;
 
+    // ✅ NEW: keep question RNG in sync + store per-cell selected question difficulty label
+    // Key format: "playerNum:row:col"
+    private final Map<String, String> pendingQuestionDiffByCell = new ConcurrentHashMap<>();
 
     public static GameController getInstance(String difficulty, String p1Name, String p2Name, Stage stage) {
         return getInstance(difficulty, p1Name, p2Name, stage, System.nanoTime());
@@ -209,6 +219,9 @@ public class GameController implements GameModelObserver {
 
         session.setOnActionReceived(action -> Platform.runLater(() -> applyRemoteAction(action)));
 
+        // ✅ NEW: receive QUESTION_RESULT (no popup on remote)
+        session.setOnQuestionResult(payload -> Platform.runLater(() -> applyQuestionResultFromNetwork(payload)));
+
         // Game Over broadcast
         session.setOnGameOver(payload -> Platform.runLater(() -> endGameFromNetwork(payload)));
 
@@ -253,9 +266,6 @@ public class GameController implements GameModelObserver {
         }));
     }
 
-
-
-
     private void disableMultiplayerLocally() {
         multiplayerEnabled = false;
         // close session safely
@@ -263,6 +273,10 @@ public class GameController implements GameModelObserver {
             try { multiplayerSession.close(); } catch (Exception ignored) {}
         }
         multiplayerSession = null;
+        localPlayerNum = -1;
+
+        // ✅ clear pending map
+        pendingQuestionDiffByCell.clear();
     }
 
     private void applyRemoteAction(GameAction action) {
@@ -291,6 +305,9 @@ public class GameController implements GameModelObserver {
         endGameDialogShown = false;
         currentPlayer = 1;
         elapsedTime = 0;
+
+        // ✅ clear pending question contexts on reset
+        pendingQuestionDiffByCell.clear();
 
         BoardController.resetInstances();
 
@@ -429,9 +446,6 @@ public class GameController implements GameModelObserver {
         });
     }
 
-
-
-
     private void executeNewGameNow() {
         if (gameTimer != null) gameTimer.cancel();
         init();
@@ -449,7 +463,8 @@ public class GameController implements GameModelObserver {
 
                 board[i][j].cellView.setOnMouseClicked(event -> {
                     if (!gameActive || endGameTriggered) return;
-                     // ✅ Multiplayer: only allow clicking YOUR board, on YOUR turn
+
+                    // ✅ Multiplayer: only allow clicking YOUR board, on YOUR turn
                     if (multiplayerEnabled && multiplayerSession != null) {
                         // block interacting with the other board always
                         if (playerNum != localPlayerNum) return;
@@ -461,14 +476,13 @@ public class GameController implements GameModelObserver {
                         if (currentPlayer != playerNum) return;
                     }
 
-
                     Cell cell = board[row][col].getCell();
 
                     if (event.getButton() == MouseButton.PRIMARY) {
 
                         boolean valid =
                                 (!cell.isOpen() && !cell.isFlag())
-                                || (cell.isSpecial() && cell.isOpen() && !cell.isActivated());
+                                        || (cell.isSpecial() && cell.isOpen() && !cell.isActivated());
 
                         if (!valid) return;
 
@@ -513,10 +527,9 @@ public class GameController implements GameModelObserver {
         gameView.setActivePlayer(currentPlayer);
     }
 
-
     public void updateUI() {
-    	gameView.setSharedScoreWithReaction(gameModel.getSharedScore());
-    	gameView.setSharedLivesWithReaction(gameModel.getSharedLives());
+        gameView.setSharedScoreWithReaction(gameModel.getSharedScore());
+        gameView.setSharedLivesWithReaction(gameModel.getSharedLives());
         gameView.currentPlayerLabel.setText((currentPlayer == 1 ? player1Name : player2Name) + "'s Turn");
 
         gameView.difficultyLabel.setText(difficulty);
@@ -624,6 +637,120 @@ public class GameController implements GameModelObserver {
         }
     }
 
+    // ✅ NEW: multiplayer-safe entry point called from BoardController
+    // - Offline: same as activateQuestionCell(...)
+    // - Multiplayer:
+    //   * Local player => show popup, apply reward, send QUESTION_RESULT
+    //   * Remote click => silently select question (to keep RNG in sync), store qDiffLabel, wait for QUESTION_RESULT
+    public void handleQuestionCellTriggered(int boardPlayerNum, int row, int col, CellController cellCtrl) {
+        if (!isGameActive()) return;
+
+        // Offline behavior unchanged
+        if (!multiplayerEnabled || multiplayerSession == null) {
+            activateQuestionCell(cellCtrl);
+            return;
+        }
+
+        // Load questions (same as your original)
+        List<Question> all = SysData.loadQuestions();
+        if (all == null || all.isEmpty()) {
+            // Only local side shows message (avoid remote spam)
+            if (boardPlayerNum == localPlayerNum) {
+                showMessage("No Questions", "No questions found in QuestionsCSV.csv");
+            }
+            return;
+        }
+
+        final String key = makeQuestionKey(boardPlayerNum, row, col);
+
+        // Remote action on this PC: consume RNG in the SAME way but DO NOT show popup
+        if (boardPlayerNum != localPlayerNum) {
+            // If already prepared, don't consume RNG twice
+            if (!pendingQuestionDiffByCell.containsKey(key)) {
+                Question q = all.get(rng.nextInt(all.size()));
+                String qDiffLabel = mapDifficultyLabel(q.getDifficulty());
+                pendingQuestionDiffByCell.put(key, qDiffLabel);
+            }
+            return;
+        }
+
+        // Local click: consume RNG (select question), show popup, apply reward, send result
+        Question q = all.get(rng.nextInt(all.size()));
+        String qDiffLabel = mapDifficultyLabel(q.getDifficulty());
+
+        Optional<Boolean> result = QuestionPopup.show(primaryStage, q, qDiffLabel);
+
+        if (!isGameActive()) return;
+
+        if (result.isPresent()) {
+            boolean correct = result.get();
+
+            // apply locally (with dialogs)
+            applyQuestionReward(correct, qDiffLabel);
+
+            Cell cell = cellCtrl.getCell();
+            cell.setActivated(true);
+            cellCtrl.init();
+
+            // send to other side (so remote applies without popup)
+            try {
+                multiplayerSession.sendQuestionResult(
+                        new QuestionResultPayload(boardPlayerNum, row, col, correct, qDiffLabel)
+                );
+            } catch (Exception ignored) {}
+
+            if (gameModel.getSharedLives() <= 0) {
+                endGame(false);
+            }
+        }
+    }
+
+    // ✅ NEW: apply QUESTION_RESULT from network (no popup)
+    private void applyQuestionResultFromNetwork(QuestionResultPayload p) {
+        if (p == null) return;
+        if (!multiplayerEnabled || multiplayerSession == null) return;
+
+        // Find the cell controller on the correct board
+        CellController[][] board = (p.playerNum == 1) ? board1 : board2;
+        if (board == null) return;
+
+        if (p.row < 0 || p.col < 0 || p.row >= board.length || p.col >= board[0].length) return;
+
+        CellController cellCtrl = board[p.row][p.col];
+        if (cellCtrl == null) return;
+
+        Cell cell = cellCtrl.getCell();
+        if (cell == null) return;
+
+        // Avoid double-apply
+        if (cell.isActivated()) return;
+
+        // Prefer the locally-prepared qDiffLabel (keeps RNG alignment), fallback to payload
+        String key = makeQuestionKey(p.playerNum, p.row, p.col);
+        String qDiffLabel = pendingQuestionDiffByCell.remove(key);
+        if (qDiffLabel == null || qDiffLabel.isBlank()) {
+            qDiffLabel = (p.qDiffLabel != null ? p.qDiffLabel : "Easy");
+        }
+
+        // Apply reward WITHOUT dialogs on remote (no popup + no message spam)
+        applyQuestionRewardInternal(p.correct, qDiffLabel, false);
+
+        // mark activated and refresh UI
+        cell.setActivated(true);
+        cellCtrl.init();
+
+        updateUI();
+        checkWinCondition();
+
+        if (gameModel.getSharedLives() <= 0) {
+            endGame(false);
+        }
+    }
+
+    private String makeQuestionKey(int playerNum, int row, int col) {
+        return playerNum + ":" + row + ":" + col;
+    }
+
     private String mapDifficultyLabel(QuestionDifficulty diff) {
         if (diff == null) return "Easy";
         switch (diff) {
@@ -635,10 +762,18 @@ public class GameController implements GameModelObserver {
         }
     }
 
+    // ✅ keep your original public method exactly, but route to internal with dialogs=true
     private void applyQuestionReward(boolean correct, String qDiff) {
-    	
-    	 if (correct) gameView.onQuestionCorrect();
-    	    else         gameView.onQuestionWrong();
+        applyQuestionRewardInternal(correct, qDiff, true);
+    }
+
+    // ✅ NEW internal method so remote can apply silently (no popups/messages)
+    private void applyQuestionRewardInternal(boolean correct, String qDiff, boolean showDialogs) {
+
+        if (showDialogs) {
+            if (correct) gameView.onQuestionCorrect();
+            else         gameView.onQuestionWrong();
+        }
 
         SpecialCellResult res = specialCellService.processQuestion(
                 difficulty, qDiff, correct,
@@ -653,21 +788,26 @@ public class GameController implements GameModelObserver {
 
         if (res.actions.contains(SpecialAction.MINE_GIFT)) {
             boolean done = revealMineGiftCell();
-            if (done) extraInfo.append("\nMine gift: one hidden mine has been marked on your board.");
-            else      extraInfo.append("\nMine gift: no hidden mines left to mark.");
+            if (showDialogs) {
+                if (done) extraInfo.append("\nMine gift: one hidden mine has been marked on your board.");
+                else      extraInfo.append("\nMine gift: no hidden mines left to mark.");
+            }
         }
 
         if (res.actions.contains(SpecialAction.REVEAL_AREA_3X3)) {
             int revealed = revealBestAvailableBlockForCurrentPlayer();
-            extraInfo.append("\nReveal bonus: ")
-                    .append(revealed)
-                    .append(" cells have been uncovered.");
+            if (showDialogs) {
+                extraInfo.append("\nReveal bonus: ")
+                        .append(revealed)
+                        .append(" cells have been uncovered.");
+            }
         }
 
-        String msg = res.message;
-        if (extraInfo.length() > 0) msg += "\n" + extraInfo;
-
-        showMessage(res.title, msg);
+        if (showDialogs) {
+            String msg = res.message;
+            if (extraInfo.length() > 0) msg += "\n" + extraInfo;
+            showMessage(res.title, msg);
+        }
 
         if (res.gameOver) {
             endGame(false);
@@ -1137,7 +1277,6 @@ public class GameController implements GameModelObserver {
                     -fx-background-radius: 16;
                 """);
 
-
         menuBtn.setOnAction(e -> {
             dialog.close();
 
@@ -1165,9 +1304,6 @@ public class GameController implements GameModelObserver {
             Main.showMainMenu(primaryStage);
         });
 
-
-
-
         HBox buttons = new HBox(14, newGameBtn, menuBtn);
         buttons.setAlignment(Pos.CENTER_RIGHT);
 
@@ -1191,12 +1327,13 @@ public class GameController implements GameModelObserver {
         dialog.centerOnScreen();
         dialog.showAndWait();
     }
+
     public String getDifficulty() {
         return difficulty;
     }
+
     private void returnToMenuNow() {
         if (gameTimer != null) gameTimer.cancel();
         Main.showMainMenu(primaryStage);
     }
-
 }

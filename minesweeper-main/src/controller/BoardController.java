@@ -79,6 +79,7 @@ public class BoardController {
 
     private final int totalMinesOnBoard;
 
+    // keep your counters (still useful internally), but mines-left will not depend on them anymore
     private int correctFlagCount = 0;
     private int openedMineCount = 0;
 
@@ -110,8 +111,24 @@ public class BoardController {
         return logicalBoard;
     }
 
+    // ✅ FIX: mines-left derived from the board state (authoritative & synced)
+    // This prevents desync caused by local counters (correctFlagCount/openedMineCount).
     public int getMinesLeft() {
-        int left = totalMinesOnBoard - (correctFlagCount + openedMineCount);
+        int minesTotal = 0;
+        int minesHandled = 0; // opened mines + correctly flagged mines
+
+        for (int r = 0; r < logicalBoard.getRows(); r++) {
+            for (int c = 0; c < logicalBoard.getCols(); c++) {
+                Cell cell = logicalBoard.getCell(r, c);
+                if (cell.isMine()) {
+                    minesTotal++;
+                    if (cell.isOpen()) minesHandled++;
+                    else if (cell.isFlag()) minesHandled++;
+                }
+            }
+        }
+
+        int left = minesTotal - minesHandled;
         return Math.max(left, 0);
     }
 
@@ -152,7 +169,10 @@ public class BoardController {
         }
 
         if (cell.isQuestion() && cell.isDiscovered() && !cell.isActivated()) {
-            gameController.activateQuestionCell(cellCtrl);
+            // ✅ IMPORTANT: multiplayer-safe question handler
+            // offline => GameController will open popup
+            // multiplayer => only local player opens popup, remote applies result via QUESTION_RESULT
+            gameController.handleQuestionCellTriggered(playerNum, row, col, cellCtrl);
             return;
         }
 
@@ -163,15 +183,14 @@ public class BoardController {
         for (RevealResult.CellPos p : revealResult.getOpenedCells()) {
             uiBoard[p.row][p.col].init();
         }
-        
-     // ✅ IMPORTANT: mark special cells as "discovered" when they become open
+
+        // ✅ IMPORTANT: mark special cells as "discovered" when they become open
         for (RevealResult.CellPos p : revealResult.getOpenedCells()) {
             Cell opened = uiBoard[p.row][p.col].getCell();
             if (opened.isSpecial() && !opened.isDiscovered()) {
                 opened.setDiscovered(true);
             }
         }
-
 
         if (!gameController.isGameActive()) return;
 
@@ -247,9 +266,9 @@ public class BoardController {
         }
         return count;
     }
+
     // track mines opened via reveal gifts
     public void onMineOpenedByGift() {
         openedMineCount++;
     }
-
 }

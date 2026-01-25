@@ -19,6 +19,9 @@ public class MultiplayerSession {
     // Player-left notification
     private Consumer<String> onPlayerLeft;
 
+    // ✅ NEW: Question result sync (popup only local; remote receives result)
+    private Consumer<QuestionResultPayload> onQuestionResult;
+
     private boolean isHost = false;
 
     private MenuAction pendingIncomingRequest = null;
@@ -60,6 +63,11 @@ public class MultiplayerSession {
         this.onPlayerLeft = h;
     }
 
+    // ✅ NEW
+    public void setOnQuestionResult(Consumer<QuestionResultPayload> h) {
+        this.onQuestionResult = h;
+    }
+
     public void sendMessage(MpMessage msg) {
         try {
             network.send(msg);
@@ -71,6 +79,11 @@ public class MultiplayerSession {
     // ✅ Notify other side & close
     public void notifyPlayerLeft(String name) {
         sendMessage(new MpMessage(MpMessageType.PLAYER_LEFT, name));
+    }
+
+    // ✅ NEW: send question result to other side (no popup on remote)
+    public void sendQuestionResult(QuestionResultPayload payload) {
+        sendMessage(new MpMessage(MpMessageType.QUESTION_RESULT, payload));
     }
 
     // ✅ Step 3: request shared action (we will use only NEW_GAME)
@@ -129,6 +142,13 @@ public class MultiplayerSession {
         if (msg.type == MpMessageType.PLAYER_LEFT) {
             String name = (String) msg.payload;
             if (onPlayerLeft != null) onPlayerLeft.accept(name);
+            return;
+        }
+
+        // ✅ NEW: Question result received
+        if (msg.type == MpMessageType.QUESTION_RESULT) {
+            QuestionResultPayload payload = (QuestionResultPayload) msg.payload;
+            if (onQuestionResult != null) onQuestionResult.accept(payload);
             return;
         }
 
