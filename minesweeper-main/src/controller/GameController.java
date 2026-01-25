@@ -93,11 +93,16 @@ public class GameController implements GameModelObserver {
     private final Stage primaryStage;
 
     // ✅ seeded RNG
-    private final Random rng;
-    private final long seed;
+    private Random rng;
+    private long seed;
+    private SpecialCellService specialCellService;
 
+    // ✅ NEW: New game seed received from host
+    private Long pendingNewGameSeed = null;
+
+    
     private final RevealService revealService = new RevealService();
-    private final SpecialCellService specialCellService;
+    
 
     private BoardController board1Controller;
     private BoardController board2Controller;
@@ -216,6 +221,13 @@ public class GameController implements GameModelObserver {
         this.multiplayerSession = session;
         this.multiplayerEnabled = true;
         this.localPlayerNum = session.isHost() ? 1 : 2;
+        
+        // ✅ Receive seed+difficulty from host for NEW_GAME
+        session.setOnGameSettings(payload -> Platform.runLater(() -> {
+            pendingNewGameSeed = payload.seed;
+            this.difficulty = payload.difficulty; // keep both sides same difficulty
+        }));
+
 
         session.setOnActionReceived(action -> Platform.runLater(() -> applyRemoteAction(action)));
 
@@ -240,10 +252,37 @@ public class GameController implements GameModelObserver {
             session.respondToPendingRequest(ok);
         }));
 
-        // ✅ Execute actions coming from the OTHER side
+     // ✅ Execute actions coming from the OTHER side
         session.setOnExecuteAction(action -> Platform.runLater(() -> {
+
             if (action.type == MenuAction.Type.NEW_GAME) {
-                executeNewGameNow();
+
+                long seedToUse;
+
+                // ✅ Host chooses ONE seed and broadcasts it, then both run the same init()
+                if (multiplayerEnabled && multiplayerSession != null && multiplayerSession.isHost()) {
+
+                    seedToUse = System.nanoTime();
+
+                    // store locally too (host uses same seed)
+                    pendingNewGameSeed = seedToUse;
+
+                    // send seed + difficulty to client BEFORE starting
+                    try {
+                        multiplayerSession.sendGameSettings(
+                                new multiplayer.GameSettingsPayload(difficulty, seedToUse)
+                        );
+                    } catch (Exception ignored) {}
+
+                } else {
+                    // ✅ Client uses the seed that arrived from host
+                    seedToUse = (pendingNewGameSeed != null) ? pendingNewGameSeed : System.nanoTime();
+                }
+
+                pendingNewGameSeed = null;
+
+                // ✅ Start new game using the SAME seed on both sides
+                executeNewGameNowWithSeed(seedToUse);
                 return;
             }
 
@@ -255,6 +294,7 @@ public class GameController implements GameModelObserver {
                 Main.showMainMenu(primaryStage);
             }
         }));
+
 
         session.setOnActionDeclined(type -> Platform.runLater(() -> {
             showMessage("Request Declined", "The other player declined the New Game request.");
@@ -278,6 +318,17 @@ public class GameController implements GameModelObserver {
         // ✅ clear pending map
         pendingQuestionDiffByCell.clear();
     }
+    
+    private void resetSeed(long newSeed) {
+        this.seed = newSeed;
+        this.rng = new Random(newSeed);
+        this.specialCellService = new SpecialCellService(this.rng);
+
+        // recreate model so board generation uses the NEW rng
+        this.gameModel = new GameModel(this, mineCount, sharedLives, rng);
+        this.gameModel.addObserver(this);
+    }
+
 
     private void applyRemoteAction(GameAction action) {
         if (action.type == GameAction.Type.LEFT_CLICK) {
@@ -446,11 +497,18 @@ public class GameController implements GameModelObserver {
         });
     }
 
-    private void executeNewGameNow() {
+    private void executeNewGameNowWithSeed(long newSeed) {
         if (gameTimer != null) gameTimer.cancel();
+        resetSeed(newSeed);
         init();
         startTimer();
     }
+
+    private void executeNewGameNow() {
+        // ✅ offline stays random
+        executeNewGameNowWithSeed(System.nanoTime());
+    }
+
 
     private void addEventHandlersToBoard(BoardController bc) {
         CellController[][] board = bc.getUiBoard();

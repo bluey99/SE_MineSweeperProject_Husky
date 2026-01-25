@@ -19,8 +19,11 @@ public class MultiplayerSession {
     // Player-left notification
     private Consumer<String> onPlayerLeft;
 
-    // ✅ NEW: Question result sync (popup only local; remote receives result)
+    // ✅ Question result sync (popup only local; remote receives result)
     private Consumer<QuestionResultPayload> onQuestionResult;
+
+    // ✅ NEW: Game settings sync (seed + difficulty for New Game)
+    private Consumer<GameSettingsPayload> onGameSettings;
 
     private boolean isHost = false;
 
@@ -63,9 +66,13 @@ public class MultiplayerSession {
         this.onPlayerLeft = h;
     }
 
-    // ✅ NEW
     public void setOnQuestionResult(Consumer<QuestionResultPayload> h) {
         this.onQuestionResult = h;
+    }
+
+    // ✅ NEW
+    public void setOnGameSettings(Consumer<GameSettingsPayload> h) {
+        this.onGameSettings = h;
     }
 
     public void sendMessage(MpMessage msg) {
@@ -81,9 +88,14 @@ public class MultiplayerSession {
         sendMessage(new MpMessage(MpMessageType.PLAYER_LEFT, name));
     }
 
-    // ✅ NEW: send question result to other side (no popup on remote)
+    // ✅ send question result to other side (no popup on remote)
     public void sendQuestionResult(QuestionResultPayload payload) {
         sendMessage(new MpMessage(MpMessageType.QUESTION_RESULT, payload));
+    }
+
+    // ✅ NEW: send game settings to other side (seed + difficulty)
+    public void sendGameSettings(GameSettingsPayload payload) {
+        sendMessage(new MpMessage(MpMessageType.GAME_SETTINGS, payload));
     }
 
     // ✅ Step 3: request shared action (we will use only NEW_GAME)
@@ -128,9 +140,18 @@ public class MultiplayerSession {
 
     public void handleIncoming(MpMessage msg) {
 
+        if (msg == null) return;
+
         if (msg.type == MpMessageType.GAME_ACTION) {
             GameAction action = (GameAction) msg.payload;
             if (onActionReceived != null) onActionReceived.accept(action);
+            return;
+        }
+
+        // ✅ NEW: GAME_SETTINGS (seed + difficulty)
+        if (msg.type == MpMessageType.GAME_SETTINGS) {
+            GameSettingsPayload payload = (GameSettingsPayload) msg.payload;
+            if (onGameSettings != null) onGameSettings.accept(payload);
             return;
         }
 
@@ -145,7 +166,7 @@ public class MultiplayerSession {
             return;
         }
 
-        // ✅ NEW: Question result received
+        // ✅ Question result received
         if (msg.type == MpMessageType.QUESTION_RESULT) {
             QuestionResultPayload payload = (QuestionResultPayload) msg.payload;
             if (onQuestionResult != null) onQuestionResult.accept(payload);
