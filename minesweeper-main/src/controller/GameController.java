@@ -478,7 +478,7 @@ public class GameController implements GameModelObserver {
 
     public void updateUI() {
     	gameView.setSharedScoreWithReaction(gameModel.getSharedScore());
-        gameView.sharedLivesLabel.setText("" + gameModel.getSharedLives());
+    	gameView.setSharedLivesWithReaction(gameModel.getSharedLives());
         gameView.currentPlayerLabel.setText((currentPlayer == 1 ? player1Name : player2Name) + "'s Turn");
 
         gameView.difficultyLabel.setText(difficulty);
@@ -598,6 +598,9 @@ public class GameController implements GameModelObserver {
     }
 
     private void applyQuestionReward(boolean correct, String qDiff) {
+    	
+    	 if (correct) gameView.onQuestionCorrect();
+    	    else         gameView.onQuestionWrong();
 
         SpecialCellResult res = specialCellService.processQuestion(
                 difficulty, qDiff, correct,
