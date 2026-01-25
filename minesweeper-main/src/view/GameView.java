@@ -64,6 +64,7 @@ public class GameView extends BorderPane {
     private javafx.animation.PauseTransition mascotTimer;
 
     private int lastScore = 0;
+    private int lastLives = 0; 
 
     public GameView(GameController controller) {
 
@@ -519,6 +520,7 @@ public class GameView extends BorderPane {
 
     public void initMascotScoreTracking() {
         lastScore = safeParseInt(sharedScoreLabel.getText());
+        lastLives = safeParseInt(sharedLivesLabel.getText());
         setMascotNeutral();
     }
 
@@ -540,6 +542,20 @@ public class GameView extends BorderPane {
         reactSad();
     }
 
-    
+    public void setSharedLivesWithReaction(int newLives) {
+        int oldLives = safeParseInt(sharedLivesLabel.getText());
+
+        sharedLivesLabel.setText(String.valueOf(newLives));
+
+        // 🎉 Life added → happy mascot
+        if (newLives > oldLives) {
+            reactHappy();
+        }
+        // 💔 Life lost → sad mascot (optional but nice)
+        else if (newLives < oldLives) {
+            reactSad();
+        }
+    }
+
   
 }

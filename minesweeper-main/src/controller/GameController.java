@@ -478,7 +478,7 @@ public class GameController implements GameModelObserver {
 
     public void updateUI() {
     	gameView.setSharedScoreWithReaction(gameModel.getSharedScore());
-        gameView.sharedLivesLabel.setText("" + gameModel.getSharedLives());
+    	gameView.setSharedLivesWithReaction(gameModel.getSharedLives());
         gameView.currentPlayerLabel.setText((currentPlayer == 1 ? player1Name : player2Name) + "'s Turn");
 
         gameView.difficultyLabel.setText(difficulty);
