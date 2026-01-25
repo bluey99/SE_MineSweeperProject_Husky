@@ -44,6 +44,7 @@ import model.QuestionDifficulty;
 import model.SysData;
 import multiplayer.GameAction;
 import multiplayer.GameOverPayload;
+import multiplayer.GameSettings;
 import multiplayer.MenuAction;
 import multiplayer.MpMessage;
 import multiplayer.MpMessageType;
@@ -270,7 +271,7 @@ public class GameController implements GameModelObserver {
                     // send seed + difficulty to client BEFORE starting
                     try {
                         multiplayerSession.sendGameSettings(
-                                new multiplayer.GameSettingsPayload(difficulty, seedToUse)
+                                new GameSettings(player1Name, player2Name,difficulty, seedToUse)
                         );
                     } catch (Exception ignored) {}
 
@@ -307,13 +308,13 @@ public class GameController implements GameModelObserver {
     }
 
     private void disableMultiplayerLocally() {
-//        multiplayerEnabled = false;
-//        // close session safely
-//        if (multiplayerSession != null) {
-//            try { multiplayerSession.close(); } catch (Exception ignored) {}
-//        }
-//        multiplayerSession = null;
-//        localPlayerNum = -1;
+        multiplayerEnabled = false;
+        // close session safely
+        if (multiplayerSession != null) {
+            try { multiplayerSession.close(); } catch (Exception ignored) {}
+        }
+        multiplayerSession = null;
+        localPlayerNum = -1;
 
         // ✅ clear pending map
         pendingQuestionDiffByCell.clear();

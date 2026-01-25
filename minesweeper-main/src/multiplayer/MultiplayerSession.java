@@ -1,6 +1,8 @@
 package multiplayer;
 
 import java.util.function.Consumer;
+import multiplayer.GameSettings;
+
 
 public class MultiplayerSession {
 
@@ -94,7 +96,7 @@ public class MultiplayerSession {
     }
 
     // ✅ NEW: send game settings to other side (seed + difficulty)
-    public void sendGameSettings(GameSettingsPayload payload) {
+    public void sendGameSettings(multiplayer.GameSettings payload) {
         sendMessage(new MpMessage(MpMessageType.GAME_SETTINGS, payload));
     }
 
