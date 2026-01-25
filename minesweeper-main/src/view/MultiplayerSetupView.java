@@ -97,6 +97,8 @@ public class MultiplayerSetupView extends BorderPane {
 
     private volatile ServerSocket serverSocket;
 
+    private String selectedKey = null;
+    
     private enum MpState { IDLE, HOSTING, JOINING, IN_GAME }
     private MpState state = MpState.IDLE;
 
@@ -275,24 +277,57 @@ public class MultiplayerSetupView extends BorderPane {
                 "-fx-background-radius: 18;"
         );
 
-        hostsList.setCellFactory(list -> new ListCell<>() {
-            @Override
-            protected void updateItem(LanDiscoveryService.DiscoveredHost item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                    setStyle("");
-                } else {
-                    setText(item.hostName() + "  •  " + item.difficulty() + "  •  " + item.ip());
+        hostsList.setCellFactory(list -> {
+            ListCell<LanDiscoveryService.DiscoveredHost> cell = new ListCell<>() {
+
+                private void applyStyle() {
+                    if (isEmpty() || getItem() == null) {
+                        setText(null);
+                        setStyle("");
+                        return;
+                    }
+
+                    setText(getItem().hostName() + "  •  " + getItem().difficulty() + "  •  " + getItem().ip());
                     setTextFill(Color.web("#E5E7EB"));
+
                     if (isSelected()) {
-                        setStyle("-fx-background-color: rgba(56,189,248,0.20); -fx-background-radius: 12;");
+                        setStyle("-fx-background-color: rgba(56,189,248,0.28); -fx-background-radius: 12;");
                     } else {
                         setStyle("-fx-background-color: transparent;");
                     }
                 }
-            }
+
+                @Override
+                protected void updateItem(LanDiscoveryService.DiscoveredHost item, boolean empty) {
+                    super.updateItem(item, empty);
+                    applyStyle();
+                }
+
+                @Override
+                public void updateSelected(boolean selected) {
+                    super.updateSelected(selected);
+                    applyStyle();
+                }
+            };
+
+            return cell;
         });
+
+        
+        hostsList.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+
+        // ✅ Track selected host key (so we can restore it after refresh)
+        hostsList.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
+            selectedKey = keyOf(newV);
+            // force repaint so the blue row stays stable visually
+            hostsList.refresh();
+        });
+        // Extra safety: force repaint when index changes (prevents visual flicker)
+        hostsList.getSelectionModel().selectedIndexProperty().addListener((obs, o, n) -> {
+            hostsList.refresh();
+        });
+
+
 
         styleSecondary(refreshBtn);
 
@@ -344,16 +379,47 @@ public class MultiplayerSetupView extends BorderPane {
         discovery.startListening(host -> {
             String key = host.ip() + ":" + host.port();
             discoveredMap.put(key, host);
-            Platform.runLater(this::refreshHostList);
+            Platform.runLater(() -> {
+                // If user selected something, don't keep replacing list every 700ms
+                if (hostsList.isHover() || hostsList.getSelectionModel().getSelectedItem() != null) {
+                    return;
+                }
+                refreshHostList();
+            });
+
         });
     }
 
     private void refreshHostList() {
+
+        // Save current selection key
+        String prevSelected = selectedKey;
+
         List<LanDiscoveryService.DiscoveredHost> list = new ArrayList<>(discoveredMap.values());
         list.sort(Comparator.comparing(LanDiscoveryService.DiscoveredHost::hostName)
                 .thenComparing(LanDiscoveryService.DiscoveredHost::ip));
+
+        // Replace list items
         hostsList.getItems().setAll(list);
+
+        // ✅ Restore selection if possible
+        if (prevSelected != null) {
+            for (LanDiscoveryService.DiscoveredHost h : list) {
+                if (prevSelected.equals(keyOf(h))) {
+                    hostsList.getSelectionModel().select(h);
+                    break;
+                }
+            }
+        }
+
+        // Ensure visuals update
+        hostsList.refresh();
+        if (hostsList.getSelectionModel().getSelectedItem() == null) {
+            selectedKey = null;
+        }
+
     }
+
 
     private void setState(MpState newState) {
         state = newState;
@@ -622,5 +688,10 @@ public class MultiplayerSetupView extends BorderPane {
                 "-fx-background-radius: 14;" +
                 "-fx-cursor: hand;"
         ));
+    }
+    
+    private String keyOf(LanDiscoveryService.DiscoveredHost h) {
+        if (h == null) return null;
+        return h.ip() + ":" + h.port();
     }
 }
