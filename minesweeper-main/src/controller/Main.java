@@ -308,43 +308,32 @@ public class Main extends Application {
 
     // ✅ NEW OVERLOAD: start game with deterministic seed (multiplayer)
     public GameController startGameFromSetupReturnController(String p1, String p2, String difficulty, long seed) {
-        GameController.resetInstance();
-        GameController controller = GameController.getInstance(difficulty, p1, p2, primaryStage, seed);
-
-        Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
-        double screenX = bounds.getMinX();
-        double screenY = bounds.getMinY();
-        double screenW = bounds.getWidth();
-        double screenH = bounds.getHeight();
-
+        
+        
+        primaryStage.setFullScreen(false);
+        primaryStage.setMaximized(false);
+        
         primaryStage.setMinWidth(0);
         primaryStage.setMaxWidth(Double.MAX_VALUE);
         primaryStage.setMinHeight(0);
         primaryStage.setMaxHeight(Double.MAX_VALUE);
+        primaryStage.setResizable(true);
 
-        double gameW = screenW * 0.92;
-        double gameH = screenH;
-
-        double x = screenX + (screenW - gameW) / 2;
-        double y = screenY;
-
-        Scene gameScene = new Scene(controller.gameView, gameW, gameH);
+        GameController.resetInstance();
+        GameController controller = GameController.getInstance(difficulty, p1, p2, primaryStage, seed);
+        
+        Scene gameScene = new Scene(controller.gameView);
+        gameScene.setFill(Color.BLACK);
         gameScene.getStylesheets().add(
                 Main.class.getResource("/css/game.css").toExternalForm()
         );
         primaryStage.setScene(gameScene);
-
-        primaryStage.setX(x);
-        primaryStage.setY(y);
-        primaryStage.setWidth(gameW);
-        primaryStage.setHeight(gameH);
-
-        primaryStage.setMinWidth(gameW);
-        primaryStage.setMaxWidth(gameW);
-        primaryStage.setMinHeight(gameH);
-        primaryStage.setMaxHeight(gameH);
-
-        primaryStage.setResizable(false);
+        
+     // ✅ maximize AFTER scene is set (taskbar stays visible)
+        Platform.runLater(() -> {
+            primaryStage.setMaximized(true);
+            primaryStage.centerOnScreen();
+        });
 
         return controller;
     }

@@ -1,6 +1,8 @@
 package multiplayer;
 
 import java.util.function.Consumer;
+import multiplayer.GameSettings;
+
 
 public class MultiplayerSession {
 
@@ -93,9 +95,9 @@ public class MultiplayerSession {
         sendMessage(new MpMessage(MpMessageType.QUESTION_RESULT, payload));
     }
 
-    // ✅ FIX: send existing GameSettings to other side
-    public void sendGameSettings(GameSettings settings) {
-        sendMessage(new MpMessage(MpMessageType.GAME_SETTINGS, settings));
+    // ✅ NEW: send game settings to other side (seed + difficulty)
+    public void sendGameSettings(multiplayer.GameSettings payload) {
+        sendMessage(new MpMessage(MpMessageType.GAME_SETTINGS, payload));
     }
 
     // ✅ Step 3: request shared action (we will use only NEW_GAME)

@@ -49,6 +49,7 @@ import model.QuestionDifficulty;
 import model.SysData;
 import multiplayer.GameAction;
 import multiplayer.GameOverPayload;
+import multiplayer.GameSettings;
 import multiplayer.MenuAction;
 import multiplayer.MpMessage;
 import multiplayer.MpMessageType;
@@ -299,7 +300,7 @@ public class GameController implements GameModelObserver {
                     // send seed + difficulty + names to client BEFORE starting
                     try {
                         multiplayerSession.sendGameSettings(
-                                new multiplayer.GameSettings(player1Name, player2Name, difficulty, seedToUse)
+                                new GameSettings(player1Name, player2Name,difficulty, seedToUse)
                         );
                     } catch (Exception ignored) {}
 
